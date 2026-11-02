@@ -174,6 +174,12 @@ static void overlay_update(void) {
     overlay_set(want);
 }
 
+/* Could the VU meter show right now? (lighting on, VU not switched off with ZK_VU, keymap allows it, e.g. Windows mode) */
+static bool vu_possible(void) {
+    return rgb_matrix_is_enabled() && vu_allowed && zxkb_overlay_allowed_user(ZXKB_OVERLAY_VU);
+}
+static void info_status(uint8_t *data, uint8_t length);
+
 void housekeeping_task_zxkb(void) {
     housekeeping_task_zxkb_kb();
     if (overlay != ZXKB_OVERLAY_NONE && rgb_matrix_get_mode() != overlay_mode(overlay)) {
@@ -183,6 +189,19 @@ void housekeeping_task_zxkb(void) {
         direct_requested = false;
     }
     if (overlay != ZXKB_OVERLAY_NONE || vu_requested || direct_requested) overlay_update();
+
+    /* Tell the app at once when something it cares about changes (lighting on/off, effect, overlay, whether the
+     * VU meter could show), so it can stop listening to audio while nothing would show it. */
+    static uint8_t last[5];
+    static bool    sent = false;
+    uint8_t        now[5] = {rgb_matrix_is_enabled(), own_mode(), overlay, vu_requested, vu_possible()};
+    if (!sent || memcmp(now, last, sizeof(now)) != 0) {
+        memcpy(last, now, sizeof(now));
+        sent = true;
+        uint8_t msg[ZXKB_REPORT_SIZE] = {ZXKB_CMD_INFO, ZXKB_INFO_STATUS};
+        info_status(msg, sizeof(msg));
+        raw_hid_send(msg, sizeof(msg));
+    }
 }
 
 /* ---------- Keys: hotkey slots, VU toggle, typing ripple history ---------- */
@@ -287,7 +306,8 @@ static void info_leds(uint8_t *data, uint8_t length) {
 }
 
 /* [0xD9, 0x00] -> [0xD9, 0x00, protocol, LED count, effect count, mode, enabled, brightness, speed, hue, sat,
- *                  max brightness, overlay, VU allowed, VU requested] */
+ *                  max brightness, overlay, VU allowed, VU requested, VU possible]. Also sent unasked when
+ *                  lighting, effect, overlay or VU state changes. */
 static void info_status(uint8_t *data, uint8_t length) {
     memset(&data[2], 0, length - 2);
     data[2]  = ZXKB_PROTOCOL_VERSION;
@@ -303,6 +323,7 @@ static void info_status(uint8_t *data, uint8_t length) {
     data[12] = overlay;
     data[13] = vu_allowed;
     data[14] = vu_requested;
+    data[15] = vu_possible();
 }
 
 /* ---------- SignalRGB protocol ---------- */

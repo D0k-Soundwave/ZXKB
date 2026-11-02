@@ -18,6 +18,7 @@
 struct Status {
     uint8_t mode = 0, enabled = 0, val = 0, speed = 0, hue = 0, sat = 0, max_val = 255;
     uint8_t overlay = 0, vu_allowed = 0, vu_requested = 0;
+    uint8_t vu_possible = 1; // the VU meter could show now (lighting on, allowed, e.g. Windows mode)
 };
 
 struct Tune { // size and intensity of the keyboard's current effect
@@ -57,6 +58,7 @@ private:
     HANDLE           stop_ev_ = nullptr, rescan_ev_ = nullptr, read_ev_ = nullptr, write_ev_ = nullptr;
     HANDLE           dev_    = INVALID_HANDLE_VALUE;
     int              in_len_ = 0, out_len_ = 0;
+    uint8_t          protocol_ = 0; // ZXKB protocol version of the connected board
     volatile bool    broken_ = false;
     CRITICAL_SECTION write_lock_;
 };

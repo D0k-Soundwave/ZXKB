@@ -127,13 +127,28 @@ void save_lists() {
 }
 
 // ---------- actions ----------
+ULONGLONG g_vu_sent = 0;                  // when ZXKB last switched the VU meter on or off on the keyboard
+constexpr ULONGLONG VU_GRACE_MS = 1000;   // replies take a few ms; ignore older status about the VU meter for this long
+
+// Listen to audio only while the VU meter could actually be seen: on, lighting on, and allowed by the keyboard
+// (not switched off with Fn + V, not in Spectrum mode). Anything else costs nothing.
+void update_capture() {
+    if (g_board && g_vu_on && g_st.enabled && g_st.vu_possible) g_vu.start();
+    else g_vu.stop();
+}
+
 void set_vu(bool on) {
     g_vu_on = on;
     settings::set_int(L"vu", L"on", on);
     if (!g_board) return;
-    if (on && !g_st.enabled) { via_set(proto::VIA_EFFECT, g_st.mode ? g_st.mode : 1); g_st.enabled = 1; }
+    if (on && !g_st.enabled) { // switching lighting back on: the keyboard reports at once if the VU still cannot show
+        via_set(proto::VIA_EFFECT, g_st.mode ? g_st.mode : 1);
+        g_st.enabled = 1;
+        g_st.vu_possible = 1;
+    }
     send({proto::VU_MODE, (uint8_t)on});
-    if (on) g_vu.start(); else g_vu.stop(); // audio is only captured while the VU meter is on
+    g_vu_sent = GetTickCount64();
+    update_capture();
     update_tray();
 }
 
@@ -505,9 +520,17 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_ZX_SLOT:
             apply_slot((int)wp);
             return 0;
-        case WM_ZX_STATUS: {
+        case WM_ZX_STATUS: { // a reply, or the keyboard telling us its state changed
             Status *s = reinterpret_cast<Status *>(lp);
-            if (g_board) g_st = *s;
+            if (g_board) {
+                g_st = *s;
+                // an effect picked on the keyboard itself replaces the VU meter, as picking one in ZXKB does
+                if (g_vu_on && !g_st.vu_requested && GetTickCount64() - g_vu_sent > VU_GRACE_MS) {
+                    g_vu_on = false;
+                    settings::set_int(L"vu", L"on", 0);
+                }
+                update_capture();
+            }
             delete s;
             update_tray();
             return 0;

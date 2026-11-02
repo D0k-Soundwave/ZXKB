@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 1
+#define ZXKB_PROTOCOL_VERSION 2 /* 2: status has "VU possible" and is also sent unasked on changes */
 #define ZXKB_REPORT_SIZE      32 /* QMK raw HID report size (RAW_EPSIZE) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */

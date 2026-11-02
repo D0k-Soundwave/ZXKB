@@ -97,7 +97,7 @@ bool HidLink::transact(HANDLE h, uint8_t *buf, int in_len, int out_len) {
 static Status parse_status(const uint8_t *p) {
     Status s;
     s.mode = p[5]; s.enabled = p[6]; s.val = p[7]; s.speed = p[8]; s.hue = p[9]; s.sat = p[10];
-    s.max_val = p[11]; s.overlay = p[12]; s.vu_allowed = p[13]; s.vu_requested = p[14];
+    s.max_val = p[11]; s.overlay = p[12]; s.vu_allowed = p[13]; s.vu_requested = p[14]; s.vu_possible = p[15];
     return s;
 }
 
@@ -107,6 +107,7 @@ bool HidLink::probe(HANDLE h, int in_len, int out_len, Board *board) {
     board->protocol  = buf[2];
     board->led_count = buf[3];
     board->status    = parse_status(buf);
+    if (board->protocol < 2) board->status.vu_possible = 1; // older firmware does not report it
     int effects      = buf[4];
     board->names.clear();
     board->kinds.clear();
@@ -159,6 +160,7 @@ bool HidLink::open_board(Board *board) {
             if (HidD_GetProductString(h, name, sizeof(name) - sizeof(wchar_t))) board->product = name;
             EnterCriticalSection(&write_lock_);
             dev_     = h;
+            protocol_ = board->protocol;
             in_len_  = caps.InputReportByteLength;
             out_len_ = caps.OutputReportByteLength;
             broken_  = false;
@@ -192,7 +194,9 @@ void HidLink::read_loop() {
         if (p[0] == proto::SLOT && p[1] >= 1 && p[1] <= 10) {
             PostMessageW(hwnd_, WM_ZX_SLOT, p[1], 0);
         } else if (p[0] == proto::INFO && p[1] == proto::INFO_STATUS) {
-            PostMessageW(hwnd_, WM_ZX_STATUS, 0, (LPARAM) new Status(parse_status(p)));
+            Status *s = new Status(parse_status(p));
+            if (protocol_ < 2) s->vu_possible = 1; // older firmware does not report it
+            PostMessageW(hwnd_, WM_ZX_STATUS, 0, (LPARAM)s);
         } else if (p[0] == proto::TUNE) {
             Tune *t = new Tune;
             t->mode = p[2]; t->flags = p[3]; t->size = p[4]; t->intensity = p[5];
