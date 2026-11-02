@@ -1,0 +1,73 @@
+# ZXKB: project brief for Claude Code
+
+ZXKB is a lightweight Windows tray app plus QMK firmware module for per-key RGB keyboards.
+It began as "ZX VU" (an audio VU meter for D0k's ZX Spectrum keyboard) and grew into a general
+lighting controller. It is headed for public release on GitHub (account `D0k-Soundwave`).
+
+## Owner and working rules (read first)
+- The owner is **D0k**. Always call him D0k. He directs; he does not write code himself.
+- **Collect all requirements before building.** Do not build, flash or release until D0k says the
+  list is complete. Record new requests in `docs/REQUIREMENTS.md` as they arrive.
+- **No Claude attribution anywhere**: no co-author lines in commits, no credit in README or code.
+- Licence: **GPL-3.0** for the whole repo (firmware builds on QMK, which is GPL).
+- British English. Direct, no filler. One step at a time. GUI over CLI for anything D0k operates.
+- Do not guess facts: check docs/online. Flag it if a plan is getting overcomplicated.
+- Keep it lightweight: measure idle/busy RAM and CPU and report real figures.
+
+## Hardware (reference board)
+- Keychron Q3 UK ISO with knob: `keychron/q3/iso_encoder`, STM32L432, 2x SNLED27351 LED drivers,
+  88 RGB LEDs, `CAPS_LOCK_LED_INDEX` 49. USB VID 0x3434 PID 0x0123. VIA raw HID: usage page 0xFF60, usage 0x61.
+- Keycaps: KAM Wraith ZX Spectrum (grey + black sets mixed). Also used with the MiSTer ZX Spectrum core.
+- Side switch: active = Windows layers (2/3), inactive ("Mac") = Spectrum layers (0/1).
+- Flashing: QMK Toolbox (runs elevated). Hold **Esc while plugging in** = DFU + EEPROM clear.
+  STM32 DFU 0483:DF11 with WinUSB driver.
+- Build: upstream `qmk_firmware` master, `make keychron/q3/iso_encoder:d0k`
+  (on this PC use WSL Ubuntu or QMK MSYS; the final `dfu-suffix` error is harmless, the .bin is produced).
+  Copy `firmware/keymaps/d0k` into `qmk_firmware/keyboards/keychron/q3/iso_encoder/keymaps/d0k`.
+
+## Colour calibration (done 2026-11-02, by eye against the true Spectrum BRIGHT palette)
+- Root cause found: Keychron ships SNLED27351 current tune red 0x44 (68), green/blue 0x9D (157),
+  which starves red: no real white or yellow. Tune register i drives CB(i+1); on this board
+  CB1/4/7/10 = green, CB2/5/8/11 = blue, CB3/6/9/12 = red.
+- D0k's hardware balance: **red 192, green 72, blue 58** (live on the keyboard, firmware default in source).
+- With that, every colour matches with its pure palette mix; only brightness differs:
+  red 204,0,0 · yellow 255,255,0 · green 0,205,0 · cyan 0,205,205 · blue 0,0,170 · magenta 200,0,200 · white 195,195,195.
+- Raw values: `calibration/ZX_colours.json`. Tool: `tools/zx_colour_cal.py` (to be folded into ZXKB).
+
+## Firmware: current state (`firmware/keymaps/d0k`)
+- Layers: SPEC_BASE, SPEC_FN, WIN_BASE, WIN_FN. Spectrum layer maps for the MiSTer core
+  (Shift = Caps Shift, Ctrl = Symbol Shift, ZX_EXT = Ctrl+LShift, ZX_LOAD types LOAD "" with 60 ms per key).
+- Fn layers: media/brightness on F-row, RM_* lighting keys, Fn+V = VU toggle, Fn+N = NKRO, Win lock.
+- Custom effects (`rgb_matrix_user.inc`): SPECTRUM_STRIPES, TAPE_LOADING, VU_METER (3 thick bars,
+  left-to-right red|yellow|green|cyan blocks), BORDER_FLASH, ATTR_CLASH, TYPING_RIPPLE, LOGO_SWEEP.
+- Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after).
+- Caps Lock: flashing magenta/white every 320 ms (Spectrum FLASH rate). *(in source, not yet flashed)*
+- Raw HID commands (handled in `via_command_kb`):
+  - `0xD0` + 16 levels: VU data. `0xD1` + 0/1: VU mode request (5 s timeout).
+  - `0xD2` + n (1-6): select Spectrum effect (saved).
+  - `0xD3` + r,g,b: set LED driver current tune live (clamped 16-192), replies.
+  - `0xD4`: save current tune to EEPROM (eeconfig user word, magic 0xA5), replies.
+  - `0xD5`: get current tune, replies `[0xD5, r, g, b]`.
+- Keyboard currently runs **v10** (has 0xD2-0xD5; colours in source are newer than v10).
+
+## App: current state
+- `app/legacy/zx_vu.py`: the ZX VU tray app (pyaudiowpatch WASAPI loopback, numpy FFT, hidapi,
+  pystray; PyInstaller onefile `ZX_VU.exe`; settings in `%APPDATA%\ZX_VU.json`). Styles: frequency
+  bands, and AY channels in ACB order (A left/top, C centre/bottom, B right/middle). Effects submenu.
+  Installed copy runs from `Documents\Keyboard Layouts\ZX VU\ZX_VU.exe` via HKCU Run key "ZX VU".
+- ZXKB replaces it (rename agreed). Tunables that D0k approved for the VU: FPS 40, RANGE_DB 30,
+  HEADROOM_DB 9, CURVE 1.7, FALL 0.72, reference = moving average.
+
+## Target design (agreed)
+See `docs/REQUIREMENTS.md` for the full checklist and status. Architecture:
+- Always-running core (tray, HID link, active effect, profiles/playlists/scheduler, OpenRGB SDK
+  server) kept near today's ~62 MB RAM idle.
+- Windows (preview, settings, paint editor, gradient builder, calibration) open on demand and are
+  fully released on close.
+- Costly sources only while used: screen capture (DXGI duplication), audio analysis, WebView2 for
+  SignalRGB Lightscripts.
+- Keyboard-independent: ZXKB firmware packaged as a QMK **community module**; the keyboard reports
+  its LED positions to ZXKB. Also speaks SignalRGB / OpenRGB firmware protocols for boards that have them.
+  Stock-VIA-only support (built-in effects via VIA custom values) possibly later.
+- Build in stages, sending each to D0k to try: (1) firmware + core app with effects, profiles,
+  hotkeys; (2) editors + preview; (3) drop-ins, Lightscripts, SDK server.
