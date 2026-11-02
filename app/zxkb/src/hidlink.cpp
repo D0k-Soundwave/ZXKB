@@ -193,6 +193,10 @@ void HidLink::read_loop() {
             PostMessageW(hwnd_, WM_ZX_SLOT, p[1], 0);
         } else if (p[0] == proto::INFO && p[1] == proto::INFO_STATUS) {
             PostMessageW(hwnd_, WM_ZX_STATUS, 0, (LPARAM) new Status(parse_status(p)));
+        } else if (p[0] == proto::TUNE) {
+            Tune *t = new Tune;
+            t->mode = p[2]; t->flags = p[3]; t->size = p[4]; t->intensity = p[5];
+            PostMessageW(hwnd_, WM_ZX_TUNE, 0, (LPARAM)t);
         }
     }
 }

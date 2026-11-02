@@ -21,7 +21,7 @@ namespace {
 // ---------- menu command ids ----------
 enum : UINT {
     ID_VU = 100, ID_STYLE_BANDS, ID_STYLE_ABC, ID_OFF, ID_BRIGHTER, ID_DIMMER, ID_FASTER, ID_SLOWER,
-    ID_FAV_ADD, ID_FAV_REMOVE, ID_PROFILE_SAVE, ID_AUTOSTART, ID_QUIT,
+    ID_FAV_ADD, ID_FAV_REMOVE, ID_PROFILE_SAVE, ID_AUTOSTART, ID_QUIT, ID_BIGGER, ID_SMALLER, ID_STRONGER, ID_SOFTER,
     ID_EFFECT  = 1000, // + effect number (1-255)
     ID_FAV     = 1300, // + favourite index
     ID_COLOUR  = 1400, // + colour index
@@ -34,7 +34,8 @@ enum : UINT {
 constexpr UINT WM_TRAY      = WM_APP + 50;
 constexpr UINT TIMER_SAVE   = 1;
 constexpr UINT SAVE_DELAY_MS = 3000; // write settings to the keyboard 3 s after the last change, not on every click
-constexpr int  STEP         = 16;    // brightness and speed step, same as QMK's own keys (RGB_MATRIX_VAL_STEP / SPD_STEP)
+constexpr int  STEP         = 16;    // brightness, speed, size, intensity step: as QMK's own keys (RGB_MATRIX_VAL_STEP / SPD_STEP)
+constexpr int  TUNE_MIN     = 16;    // the keyboard keeps size and intensity within 16-255
 constexpr int  MAX_PROFILES = 100;   // menu id range per slot
 
 // Spectrum BRIGHT palette as QMK hue/saturation (with D0k's calibrated colour balance the pure hues match)
@@ -52,6 +53,7 @@ HidLink        g_link;
 VuMeter        g_vu(&g_link);
 Board         *g_board = nullptr;  // null while no keyboard is connected
 Status         g_st;               // last known keyboard state
+Tune           g_tune;             // size and intensity of the current effect
 bool           g_vu_on = true, g_vu_abc = false;
 std::vector<std::string>  g_favs;  // effect names
 std::wstring   g_slots[10];        // "effect:NAME" or "profile:NAME"
@@ -97,7 +99,10 @@ void schedule_save() { g_save_pending = true; SetTimer(g_hwnd, TIMER_SAVE, SAVE_
 
 void save_now() {
     KillTimer(g_hwnd, TIMER_SAVE);
-    if (g_board && g_save_pending) send({proto::VIA_SAVE, proto::VIA_RGB_MATRIX});
+    if (g_board && g_save_pending) {
+        send({proto::VIA_SAVE, proto::VIA_RGB_MATRIX});
+        send({proto::TUNE, proto::TUNE_SAVE});
+    }
     g_save_pending = false;
 }
 
@@ -132,6 +137,7 @@ void set_effect(int mode) { // 0 = lighting off
     via_set(proto::VIA_EFFECT, (uint8_t)mode);
     if (mode) g_st.mode = (uint8_t)mode;
     g_st.enabled = mode != 0;
+    send({proto::TUNE, proto::TUNE_GET}); // this effect's own size and intensity
     schedule_save();
     update_tray();
 }
@@ -153,6 +159,16 @@ void set_speed(int speed) {
     schedule_save();
 }
 
+// Size and intensity belong to the current effect; the keyboard keeps them per effect
+void set_tune(int size, int intensity) {
+    if (!g_board || !g_tune.flags) return;
+    auto clamp = [](int v) { return v < TUNE_MIN ? TUNE_MIN : v > 255 ? 255 : v; };
+    g_tune.size      = (uint8_t)clamp(size);
+    g_tune.intensity = (uint8_t)clamp(intensity);
+    send({proto::TUNE, proto::TUNE_SET, g_tune.size, g_tune.intensity});
+    schedule_save();
+}
+
 void set_colour(uint8_t hue, uint8_t sat) {
     if (!g_board) return;
     g_st.hue = hue;
@@ -166,6 +182,7 @@ Profile current_profile() {
     p.effect = g_st.enabled ? effect_name(g_st.mode) : "OFF";
     p.speed = g_st.speed; p.hue = g_st.hue; p.sat = g_st.sat; p.val = g_st.val;
     p.vu = g_vu_on; p.vu_abc = g_vu_abc;
+    if (g_tune.flags && g_tune.mode == g_st.mode) { p.size = g_tune.size; p.intensity = g_tune.intensity; }
     return p;
 }
 
@@ -173,7 +190,11 @@ void apply_profile(const std::wstring &name) {
     Profile p;
     if (!g_board || !settings::load_profile(name, &p)) return;
     if (p.effect == "OFF") set_effect(0);
-    else if (int m = effect_number(p.effect)) set_effect(m);
+    else if (int m = effect_number(p.effect)) {
+        set_effect(m);
+        send({proto::TUNE, proto::TUNE_SET, (uint8_t)p.size, (uint8_t)p.intensity}); // ignored by effects without them
+        g_tune.size = (uint8_t)p.size; g_tune.intensity = (uint8_t)p.intensity;
+    }
     set_colour((uint8_t)p.hue, (uint8_t)p.sat);
     set_speed(p.speed);
     set_brightness(p.val);
@@ -250,15 +271,28 @@ void sep(HMENU m) { AppendMenuW(m, MF_SEPARATOR, 0, nullptr); }
 void refresh_status() {
     if (!g_board) return;
     send({proto::INFO, proto::INFO_STATUS});
+    send({proto::TUNE, proto::TUNE_GET});
     DWORD start = GetTickCount();
-    MSG msg;
-    while (GetTickCount() - start < 150) {
-        if (PeekMessageW(&msg, g_hwnd, WM_ZX_STATUS, WM_ZX_STATUS, PM_REMOVE)) {
+    bool  status = false, tune = false;
+    MSG   msg;
+    while (GetTickCount() - start < 150 && !(status && tune)) { // replies normally take a few ms
+        if (PeekMessageW(&msg, g_hwnd, WM_ZX_STATUS, WM_ZX_TUNE, PM_REMOVE)) {
+            status |= msg.message == WM_ZX_STATUS;
+            tune |= msg.message == WM_ZX_TUNE;
             DispatchMessageW(&msg);
-            return;
+            continue;
         }
         MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
     }
+}
+
+// QMK's own version of an effect is hidden when the board also has ZXKB's (same menu name)
+bool replaced(size_t i) {
+    if (g_board->kinds[i] != 0) return false;
+    std::wstring name = effects::friendly(g_board->names[i]);
+    for (size_t j = 0; j < g_board->names.size(); j++)
+        if (g_board->kinds[j] == 1 && effects::friendly(g_board->names[j]) == name) return true;
+    return false;
 }
 
 void show_menu() {
@@ -285,7 +319,7 @@ void show_menu() {
         HMENU groups[effects::GROUP_COUNT] = {};
         for (size_t i = 0; i < g_board->names.size(); i++) {
             effects::Group gr = effects::group(g_board->names[i], g_board->kinds[i]);
-            if (gr == effects::HIDDEN) continue;
+            if (gr == effects::HIDDEN || replaced(i)) continue;
             if (!groups[gr]) groups[gr] = CreatePopupMenu();
             add(groups[gr], ID_EFFECT + (UINT)i + 1, effects::friendly(g_board->names[i]), fx && g_st.mode == i + 1, true, true);
         }
@@ -313,14 +347,21 @@ void show_menu() {
 
     // effect settings
     HMENU set = CreatePopupMenu();
+    bool has_size = fx && g_tune.mode == g_st.mode && (g_tune.flags & proto::TUNE_HAS_SIZE);
+    bool has_int  = fx && g_tune.mode == g_st.mode && (g_tune.flags & proto::TUNE_HAS_INTENSITY);
     add(set, ID_FASTER, L"Faster", false, on);
     add(set, ID_SLOWER, L"Slower", false, on);
+    sep(set);
+    add(set, ID_BIGGER, L"Bigger", false, has_size && g_tune.size < 255);
+    add(set, ID_SMALLER, L"Smaller", false, has_size && g_tune.size > TUNE_MIN);
+    add(set, ID_STRONGER, L"Stronger", false, has_int && g_tune.intensity < 255);
+    add(set, ID_SOFTER, L"Softer", false, has_int && g_tune.intensity > TUNE_MIN);
     sep(set);
     for (size_t i = 0; i < ARRAYSIZE(colours); i++) {
         bool now = on && g_st.sat == colours[i].sat && (colours[i].sat == 0 || g_st.hue == colours[i].hue);
         add(set, ID_COLOUR + (UINT)i, colours[i].name, now, on, true);
     }
-    add_sub(menu, set, L"Effect speed and colour", on);
+    add_sub(menu, set, L"Effect settings", on);
     add(menu, ID_BRIGHTER, L"Brighter", false, on && g_st.val < g_st.max_val);
     add(menu, ID_DIMMER, L"Dimmer", false, on && g_st.val > 0);
     sep(menu);
@@ -369,6 +410,10 @@ void show_menu() {
     else if (cmd == ID_DIMMER) set_brightness(g_st.val - STEP);
     else if (cmd == ID_FASTER) set_speed(g_st.speed + STEP);
     else if (cmd == ID_SLOWER) set_speed(g_st.speed - STEP);
+    else if (cmd == ID_BIGGER) set_tune(g_tune.size + STEP, g_tune.intensity);
+    else if (cmd == ID_SMALLER) set_tune(g_tune.size - STEP, g_tune.intensity);
+    else if (cmd == ID_STRONGER) set_tune(g_tune.size, g_tune.intensity + STEP);
+    else if (cmd == ID_SOFTER) set_tune(g_tune.size, g_tune.intensity - STEP);
     else if (cmd == ID_FAV_ADD) { g_favs.push_back(cur); save_lists(); }
     else if (cmd == ID_FAV_REMOVE) {
         for (size_t i = 0; i < g_favs.size(); i++)
@@ -425,6 +470,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             delete g_board;
             g_board = reinterpret_cast<Board *>(lp);
             g_st    = g_board->status;
+            send({proto::TUNE, proto::TUNE_GET});
             if (g_vu_on) set_vu(true); // tell the keyboard and start listening
             update_tray();
             return 0;
@@ -444,6 +490,12 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (g_board) g_st = *s;
             delete s;
             update_tray();
+            return 0;
+        }
+        case WM_ZX_TUNE: {
+            Tune *t = reinterpret_cast<Tune *>(lp);
+            if (g_board) g_tune = *t;
+            delete t;
             return 0;
         }
         case WM_TIMER:

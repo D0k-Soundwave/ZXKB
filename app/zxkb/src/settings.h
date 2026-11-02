@@ -9,6 +9,7 @@
 struct Profile {
     std::string effect;          // effect by name, so it survives firmware rebuilds that renumber effects
     int  speed = 128, hue = 0, sat = 255, val = 255;
+    int  size = 128, intensity = 255;  // for effects that have them (typing effects)
     bool vu = false, vu_abc = false;
 };
 

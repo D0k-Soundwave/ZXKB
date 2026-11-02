@@ -114,6 +114,8 @@ bool load_profile(const std::wstring &name, Profile *p) {
     p->hue    = GetPrivateProfileIntW(L"profile", L"hue", 0, path.c_str());
     p->sat    = GetPrivateProfileIntW(L"profile", L"sat", 255, path.c_str());
     p->val    = GetPrivateProfileIntW(L"profile", L"brightness", 255, path.c_str());
+    p->size      = GetPrivateProfileIntW(L"profile", L"size", 128, path.c_str());
+    p->intensity = GetPrivateProfileIntW(L"profile", L"intensity", 255, path.c_str());
     p->vu     = GetPrivateProfileIntW(L"profile", L"vu", 0, path.c_str()) != 0;
     GetPrivateProfileStringW(L"profile", L"vu_style", L"bands", buf, 256, path.c_str());
     p->vu_abc = wcscmp(buf, L"abc") == 0;
@@ -125,7 +127,8 @@ bool save_profile(const std::wstring &name, const Profile &p) {
     std::wstring path = profile_path(name);
     auto w = [&](const wchar_t *k, const std::wstring &v) { return WritePrivateProfileStringW(L"profile", k, v.c_str(), path.c_str()); };
     return w(L"effect", widen(p.effect)) && w(L"speed", std::to_wstring(p.speed)) && w(L"hue", std::to_wstring(p.hue)) &&
-           w(L"sat", std::to_wstring(p.sat)) && w(L"brightness", std::to_wstring(p.val)) && w(L"vu", p.vu ? L"1" : L"0") &&
+           w(L"sat", std::to_wstring(p.sat)) && w(L"brightness", std::to_wstring(p.val)) &&
+           w(L"size", std::to_wstring(p.size)) && w(L"intensity", std::to_wstring(p.intensity)) && w(L"vu", p.vu ? L"1" : L"0") &&
            w(L"vu_style", p.vu_abc ? L"abc" : L"bands");
 }
 

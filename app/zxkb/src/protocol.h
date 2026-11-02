@@ -17,6 +17,12 @@ constexpr uint8_t INFO      = 0xD9; // [0xD9, sub, ...]
 constexpr uint8_t INFO_STATUS = 0x00;
 constexpr uint8_t INFO_NAME   = 0x01;
 constexpr uint8_t INFO_LEDS   = 0x02;
+constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
+constexpr uint8_t TUNE_GET  = 0x00;
+constexpr uint8_t TUNE_SET  = 0x01; // [0xDA, 0x01, size, intensity]
+constexpr uint8_t TUNE_SAVE = 0x02;
+constexpr uint8_t TUNE_HAS_SIZE      = 0x01;
+constexpr uint8_t TUNE_HAS_INTENSITY = 0x02;
 
 // SignalRGB commands used for ZXKB direct mode
 constexpr uint8_t DIRECT_STREAM  = 0x24; // [0x24, first, count (max 9), count x r,g,b]

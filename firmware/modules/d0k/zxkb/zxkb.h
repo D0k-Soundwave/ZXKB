@@ -19,6 +19,24 @@
 #define ZXKB_INFO_STATUS   0x00
 #define ZXKB_INFO_NAME     0x01
 #define ZXKB_INFO_LEDS     0x02
+#define ZXKB_CMD_TUNE      0xDA /* size and intensity of the current effect, always replies:
+                                 * [0xDA, 0x00] get, [0xDA, 0x01, size, intensity] set (live), [0xDA, 0x02] save
+                                 * -> [0xDA, sub, mode, flags (1 = size, 2 = intensity apply), size, intensity] */
+#define ZXKB_TUNE_GET      0x00
+#define ZXKB_TUNE_SET      0x01
+#define ZXKB_TUNE_SAVE     0x02
+#define ZXKB_TUNE_SIZE      0x01
+#define ZXKB_TUNE_INTENSITY 0x02
+
+/* Size and intensity: 128 = QMK's own size, 255 = full intensity. Both kept within 16-255. */
+#define ZXKB_TUNE_DEFAULT_SIZE      128
+#define ZXKB_TUNE_DEFAULT_INTENSITY 255
+#define ZXKB_TUNE_MIN               16
+#define ZXKB_TUNABLES               14 /* effects with their own size/intensity (see zxkb.c) */
+
+/* For effects: the current effect's size and intensity */
+uint8_t zxkb_size(void);
+uint8_t zxkb_intensity(void);
 
 /* "PC lighting" overlays: shown instead of the keyboard's own effect while the PC keeps sending. */
 enum zxkb_overlay { ZXKB_OVERLAY_NONE = 0, ZXKB_OVERLAY_VU = 1, ZXKB_OVERLAY_DIRECT = 2 };

@@ -26,6 +26,19 @@ const Known known[] = {
     {"TYPING_RIPPLE", L"Typing ripple", SPECTRUM},
     {"LOGO_SWEEP", L"Logo sweep", SPECTRUM},
     {"KEY_EXPLOSION", L"Key explosion", TYPING},
+    // ZXKB versions of QMK's typing effects (with size and intensity): same names in the menu
+    {"ZX_REACTIVE_SIMPLE", L"Reactive", TYPING},
+    {"ZX_REACTIVE", L"Reactive (hue shift)", TYPING},
+    {"ZX_REACTIVE_WIDE", L"Reactive wide", TYPING},
+    {"ZX_REACTIVE_MULTIWIDE", L"Reactive wide (multi)", TYPING},
+    {"ZX_REACTIVE_CROSS", L"Reactive cross", TYPING},
+    {"ZX_REACTIVE_MULTICROSS", L"Reactive cross (multi)", TYPING},
+    {"ZX_REACTIVE_NEXUS", L"Reactive nexus", TYPING},
+    {"ZX_REACTIVE_MULTINEXUS", L"Reactive nexus (multi)", TYPING},
+    {"ZX_SPLASH", L"Splash", TYPING},
+    {"ZX_MULTISPLASH", L"Splash (multi)", TYPING},
+    {"ZX_SOLID_SPLASH", L"Solid splash", TYPING},
+    {"ZX_SOLID_MULTISPLASH", L"Solid splash (multi)", TYPING},
     {"VU_METER", L"VU meter", HIDDEN},   // driven by the VU meter switch, not picked as an effect
     {"PC_DIRECT", L"PC direct", HIDDEN}, // driven by the PC
     // QMK

@@ -85,6 +85,29 @@ int main(int argc, char **argv) {
         std::printf("streamed %d frames (%d packets) in %.2f s: %.1f frames/s, %.0f packets/s\n", frames, packets, el, frames / el, packets / el);
         uint8_t dis[1] = {proto::DIRECT_DISABLE};
         link.send(dis, 1);
+    } else if (!std::strcmp(cmd, "effect") && argc > 2) { // probe effect NAME: switch effect (not saved)
+        for (size_t i = 0; i < board->names.size(); i++)
+            if (board->names[i] == argv[2]) {
+                uint8_t q[4] = {proto::VIA_SET, proto::VIA_RGB_MATRIX, proto::VIA_EFFECT, (uint8_t)(i + 1)};
+                link.send(q, 4);
+                std::printf("effect %d %s\n", (int)i + 1, argv[2]);
+            }
+        pump(100, false);
+    } else if (!std::strcmp(cmd, "tune")) { // probe tune [size intensity]: show / set the current effect's
+        uint8_t q[4] = {proto::TUNE, proto::TUNE_GET};
+        if (argc > 3) { q[1] = proto::TUNE_SET; q[2] = (uint8_t)std::atoi(argv[2]); q[3] = (uint8_t)std::atoi(argv[3]); }
+        link.send(q, 4);
+        DWORD start = GetTickCount();
+        MSG   m;
+        while (GetTickCount() - start < 500) {
+            if (PeekMessageW(&m, nullptr, WM_ZX_TUNE, WM_ZX_TUNE, PM_REMOVE)) {
+                Tune *t = reinterpret_cast<Tune *>(m.lParam);
+                std::printf("tune: mode %d flags %d size %d intensity %d\n", t->mode, t->flags, t->size, t->intensity);
+                delete t;
+                break;
+            }
+            MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+        }
     } else if (!std::strcmp(cmd, "vu")) {
         uint8_t on[2] = {proto::VU_MODE, 1};
         link.send(on, 2);

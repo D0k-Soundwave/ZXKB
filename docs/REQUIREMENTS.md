@@ -23,6 +23,8 @@ Rule: do not build until D0k confirms the list is complete.
 ## ZXKB app (renamed from ZX VU)
 - [~] Every effect by name in the tray: QMK built-ins, Spectrum (done); PC-driven, drop-ins (later stages)
 - [~] Effect settings (speed, Spectrum colours) and favourites in the tray; a settings panel window is Stage 2
+- [ ] Effect intensity settings, e.g. how large and how bright typing effects are (requested 2026-11-02);
+      scope pending: ZXKB's own effects only, or ZXKB versions of QMK's typing effects too
 - [~] Overall brightness control: steps (Brighter / Dimmer), decided 2026-11-02
 - [~] Profiles: save/load whole setup by name
 - [ ] Playlists: cycle effects on a timer

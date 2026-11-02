@@ -13,10 +13,15 @@
 #define WM_ZX_DISCONNECTED (WM_APP + 2)
 #define WM_ZX_SLOT         (WM_APP + 3) // wParam = slot 1-10
 #define WM_ZX_STATUS       (WM_APP + 4) // lParam = Status* (receiver deletes)
+#define WM_ZX_TUNE         (WM_APP + 5) // lParam = Tune* (receiver deletes)
 
 struct Status {
     uint8_t mode = 0, enabled = 0, val = 0, speed = 0, hue = 0, sat = 0, max_val = 255;
     uint8_t overlay = 0, vu_allowed = 0, vu_requested = 0;
+};
+
+struct Tune { // size and intensity of the keyboard's current effect
+    uint8_t mode = 0, flags = 0, size = 128, intensity = 255;
 };
 
 struct Board {

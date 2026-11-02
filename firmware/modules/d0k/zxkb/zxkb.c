@@ -49,15 +49,77 @@ static bool is_overlay_mode(uint8_t mode) {
     return mode == RGB_MATRIX_COMMUNITY_MODULE_VU_METER || mode == RGB_MATRIX_COMMUNITY_MODULE_PC_DIRECT;
 }
 
+/* ---------- Saved settings (module EEPROM datablock) ---------- */
+typedef struct PACKED {
+    uint8_t home_mode;                    /* the keyboard's own effect, kept while an overlay shows */
+    uint8_t size[ZXKB_TUNABLES];          /* per tunable effect, see tunables[] */
+    uint8_t intensity[ZXKB_TUNABLES];
+} zxkb_config_t;
+_Static_assert(sizeof(zxkb_config_t) == EECONFIG_MODULE_ZXKB_DATA_SIZE, "update EECONFIG_MODULE_ZXKB_DATA_SIZE in config.h");
+static zxkb_config_t cfg;
+
+/* Effects with their own size and intensity, and which of the two apply */
+#define SZ ZXKB_TUNE_SIZE
+#define IN ZXKB_TUNE_INTENSITY
+static const struct { uint8_t mode, flags; } tunables[] = {
+    {RGB_MATRIX_COMMUNITY_MODULE_TYPING_RIPPLE, SZ | IN},
+#ifdef RGB_MATRIX_KEYREACTIVE_ENABLED
+    {RGB_MATRIX_COMMUNITY_MODULE_KEY_EXPLOSION, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE_SIMPLE, IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE, IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE_WIDE, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE_MULTIWIDE, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE_CROSS, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE_MULTICROSS, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE_NEXUS, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_REACTIVE_MULTINEXUS, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_SPLASH, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_MULTISPLASH, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_SOLID_SPLASH, SZ | IN},
+    {RGB_MATRIX_COMMUNITY_MODULE_ZX_SOLID_MULTISPLASH, SZ | IN},
+#endif
+};
+#undef SZ
+#undef IN
+_Static_assert(sizeof(tunables) / sizeof(tunables[0]) <= ZXKB_TUNABLES, "raise ZXKB_TUNABLES and the EEPROM size");
+
+void eeconfig_init_zxkb_datablock(void) { /* first start, or the saved layout changed: defaults */
+    zxkb_config_t def;
+    def.home_mode = RGB_MATRIX_SOLID_COLOR;
+    for (uint8_t i = 0; i < ZXKB_TUNABLES; i++) {
+        def.size[i]      = ZXKB_TUNE_DEFAULT_SIZE;
+        def.intensity[i] = ZXKB_TUNE_DEFAULT_INTENSITY;
+    }
+    eeconfig_update_zxkb_datablock(&def, 0, sizeof(def));
+}
+
+static int8_t tunable_index(uint8_t mode) {
+    for (uint8_t i = 0; i < sizeof(tunables) / sizeof(tunables[0]); i++)
+        if (tunables[i].mode == mode) return i;
+    return -1;
+}
+static uint8_t own_mode(void) { /* the effect the keyboard shows when no overlay is on */
+    return overlay != ZXKB_OVERLAY_NONE ? saved_mode : rgb_matrix_get_mode();
+}
+uint8_t zxkb_size(void) {
+    int8_t t = tunable_index(rgb_matrix_get_mode());
+    return t < 0 ? ZXKB_TUNE_DEFAULT_SIZE : cfg.size[t];
+}
+uint8_t zxkb_intensity(void) {
+    int8_t t = tunable_index(rgb_matrix_get_mode());
+    return t < 0 ? ZXKB_TUNE_DEFAULT_INTENSITY : cfg.intensity[t];
+}
+
 static void overlay_set(uint8_t o) {
     if (o == overlay) return;
     if (overlay == ZXKB_OVERLAY_NONE) {
         saved_mode = rgb_matrix_get_mode();
         /* QMK saves the whole lighting state (current effect included) whenever any setting changes, so a
          * brightness change during an overlay would make it the start-up effect. Remember the real one. */
-        uint8_t stored = 0;
-        eeconfig_read_zxkb_datablock(&stored, 0, 1);
-        if (stored != saved_mode) eeconfig_update_zxkb_datablock(&saved_mode, 0, 1);
+        if (cfg.home_mode != saved_mode) {
+            cfg.home_mode = saved_mode;
+            eeconfig_update_zxkb_datablock(&cfg.home_mode, 0, 1);
+        }
     }
     rgb_matrix_mode_noeeprom(o == ZXKB_OVERLAY_NONE ? saved_mode : overlay_mode(o));
     overlay = o;
@@ -65,11 +127,33 @@ static void overlay_set(uint8_t o) {
 
 void keyboard_post_init_zxkb(void) {
     keyboard_post_init_zxkb_kb();
-    if (is_overlay_mode(rgb_matrix_get_mode())) {
-        uint8_t stored = 0;
-        if (eeconfig_is_zxkb_datablock_valid()) eeconfig_read_zxkb_datablock(&stored, 0, 1);
-        rgb_matrix_mode(stored >= 1 && stored < RGB_MATRIX_EFFECT_MAX && !is_overlay_mode(stored) ? stored : RGB_MATRIX_SOLID_COLOR);
+    eeconfig_read_zxkb_datablock(&cfg, 0, sizeof(cfg));
+    for (uint8_t i = 0; i < ZXKB_TUNABLES; i++) {
+        if (cfg.size[i] < ZXKB_TUNE_MIN) cfg.size[i] = ZXKB_TUNE_DEFAULT_SIZE;
+        if (cfg.intensity[i] < ZXKB_TUNE_MIN) cfg.intensity[i] = ZXKB_TUNE_DEFAULT_INTENSITY;
     }
+    if (is_overlay_mode(rgb_matrix_get_mode())) {
+        uint8_t m = cfg.home_mode;
+        rgb_matrix_mode(m >= 1 && m < RGB_MATRIX_EFFECT_MAX && !is_overlay_mode(m) ? m : RGB_MATRIX_SOLID_COLOR);
+    }
+}
+
+/* [0xDA, sub, ...] -> [0xDA, sub, mode, flags, size, intensity] for the keyboard's own effect */
+static void tune_command(uint8_t *data, uint8_t length) {
+    uint8_t mode = own_mode();
+    int8_t  t    = tunable_index(mode);
+    if (t >= 0 && data[1] == ZXKB_TUNE_SET) {
+        cfg.size[t]      = data[2] < ZXKB_TUNE_MIN ? ZXKB_TUNE_MIN : data[2];
+        cfg.intensity[t] = data[3] < ZXKB_TUNE_MIN ? ZXKB_TUNE_MIN : data[3];
+    } else if (data[1] == ZXKB_TUNE_SAVE) {
+        eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg)); /* only changed bytes are written */
+    }
+    memset(&data[2], 0, length - 2);
+    data[2] = mode;
+    data[3] = t < 0 ? 0 : tunables[t].flags;
+    data[4] = t < 0 ? ZXKB_TUNE_DEFAULT_SIZE : cfg.size[t];
+    data[5] = t < 0 ? ZXKB_TUNE_DEFAULT_INTENSITY : cfg.intensity[t];
+    raw_hid_send(data, length);
 }
 
 void zxkb_overlay_clear(void) {
@@ -321,6 +405,9 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length) {
             else if (data[1] == ZXKB_INFO_LEDS) info_leds(data, length);
             else memset(&data[2], 0xFF, length - 2);
             raw_hid_send(data, length);
+            return true;
+        case ZXKB_CMD_TUNE:
+            tune_command(data, length);
             return true;
     }
     if (signalrgb_command(data, length)) return true;
