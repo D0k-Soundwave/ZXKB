@@ -26,7 +26,7 @@ bool save_profile(const std::wstring &name, const Profile &p);
 bool delete_profile(const std::wstring &name);
 bool valid_profile_name(const std::wstring &name);
 
-bool autostart();                                       // HKCU Run entry present and pointing at this exe
+bool autostart();                                       // Startup-folder shortcut present and pointing at this exe
 void set_autostart(bool on);
 
 std::wstring widen(const std::string &s);

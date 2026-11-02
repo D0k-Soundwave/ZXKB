@@ -44,4 +44,6 @@ Rule: do not build until D0k confirms the list is complete.
 ## Release
 - [ ] GitHub repo under D0k-Soundwave, GPL-3.0, no Claude attribution
 - [ ] Private for now (decided 2026-11-02); make public at first release
+- [ ] Microsoft Defender flags new unsigned ZXKB builds that add themselves to startup (2026-11-02): decide on
+      code signing and/or a false-positive report to Microsoft before release
 - [ ] README and user manual (existing Q3 keyboard manual doc to be updated for the custom firmware)

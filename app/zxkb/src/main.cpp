@@ -6,6 +6,7 @@
 #include <shellapi.h>
 #include <commctrl.h>
 #include <dbt.h>
+#include <objbase.h>
 #include <string>
 #include <vector>
 #include "../res/resource.h"
@@ -472,6 +473,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     HANDLE single = CreateMutexW(nullptr, TRUE, L"Local\\ZXKB.single");
     if (GetLastError() == ERROR_ALREADY_EXISTS) return 0; // already running
     g_inst = inst;
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); // for the Startup-folder shortcut
 
     settings::import_zx_vu();
     g_vu_on  = settings::get_int(L"vu", L"on", 1) != 0;

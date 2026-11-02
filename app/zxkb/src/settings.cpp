@@ -4,6 +4,7 @@
 #include "settings.h"
 #include <windows.h>
 #include <shlobj.h>
+#include <shobjidl.h>
 #include <algorithm>
 
 namespace settings {
@@ -132,29 +133,63 @@ bool delete_profile(const std::wstring &name) {
     return DeleteFileW(profile_path(name).c_str()) != 0;
 }
 
-static std::wstring run_command() {
+static std::wstring exe_path() {
     wchar_t exe[MAX_PATH];
     GetModuleFileNameW(nullptr, exe, MAX_PATH);
-    return L"\"" + std::wstring(exe) + L"\"";
+    return exe;
 }
 
+static std::wstring startup_link() {
+    std::wstring path;
+    wchar_t *dir = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Startup, 0, nullptr, &dir))) {
+        path = std::wstring(dir) + L"\\ZXKB.lnk";
+        CoTaskMemFree(dir);
+    }
+    return path;
+}
+
+// Shortcut present and pointing at this exe
 bool autostart() {
-    wchar_t buf[MAX_PATH + 4];
-    DWORD   size = sizeof(buf);
-    if (RegGetValueW(HKEY_CURRENT_USER, RUN_KEY, RUN_VALUE, RRF_RT_REG_SZ, nullptr, buf, &size) != ERROR_SUCCESS) return false;
-    return _wcsicmp(buf, run_command().c_str()) == 0;
+    std::wstring link = startup_link();
+    if (link.empty() || GetFileAttributesW(link.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
+    bool same = false;
+    IShellLinkW *sl = nullptr;
+    if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void **)&sl))) {
+        IPersistFile *pf = nullptr;
+        if (SUCCEEDED(sl->QueryInterface(IID_IPersistFile, (void **)&pf))) {
+            wchar_t target[MAX_PATH] = {0};
+            if (SUCCEEDED(pf->Load(link.c_str(), STGM_READ)) && SUCCEEDED(sl->GetPath(target, MAX_PATH, nullptr, 0)))
+                same = _wcsicmp(target, exe_path().c_str()) == 0;
+            pf->Release();
+        }
+        sl->Release();
+    }
+    return same;
 }
 
 void set_autostart(bool on) {
     HKEY key;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, RUN_KEY, 0, KEY_SET_VALUE, &key) != ERROR_SUCCESS) return;
-    if (on) {
-        std::wstring cmd = run_command();
-        RegSetValueExW(key, RUN_VALUE, 0, REG_SZ, (const BYTE *)cmd.c_str(), (DWORD)((cmd.size() + 1) * sizeof(wchar_t)));
-    } else {
-        RegDeleteValueW(key, RUN_VALUE);
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, RUN_KEY, 0, KEY_SET_VALUE, &key) == ERROR_SUCCESS) {
+        RegDeleteValueW(key, RUN_VALUE); // tidy up after older builds
+        RegCloseKey(key);
     }
-    RegCloseKey(key);
+    std::wstring link = startup_link();
+    if (link.empty()) return;
+    if (!on) { DeleteFileW(link.c_str()); return; }
+    std::wstring exe = exe_path(), dir = exe.substr(0, exe.find_last_of(L'\\'));
+    IShellLinkW *sl = nullptr;
+    if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void **)&sl))) {
+        sl->SetPath(exe.c_str());
+        sl->SetWorkingDirectory(dir.c_str());
+        sl->SetDescription(L"ZXKB keyboard lighting");
+        IPersistFile *pf = nullptr;
+        if (SUCCEEDED(sl->QueryInterface(IID_IPersistFile, (void **)&pf))) {
+            pf->Save(link.c_str(), TRUE);
+            pf->Release();
+        }
+        sl->Release();
+    }
 }
 
 } // namespace settings
