@@ -1,18 +1,19 @@
 /* D0k's Keychron Q3 ISO knob keymap: KAM Wraith ZX Spectrum caps
  * Layer 0/1 = Spectrum mode (side switch on Mac), layer 2/3 = Windows mode.
- * Extras: flashing magenta/white Caps Lock light, Spectrum effects (stripes, tape loading, VU, border flash,
- *         attribute clash, typing ripple, logo sweep) selectable from the ZX VU tray app,
- * automatic Spectrum lighting in Spectrum mode, one-key EXTEND MODE and LOAD "".
+ * Lighting effects, the VU meter, PC direct colour, SignalRGB and the Fn + number hotkey slots come from
+ * the ZXKB community module (modules/d0k/zxkb). This keymap adds the Q3/Spectrum extras: flashing
+ * magenta/white Caps Lock light, automatic Spectrum lighting in Spectrum mode, one-key EXTEND MODE
+ * and LOAD "", and the LED driver colour balance (SNLED27351 current tune).
+ * Copyright 2026 D0k
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 #include QMK_KEYBOARD_H
 #include "raw_hid.h"
+#include "zxkb.h"
 
 enum layers { SPEC_BASE, SPEC_FN, WIN_BASE, WIN_FN };
 
-enum custom_keycodes { ZX_LOAD = QK_USER_0, VU_TOGG };
-
-static bool vu_allowed = true;   /* Fn + V turns the VU meter on/off */
-static void vu_apply(void);
+enum custom_keycodes { ZX_LOAD = QK_USER_0 };
 
 #define ZX_EXT  C(KC_LSFT)   /* Caps Shift + Symbol Shift = EXTENDED MODE on the MiSTer core */
 
@@ -27,10 +28,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [SPEC_FN] = LAYOUT_tkl_f13_iso(
         _______,  KC_BRID,  KC_BRIU,  KC_NO,    KC_NO,    RM_VALD,  RM_VALU,  KC_MPRV,  KC_MPLY,  KC_MNXT,  KC_MUTE,  KC_VOLD,  KC_VOLU,    RM_TOGG,  _______,  _______,  RM_NEXT,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,    _______,  _______,  _______,  _______,
+        _______,  ZK_1,     ZK_2,     ZK_3,     ZK_4,     ZK_5,     ZK_6,     ZK_7,     ZK_8,     ZK_9,     ZK_0,     _______,  _______,    _______,  _______,  _______,  _______,
         RM_TOGG,  RM_NEXT,  RM_VALU,  RM_HUEU,  RM_SATU,  RM_SPDU,  _______,  _______,  _______,  _______,  _______,  _______,  _______,              _______,  _______,  _______,
         _______,  RM_PREV, RM_VALD,  RM_HUED,  RM_SATD,  RM_SPDD,  _______,  _______,  _______,  _______,  _______,  _______,  _______,    _______,
-        _______,  _______,  _______,  _______,  _______,  VU_TOGG,  _______,  NK_TOGG,  _______,  _______,  _______,  _______,              _______,            _______,
+        _______,  _______,  _______,  _______,  _______,  ZK_VU,    _______,  NK_TOGG,  _______,  _______,  _______,  _______,              _______,            _______,
         _______,  GU_TOGG,  _______,                                _______,                                _______,  GU_TOGG,  _______,    _______,  _______,  _______,  _______),
 
     [WIN_BASE] = LAYOUT_tkl_f13_iso(
@@ -43,10 +44,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     [WIN_FN] = LAYOUT_tkl_f13_iso(
         _______,  KC_BRID,  KC_BRIU,  KC_NO,    KC_NO,    RM_VALD,  RM_VALU,  KC_MPRV,  KC_MPLY,  KC_MNXT,  KC_MUTE,  KC_VOLD,  KC_VOLU,    RM_TOGG,  _______,  _______,  RM_NEXT,
-        _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,    _______,  _______,  _______,  _______,
+        _______,  ZK_1,     ZK_2,     ZK_3,     ZK_4,     ZK_5,     ZK_6,     ZK_7,     ZK_8,     ZK_9,     ZK_0,     _______,  _______,    _______,  _______,  _______,  _______,
         RM_TOGG,  RM_NEXT,  RM_VALU,  RM_HUEU,  RM_SATU,  RM_SPDU,  _______,  _______,  _______,  _______,  _______,  _______,  _______,              _______,  _______,  _______,
         _______,  RM_PREV, RM_VALD,  RM_HUED,  RM_SATD,  RM_SPDD,  _______,  _______,  _______,  _______,  _______,  _______,  _______,    _______,
-        _______,  _______,  _______,  _______,  _______,  VU_TOGG,  _______,  NK_TOGG,  _______,  _______,  _______,  _______,              _______,            _______,
+        _______,  _______,  _______,  _______,  _______,  ZK_VU,    _______,  NK_TOGG,  _______,  _______,  _______,  _______,              _______,            _______,
         _______,  GU_TOGG,  _______,                                _______,                                _______,  GU_TOGG,  _______,    _______,  _______,  _______,  _______),
 };
 
@@ -67,28 +68,7 @@ static void zx_tap(uint16_t kc) {
     wait_ms(60);
 }
 
-/* Typing ripple: remember the last 8 key presses, colour cycling red, yellow, green, cyan */
-#define ZX_RIPPLES 8
-uint8_t  zx_rip_led[ZX_RIPPLES]  = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-uint8_t  zx_rip_col[ZX_RIPPLES];
-uint32_t zx_rip_time[ZX_RIPPLES];
-static uint8_t zx_rip_next = 0, zx_rip_colour = 0;
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (record->event.pressed && record->event.type == KEY_EVENT) {
-        uint8_t led = g_led_config.matrix_co[record->event.key.row][record->event.key.col];
-        if (led != NO_LED) {
-            zx_rip_led[zx_rip_next]  = led;
-            zx_rip_col[zx_rip_next]  = zx_rip_colour;
-            zx_rip_time[zx_rip_next] = g_rgb_timer;
-            zx_rip_next   = (zx_rip_next + 1) % ZX_RIPPLES;
-            zx_rip_colour = (zx_rip_colour + 1) % 4;
-        }
-    }
-    if (keycode == VU_TOGG) {
-        if (record->event.pressed) { vu_allowed = !vu_allowed; vu_apply(); }
-        return false;
-    }
     if (keycode == ZX_LOAD) {
         if (record->event.pressed) {
             zx_tap(KC_J);       /* LOAD keyword */
@@ -101,16 +81,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-/* ---------- Audio VU meter data from the PC helper (raw HID command 0xD0) ---------- */
-uint8_t  vu_levels[16];
-uint32_t vu_last_update = 0;
-static bool     vu_active     = false;
-static bool     vu_requested  = false;   /* the PC helper wants VU mode */
-static uint8_t  vu_saved_mode = RGB_MATRIX_SOLID_COLOR;
-
-#define VU_CMD_LEVELS 0xD0   /* [0xD0, 16 x level 0-255] */
-#define VU_CMD_MODE   0xD1   /* [0xD1, 1 = VU on, 0 = VU off] */
-#define FX_CMD_SET    0xD2   /* [0xD2, effect 1-6] pick a Spectrum lighting effect (saved) */
+/* ---------- Board commands, passed on by the ZXKB module ---------- */
 #define HW_CMD_SET    0xD3   /* [0xD3, red, green, blue] LED driver current limit per colour (live, replies) */
 #define HW_CMD_SAVE   0xD4   /* [0xD4] save the current limits to the keyboard (replies) */
 #define HW_CMD_GET    0xD5   /* [0xD5] -> [0xD5, red, green, blue] */
@@ -142,23 +113,7 @@ void keyboard_post_init_user(void) {
 }
 static uint8_t clamp_tune(uint8_t v) { return v < HW_TUNE_MIN ? HW_TUNE_MIN : v > HW_TUNE_MAX ? HW_TUNE_MAX : v; }
 
-static const uint8_t fx_modes[] = {
-    RGB_MATRIX_CUSTOM_SPECTRUM_STRIPES, RGB_MATRIX_CUSTOM_TAPE_LOADING, RGB_MATRIX_CUSTOM_BORDER_FLASH,
-    RGB_MATRIX_CUSTOM_ATTR_CLASH, RGB_MATRIX_CUSTOM_TYPING_RIPPLE, RGB_MATRIX_CUSTOM_LOGO_SWEEP,
-};
-
-bool via_command_kb(uint8_t *data, uint8_t length) {
-    if (data[0] == VU_CMD_LEVELS) {
-        for (uint8_t b = 0; b < 16; b++) vu_levels[b] = data[1 + b];
-        vu_last_update = timer_read32();
-        return true;   /* no reply needed */
-    }
-    if (data[0] == VU_CMD_MODE) {
-        vu_requested = data[1] != 0;
-        vu_last_update = timer_read32();
-        vu_apply();
-        return true;
-    }
+bool zxkb_command_user(uint8_t *data, uint8_t length) {
     if (data[0] == HW_CMD_SET) {
         for (uint8_t c = 0; c < 3; c++) hw_tune[c] = clamp_tune(data[1 + c]);
         hw_tune_apply();
@@ -172,30 +127,12 @@ bool via_command_kb(uint8_t *data, uint8_t length) {
         raw_hid_send(data, length);
         return true;
     }
-    if (data[0] == FX_CMD_SET) {
-        uint8_t n = data[1];
-        if (n >= 1 && n <= sizeof(fx_modes)) {
-            vu_requested = false;          /* picking an effect switches the VU meter off */
-            vu_active    = false;
-            if (!rgb_matrix_is_enabled()) rgb_matrix_enable();
-            rgb_matrix_mode(fx_modes[n - 1]);
-        }
-        return true;
-    }
     return false;
 }
 
-static void vu_apply(void) {
-    bool want = vu_allowed && vu_requested && get_highest_layer(default_layer_state) == WIN_BASE
-                && timer_elapsed32(vu_last_update) < 5000;
-    if (want && !vu_active) {
-        vu_saved_mode = rgb_matrix_get_mode();
-        rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_VU_METER);
-        vu_active = true;
-    } else if (!want && vu_active) {
-        rgb_matrix_mode_noeeprom(vu_saved_mode);
-        vu_active = false;
-    }
+/* PC lighting (VU meter, direct colour) only in Windows mode, as before */
+bool zxkb_overlay_allowed_user(uint8_t overlay) {
+    return get_highest_layer(default_layer_state) == WIN_BASE;
 }
 
 /* ---------- Automatic Spectrum lighting when the side switch selects Spectrum mode ---------- */
@@ -206,16 +143,14 @@ void housekeeping_task_user(void) {
     uint8_t def = get_highest_layer(default_layer_state);
     if (def != last_default && rgb_matrix_is_enabled()) {
         if (def == SPEC_BASE) {
-            if (vu_active) { rgb_matrix_mode_noeeprom(vu_saved_mode); vu_active = false; }
+            zxkb_overlay_clear();
             spec_saved_mode = rgb_matrix_get_mode();
-            rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_SPECTRUM_STRIPES);
+            rgb_matrix_mode_noeeprom(RGB_MATRIX_COMMUNITY_MODULE_SPECTRUM_STRIPES);
         } else if (last_default == SPEC_BASE) {
             rgb_matrix_mode_noeeprom(spec_saved_mode);
         }
         last_default = def;
     }
-    /* drop out of VU mode if the PC helper stops sending for 5 s */
-    if (vu_active && timer_elapsed32(vu_last_update) > 5000) vu_apply();
 }
 
 /* ---------- Caps Lock light: flashing magenta/white (normal effect when off) ---------- */
