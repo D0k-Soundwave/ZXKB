@@ -46,7 +46,7 @@ When an A figure is measured, its old value stays here, struck through.
 | VU send rate cap | 40 per second | A | D0k approved (FPS 40) |
 | Save delay | 3 s after the last change | A | avoids an EEPROM write per click; not a constraint |
 | Silence fed after | 100 ms without audio | A | Windows sends nothing while nothing plays; 10 polls of 10 ms |
-| D0k's audio output rate | 96 kHz, 2 channels, 32-bit float | M | vu_live, 2026-11-02 (VU maths were tested at 48 kHz; same results either way) |
+| D0k's audio output rate | 96 kHz, 2 channels, 32-bit float | M | vu_live, 2026-11-02. The old-vs-new VU comparison ran at 48 kHz only; 96 kHz not compared |
 | AY style on ordinary music: top vs middle bar correlation | 0.54-0.66 | M | vu_live 20 s x3, 2026-11-02 |
 | Music style: bar correlations | 0.01-0.25 | M | vu_live 20 s, 2026-11-02 |
 | Music style swing, ZX VU values (30 dB, 0.03/block, x0.72/block) | 84 of 255 | M | vu_tune on 20 s of D0k's music, first 3 s skipped |
