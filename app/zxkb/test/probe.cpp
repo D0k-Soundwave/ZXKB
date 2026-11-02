@@ -26,6 +26,11 @@ static void pump(DWORD ms, bool print) {
                 if (print) std::printf("status: mode %d enabled %d val %d speed %d hue %d sat %d overlay %d\n", s->mode, s->enabled, s->val,
                                        s->speed, s->hue, s->sat, s->overlay);
                 delete s;
+            } else if (m.message == WM_ZX_TUNE) {
+                Tune *t = reinterpret_cast<Tune *>(m.lParam);
+                if (print) std::printf("tune reply (another program asked): mode %d flags %d size %d intensity %d\n", t->mode, t->flags,
+                                       t->size, t->intensity);
+                delete t;
             } else if (m.message == WM_ZX_DISCONNECTED) std::printf("disconnected\n");
             DispatchMessageW(&m);
         }
