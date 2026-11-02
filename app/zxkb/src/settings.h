@@ -10,7 +10,8 @@ struct Profile {
     std::string effect;          // effect by name, so it survives firmware rebuilds that renumber effects
     int  speed = 128, hue = 0, sat = 255, val = 255;
     int  size = 128, intensity = 255;  // for effects that have them (typing effects)
-    bool vu = false, vu_abc = false;
+    bool vu = false;
+    int  vu_style = 0;                 // VuStyle: 0 bands, 1 AY channels, 2 music
 };
 
 namespace settings {
@@ -29,6 +30,9 @@ bool valid_profile_name(const std::wstring &name);
 
 bool autostart();                                       // Startup-folder shortcut present and pointing at this exe
 void set_autostart(bool on);
+
+const wchar_t *vu_style_name(int style);   // "bands", "abc", "music"
+int            vu_style_from(const std::wstring &name);
 
 std::wstring widen(const std::string &s);
 std::string  narrow(const std::wstring &s);

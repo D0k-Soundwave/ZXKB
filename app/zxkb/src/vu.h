@@ -13,7 +13,7 @@ public:
     explicit VuMeter(HidLink *link) : link_(link) {}
     void start(); // starts the capture thread (no-op if running)
     void stop();  // stops it and releases the audio device
-    void set_abc(bool abc) { abc_ = abc; }
+    void set_style(int style) { style_ = style; } // a VuStyle
     bool running() const { return thread_ != nullptr; }
 
 private:
@@ -23,6 +23,6 @@ private:
 
     HidLink      *link_;
     HANDLE        thread_ = nullptr, stop_ev_ = nullptr;
-    volatile bool abc_    = false;
+    volatile int  style_  = VU_BANDS;
     VuMath        math_;        // kept between runs, as the old app kept its running levels
 };

@@ -72,7 +72,8 @@ void VuMath::fft() {
     }
 }
 
-void VuMath::process(const float *frames, int ch, bool abc, uint8_t out[BANDS]) {
+void VuMath::process(const float *frames, int ch, int style, uint8_t out[BANDS]) {
+    const bool abc = style == VU_ABC;
     const int N = BLOCK;
     // frames[:, :2] (mono input is used as both channels); mono = mean of the first two channels
     auto L = [&](int n) { return (double)frames[n * ch]; };
@@ -120,6 +121,34 @@ void VuMath::process(const float *frames, int ch, bool abc, uint8_t out[BANDS]) 
         for (int i = 0; i < 5; i++) out[i] = c;
         for (int i = 5; i < 11; i++) out[i] = b;
         for (int i = 11; i < 16; i++) out[i] = a;
+        return;
+    }
+
+    if (style == VU_MUSIC) {
+        // Ordinary music: three bars from the energy in treble (top), mids (middle) and bass (bottom), the same
+        // ranges the AY style falls back on. Each bar follows its own ~1 s average level, so each uses its full
+        // width and moves to its own part of the music (in the other styles one shared level sets all bars).
+        for (int n = 0; n < N; n++) { re_[n] = mono_[n] * win_[n]; im_[n] = 0; }
+        fft();
+        const double bin_hz = (double)rate_ / N;
+        double e[3] = {0, 0, 0}; // treble, mids, bass
+        for (int k = 0; k <= N / 2; k++) {
+            double f = k * bin_hz, p = re_[k] * re_[k] + im_[k] * im_[k];
+            if (f >= 30 && f < 250) e[2] += p;
+            else if (f >= 250 && f < 2000) e[1] += p;
+            else if (f >= 2000 && f < 16000) e[0] += p;
+        }
+        uint8_t lv[3];
+        for (int i = 0; i < 3; i++) {
+            double db = 10 * std::log10(e[i] / ((double)N * N) + 1e-12);
+            music_ref_[i] = std::fmax(music_ref_[i] + 0.03 * (db - music_ref_[i]), -70.0);
+            double t = std::pow(clip01((db - (music_ref_[i] + HEADROOM_DB - RANGE_DB)) / RANGE_DB), CURVE);
+            music_[i] = t > music_[i] ? t : music_[i] * FALL;
+            lv[i] = to_level(music_[i]);
+        }
+        for (int i = 0; i < 5; i++) out[i] = lv[2];
+        for (int i = 5; i < 11; i++) out[i] = lv[1];
+        for (int i = 11; i < 16; i++) out[i] = lv[0];
         return;
     }
 

@@ -20,7 +20,7 @@ namespace {
 
 // ---------- menu command ids ----------
 enum : UINT {
-    ID_VU = 100, ID_STYLE_BANDS, ID_STYLE_ABC, ID_OFF, ID_BRIGHTER, ID_DIMMER, ID_FASTER, ID_SLOWER,
+    ID_VU = 100, ID_STYLE_BANDS, ID_STYLE_ABC, ID_STYLE_MUSIC, ID_OFF, ID_BRIGHTER, ID_DIMMER, ID_FASTER, ID_SLOWER,
     ID_FAV_ADD, ID_FAV_REMOVE, ID_PROFILE_SAVE, ID_AUTOSTART, ID_QUIT, ID_BIGGER, ID_SMALLER, ID_STRONGER, ID_SOFTER,
     ID_EFFECT  = 1000, // + effect number (1-255)
     ID_FAV     = 1300, // + favourite index
@@ -54,7 +54,8 @@ VuMeter        g_vu(&g_link);
 Board         *g_board = nullptr;  // null while no keyboard is connected
 Status         g_st;               // last known keyboard state
 Tune           g_tune;             // size and intensity of the current effect
-bool           g_vu_on = true, g_vu_abc = false;
+bool           g_vu_on = true;
+int            g_vu_style = VU_BANDS;
 std::vector<std::string>  g_favs;  // effect names
 std::wstring   g_slots[10];        // "effect:NAME" or "profile:NAME"
 
@@ -70,7 +71,8 @@ int effect_number(const std::string &name) {
 }
 std::wstring current_effect_text() {
     if (!g_board) return L"keyboard not connected";
-    if (g_vu_on) return g_vu_abc ? L"VU meter (AY channels)" : L"VU meter (frequency bands)";
+    if (g_vu_on)
+        return g_vu_style == VU_ABC ? L"VU meter (AY channels)" : g_vu_style == VU_MUSIC ? L"VU meter (music)" : L"VU meter (frequency bands)";
     if (!g_st.enabled) return L"lighting off";
     return effects::friendly(effect_name(g_st.mode));
 }
@@ -124,10 +126,10 @@ void set_vu(bool on) {
     update_tray();
 }
 
-void set_vu_style(bool abc) {
-    g_vu_abc = abc;
-    g_vu.set_abc(abc);
-    settings::set(L"vu", L"style", abc ? L"abc" : L"bands");
+void set_vu_style(int style) {
+    g_vu_style = style;
+    g_vu.set_style(style);
+    settings::set(L"vu", L"style", settings::vu_style_name(style));
     update_tray();
 }
 
@@ -181,7 +183,7 @@ Profile current_profile() {
     Profile p;
     p.effect = g_st.enabled ? effect_name(g_st.mode) : "OFF";
     p.speed = g_st.speed; p.hue = g_st.hue; p.sat = g_st.sat; p.val = g_st.val;
-    p.vu = g_vu_on; p.vu_abc = g_vu_abc;
+    p.vu = g_vu_on; p.vu_style = g_vu_style;
     if (g_tune.flags && g_tune.mode == g_st.mode) { p.size = g_tune.size; p.intensity = g_tune.intensity; }
     return p;
 }
@@ -198,7 +200,7 @@ void apply_profile(const std::wstring &name) {
     set_colour((uint8_t)p.hue, (uint8_t)p.sat);
     set_speed(p.speed);
     set_brightness(p.val);
-    set_vu_style(p.vu_abc);
+    set_vu_style(p.vu_style);
     set_vu(p.vu);
 }
 
@@ -308,8 +310,9 @@ void show_menu() {
     else { add(menu, 0, L"Now: " + current_effect_text(), false, false); sep(menu); }
 
     add(menu, ID_VU, L"VU meter on keyboard", g_vu_on, on);
-    add(menu, ID_STYLE_BANDS, L"Frequency bands (bass bottom, treble top)", !g_vu_abc, true, true);
-    add(menu, ID_STYLE_ABC, L"AY channels (ACB): A top, B middle, C bottom", g_vu_abc, true, true);
+    add(menu, ID_STYLE_MUSIC, L"Music: treble top, mids middle, bass bottom", g_vu_style == VU_MUSIC, true, true);
+    add(menu, ID_STYLE_BANDS, L"Frequency bands (bass bottom, treble top)", g_vu_style == VU_BANDS, true, true);
+    add(menu, ID_STYLE_ABC, L"AY channels (ACB) for Spectrum music: A top, B middle, C bottom", g_vu_style == VU_ABC, true, true);
     sep(menu);
 
     // effects, grouped
@@ -403,8 +406,9 @@ void show_menu() {
     if (!cmd) return;
 
     if (cmd == ID_VU) set_vu(!g_vu_on);
-    else if (cmd == ID_STYLE_BANDS) set_vu_style(false);
-    else if (cmd == ID_STYLE_ABC) set_vu_style(true);
+    else if (cmd == ID_STYLE_BANDS) set_vu_style(VU_BANDS);
+    else if (cmd == ID_STYLE_ABC) set_vu_style(VU_ABC);
+    else if (cmd == ID_STYLE_MUSIC) set_vu_style(VU_MUSIC);
     else if (cmd == ID_OFF) set_effect(0);
     else if (cmd == ID_BRIGHTER) set_brightness(g_st.val + STEP);
     else if (cmd == ID_DIMMER) set_brightness(g_st.val - STEP);
@@ -529,8 +533,8 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
 
     settings::import_zx_vu();
     g_vu_on  = settings::get_int(L"vu", L"on", 1) != 0;
-    g_vu_abc = settings::get(L"vu", L"style", L"bands") == L"abc";
-    g_vu.set_abc(g_vu_abc);
+    g_vu_style = settings::vu_style_from(settings::get(L"vu", L"style", L"bands"));
+    g_vu.set_style(g_vu_style);
     std::string favs = settings::narrow(settings::get(L"favourites", L"effects"));
     for (size_t p = 0; !favs.empty() && p != std::string::npos;) {
         size_t c = favs.find(',', p);

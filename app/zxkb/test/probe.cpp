@@ -113,6 +113,16 @@ int main(int argc, char **argv) {
             }
             MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
         }
+    } else if (!std::strcmp(cmd, "vubars") && argc > 5) { // probe vubars <top> <middle> <bottom> <s>: hold fixed bars
+        int a = std::atoi(argv[2]), b = std::atoi(argv[3]), c = std::atoi(argv[4]), s = std::atoi(argv[5]);
+        uint8_t on[2] = {proto::VU_MODE, 1};
+        link.send(on, 2);
+        uint8_t p[17] = {proto::VU_LEVELS};
+        for (int i = 0; i < 5; i++) p[1 + i] = (uint8_t)c;   // bands 0-4: bottom bar
+        for (int i = 5; i < 11; i++) p[1 + i] = (uint8_t)b;  // bands 5-10: middle bar
+        for (int i = 11; i < 16; i++) p[1 + i] = (uint8_t)a; // bands 11-15: top bar
+        for (int i = 0; i < s * 40; i++) { link.send(p, 17); pump(25, false); }
+        std::printf("held top %d, middle %d, bottom %d for %d s\n", a, b, c, s);
     } else if (!std::strcmp(cmd, "vu")) {
         uint8_t on[2] = {proto::VU_MODE, 1};
         link.send(on, 2);

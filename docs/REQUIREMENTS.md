@@ -38,6 +38,9 @@ Rule: do not build until D0k confirms the list is complete.
       audio visualisers fed by ZXKB audio; game integrations not at first)
 - [ ] PC-streamed effects (effects worked out by ZXKB and streamed live through direct mode): Stage 2,
       decided 2026-11-02. Direct mode measured at 91 frames/s on the Q3.
+- [ ] VU: third style for ordinary music (treble / mids / bass, each bar with its own level), requested
+      2026-11-02: AY channels style mirrors its top two bars on normal stereo music (measured)
+- [ ] VU: both rows of a bar end at the same point despite staggered keys (edge key partly lit), 2026-11-02
 - [~] Built-in PC effects: VU meter (bands + ACB) ported, identical output; screen ambient, system load (CPU/RAM/GPU), beat pulse,
       notification flash
 - [ ] OpenRGB SDK server

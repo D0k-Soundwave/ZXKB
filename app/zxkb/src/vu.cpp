@@ -58,7 +58,7 @@ DWORD WINAPI VuMeter::thread_main(LPVOID self) {
 
 void VuMeter::block_ready(const float *frames, int ch) {
     uint8_t pkt[1 + VuMath::BANDS] = {proto::VU_LEVELS};
-    math_.process(frames, ch, abc_, pkt + 1);
+    math_.process(frames, ch, style_, pkt + 1);
     static double last = 0;
     double now = qpc_seconds();
     if (now - last >= 1.0 / FPS) {

@@ -4,6 +4,9 @@
 #pragma once
 #include <cstdint>
 
+// VU styles. Stored in settings as "bands", "abc", "music".
+enum VuStyle { VU_BANDS = 0, VU_ABC = 1, VU_MUSIC = 2 };
+
 class VuMath {
 public:
     static constexpr int BLOCK = 1024; // frames per analysis block
@@ -12,9 +15,9 @@ public:
     // Call when the sample rate is known (or changes). Keeps the running levels.
     void setup(int rate);
 
-    // One block of BLOCK frames, interleaved, ch channels. abc = AY channels (ACB) style, else frequency bands.
-    // Writes the 16 levels the keyboard expects (0-255).
-    void process(const float *frames, int ch, bool abc, uint8_t out[BANDS]);
+    // One block of BLOCK frames, interleaved, ch channels, in one of the VuStyle styles.
+    // Writes the 16 levels the keyboard expects (0-255): bands 0-4 bottom bar, 5-10 middle, 11-15 top.
+    void process(const float *frames, int ch, int style, uint8_t out[BANDS]);
 
 private:
     void fft(); // in place on re_/im_
@@ -30,4 +33,6 @@ private:
     double abc_peak_ = -40.0; // running reference level, ACB style
     double levels_[BANDS] = {};
     double abc_[3] = {};
+    double music_ref_[3] = {-40.0, -40.0, -40.0}; // music style: each bar's own running reference level
+    double music_[3] = {};
 };

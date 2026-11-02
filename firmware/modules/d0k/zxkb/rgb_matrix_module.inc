@@ -77,8 +77,31 @@ static bool TAPE_LOADING(effect_params_t* params) {
 //   Bar 2 = Tab row + Caps Lock row  (ACB mode: channel B,  bands mode: mids)
 //   Bar 3 = Shift row + bottom row   (ACB mode: channel C,  bands mode: bass)
 // Solid Spectrum-logo colour blocks across the board, left to right: red | yellow | green | cyan (BRIGHT palette)
+// Keys in neighbouring rows are staggered, so a bar that just lit keys whose centre it had passed ended on a
+// different key in each row (and the space bar jumped on all at once). Instead each key covers a span, from
+// half-way to its left neighbour to half-way to its right one, and lights in proportion to how much of that
+// span the bar covers. Both rows of a bar then fade out at the same point.
 static const uint8_t vu_bar_first[3] = { 11, 5, 0 };
 static const uint8_t vu_bar_last[3]  = { 15, 10, 4 };
+#define VU_HALF_KEY 7   // half a key: the Q3's key pitch is 13 units (LED map), for keys at the end of a row
+static uint8_t vu_left[RGB_MATRIX_LED_COUNT], vu_right[RGB_MATRIX_LED_COUNT];
+static bool    vu_spans_ready = false;
+static uint8_t vu_row(uint8_t y) { return (y < 8) ? 0 : (y < 21) ? 1 : (y < 34) ? 2 : (y < 46) ? 3 : (y < 58) ? 4 : 5; }
+static void vu_make_spans(void) {
+    for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT; i++) {
+        uint8_t x = g_led_config.point[i].x, row = vu_row(g_led_config.point[i].y);
+        int16_t left_x = -1, right_x = 999;   // nearest neighbours in the same row
+        for (uint8_t j = 0; j < RGB_MATRIX_LED_COUNT; j++) {
+            if (j == i || vu_row(g_led_config.point[j].y) != row) continue;
+            uint8_t xj = g_led_config.point[j].x;
+            if (xj < x && xj > left_x) left_x = xj;
+            if (xj > x && xj < right_x) right_x = xj;
+        }
+        vu_left[i]  = left_x >= 0 ? (uint8_t)((left_x + x + 1) / 2) : (x > VU_HALF_KEY ? x - VU_HALF_KEY : 0);
+        vu_right[i] = right_x < 999 ? (uint8_t)((x + right_x) / 2) : (uint8_t)(x + VU_HALF_KEY > 255 ? 255 : x + VU_HALF_KEY);
+    }
+    vu_spans_ready = true;
+}
 static bool VU_METER(effect_params_t* params) {
     RGB_MATRIX_USE_LIMITS(led_min, led_max);
     if (params->init) { for (uint8_t b = 0; b < 16; b++) zxkb_vu_levels[b] = 0; }
@@ -90,15 +113,20 @@ static bool VU_METER(effect_params_t* params) {
         for (uint8_t b = vu_bar_first[k]; b <= vu_bar_last[k]; b++) if (zxkb_vu_levels[b] > lvl) lvl = zxkb_vu_levels[b];
         bar_level[k] = lvl;
     }
+    if (!vu_spans_ready) vu_make_spans();
     for (uint8_t i = led_min; i < led_max; i++) {
         RGB_MATRIX_TEST_LED_FLAGS();
         uint8_t x = g_led_config.point[i].x, y = g_led_config.point[i].y;
-        uint8_t row = (y < 8) ? 0 : (y < 21) ? 1 : (y < 34) ? 2 : (y < 46) ? 3 : (y < 58) ? 4 : 5;
-        uint8_t lvl = bar_level[row / 2];                 // both rows of a bar show the same value
+        uint8_t lvl = bar_level[vu_row(y) / 2];           // both rows of a bar show the same value
         uint16_t reach = (uint16_t)lvl * 232 / 255;
-        if (lvl > 8 && reach >= x) {
+        uint8_t cover = 0;                                // how much of this key the bar covers, 0-255
+        if (lvl > 8) {
+            if (reach >= vu_right[i]) cover = 255;
+            else if (reach > vu_left[i]) cover = (uint16_t)(reach - vu_left[i]) * 255 / (vu_right[i] - vu_left[i]);
+        }
+        if (cover) {
             uint8_t c = (x < 56) ? 0 : (x < 112) ? 1 : (x < 168) ? 2 : 3;   // red, yellow, green, cyan (left to right)
-            zx_set(i, zx_cols[c][0], zx_cols[c][1], zx_cols[c][2]);
+            zx_set(i, scale8(zx_cols[c][0], cover), scale8(zx_cols[c][1], cover), scale8(zx_cols[c][2], cover));
         } else {
             rgb_matrix_set_color(i, 0, 0, 0);
         }

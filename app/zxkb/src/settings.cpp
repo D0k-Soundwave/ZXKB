@@ -28,6 +28,13 @@ std::string narrow(const std::wstring &w) {
     return s;
 }
 
+const wchar_t *vu_style_name(int style) {
+    return style == 1 ? L"abc" : style == 2 ? L"music" : L"bands";
+}
+int vu_style_from(const std::wstring &name) {
+    return name == L"abc" ? 1 : name == L"music" ? 2 : 0;
+}
+
 std::wstring folder() {
     static std::wstring dir;
     if (dir.empty()) {
@@ -118,7 +125,7 @@ bool load_profile(const std::wstring &name, Profile *p) {
     p->intensity = GetPrivateProfileIntW(L"profile", L"intensity", 255, path.c_str());
     p->vu     = GetPrivateProfileIntW(L"profile", L"vu", 0, path.c_str()) != 0;
     GetPrivateProfileStringW(L"profile", L"vu_style", L"bands", buf, 256, path.c_str());
-    p->vu_abc = wcscmp(buf, L"abc") == 0;
+    p->vu_style = vu_style_from(buf);
     return true;
 }
 
@@ -129,7 +136,7 @@ bool save_profile(const std::wstring &name, const Profile &p) {
     return w(L"effect", widen(p.effect)) && w(L"speed", std::to_wstring(p.speed)) && w(L"hue", std::to_wstring(p.hue)) &&
            w(L"sat", std::to_wstring(p.sat)) && w(L"brightness", std::to_wstring(p.val)) &&
            w(L"size", std::to_wstring(p.size)) && w(L"intensity", std::to_wstring(p.intensity)) && w(L"vu", p.vu ? L"1" : L"0") &&
-           w(L"vu_style", p.vu_abc ? L"abc" : L"bands");
+           w(L"vu_style", vu_style_name(p.vu_style));
 }
 
 bool delete_profile(const std::wstring &name) {

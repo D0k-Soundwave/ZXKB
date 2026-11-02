@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
     if (argc < 3) return 2;
-    bool abc = std::strcmp(argv[2], "abc") == 0;
+    int style = std::strcmp(argv[2], "abc") == 0 ? VU_ABC : std::strcmp(argv[2], "music") == 0 ? VU_MUSIC : VU_BANDS;
     FILE *f = std::fopen(argv[1], "rb");
     if (!f) return 1;
     std::vector<float> blk(VuMath::BLOCK * 2);
@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     vu.setup(48000);
     uint8_t lv[VuMath::BANDS];
     while (std::fread(blk.data(), sizeof(float), blk.size(), f) == blk.size()) {
-        vu.process(blk.data(), 2, abc, lv);
+        vu.process(blk.data(), 2, style, lv);
         for (int i = 0; i < VuMath::BANDS; i++) std::printf(i ? " %d" : "%d", lv[i]);
         std::printf("\n");
     }
