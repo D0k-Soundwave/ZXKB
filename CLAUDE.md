@@ -64,8 +64,10 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   `src/vumath` (VU maths ported from zx_vu.py; `test/run_vu_test.sh` compares it with the real legacy code:
   worst difference 0), `src/vu` (WASAPI loopback, only while the VU is on), `src/settings` (`%APPDATA%\ZXKB\zxkb.ini`,
   `profiles\*.ini`, HKCU Run "ZXKB"), `src/effects` (menu names and groups), `src/main` (tray and menus).
+- Installed copy: `Documents\Keyboard Layouts\ZXKB\ZXKB.exe`, started with Windows by HKCU Run key "ZXKB"
+  (switched from ZX VU on 2026-11-02). Copy a new build there after quitting ZXKB from the tray.
 - `app/legacy/zx_vu.py`: the old ZX VU tray app (Python; PyInstaller onefile `ZX_VU.exe`; settings in
-  `%APPDATA%\ZX_VU.json`), still installed in `Documents\Keyboard Layouts\ZX VU\ZX_VU.exe` via HKCU Run key "ZX VU".
+  `%APPDATA%\ZX_VU.json`). Its exe is still in `Documents\Keyboard Layouts\ZX VU\` but no longer starts with Windows.
 - VU tunables D0k approved: FPS 40, RANGE_DB 30, HEADROOM_DB 9, CURVE 1.7, FALL 0.72, reference = moving average.
 - Measure with `python tools/measure.py ZXKB.exe 60` (private working set is the honest RAM figure).
 
