@@ -22,7 +22,7 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
 - Flashing: QMK Toolbox (runs elevated). Hold **Esc while plugging in** = DFU + EEPROM clear.
   STM32 DFU 0483:DF11 with WinUSB driver.
 - Build: upstream `qmk_firmware` master, `make keychron/q3/iso_encoder:d0k`
-  (on this PC use WSL Ubuntu or QMK MSYS; the final `dfu-suffix` error is harmless, the .bin is produced).
+  (on this PC build with QMK MSYS, the official Windows QMK environment; do not use WSL. The final `dfu-suffix` error is harmless, the .bin is produced).
   Copy `firmware/keymaps/d0k` into `qmk_firmware/keyboards/keychron/q3/iso_encoder/keymaps/d0k`.
 
 ## Colour calibration (done 2026-11-02, by eye against the true Spectrum BRIGHT palette)
