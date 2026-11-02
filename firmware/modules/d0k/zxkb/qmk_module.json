@@ -1,0 +1,23 @@
+{
+    "module_name": "ZXKB",
+    "maintainer": "D0k",
+    "license": "GPL-3.0-or-later",
+    "url": "https://github.com/D0k-Soundwave/ZXKB",
+    "features": {
+        "rgb_matrix": true,
+        "raw": true
+    },
+    "keycodes": [
+        {"key": "ZXKB_SLOT_1", "aliases": ["ZK_1"]},
+        {"key": "ZXKB_SLOT_2", "aliases": ["ZK_2"]},
+        {"key": "ZXKB_SLOT_3", "aliases": ["ZK_3"]},
+        {"key": "ZXKB_SLOT_4", "aliases": ["ZK_4"]},
+        {"key": "ZXKB_SLOT_5", "aliases": ["ZK_5"]},
+        {"key": "ZXKB_SLOT_6", "aliases": ["ZK_6"]},
+        {"key": "ZXKB_SLOT_7", "aliases": ["ZK_7"]},
+        {"key": "ZXKB_SLOT_8", "aliases": ["ZK_8"]},
+        {"key": "ZXKB_SLOT_9", "aliases": ["ZK_9"]},
+        {"key": "ZXKB_SLOT_10", "aliases": ["ZK_0"]},
+        {"key": "ZXKB_VU_TOGGLE", "aliases": ["ZK_VU"]}
+    ]
+}
