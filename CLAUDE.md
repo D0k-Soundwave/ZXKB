@@ -43,20 +43,24 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
 - `firmware/keyboards/keychron/q3/iso_encoder/keymaps/d0k`: Q3 keymap using the module. Layers SPEC_BASE, SPEC_FN,
   WIN_BASE, WIN_FN. Spectrum layer maps for the MiSTer core (Shift = Caps Shift, Ctrl = Symbol Shift,
   ZX_EXT = Ctrl+LShift, ZX_LOAD types LOAD "" with 60 ms per key). Fn layers: media/brightness on F-row, RM_*
-  lighting keys, Fn+1..0 = hotkey slots, Fn+V = VU toggle, Fn+N = NKRO, Win lock.
-- Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after). PC overlays
-  (VU, direct) only in Windows mode.
+  lighting keys, Fn+1..0 = hotkey slots, Fn+V = switch to/from the VU meter effect, Fn+N = NKRO, Win lock.
+- Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after). The VU meter is a
+  normal effect fed by ZXKB (dark without it); PC direct mode is an overlay, only in Windows mode.
 - Caps Lock: flashing magenta/white every 320 ms (Spectrum FLASH rate).
 - Raw HID (32-byte reports, `zxkb.h`):
   - `0xD0` + 16 levels: VU data. `0xD1` + 0/1: VU mode request. `0xD2` + n (1-6): Spectrum effect (old app).
   - `0xD3` + r,g,b / `0xD4` / `0xD5`: LED driver current tune set / save / get (keymap, replies).
   - `0xD8` + slot: keyboard -> app, Fn+number pressed.
-  - `0xD9` 0x00 status, 0x01 + mode -> name, 0x02 + first LED -> 9 x (x, y, flags).
+  - `0xD9` 0x00 status (protocol 2: also sent unasked on changes; byte 15 VU possible, byte 16 firmware version),
+    0x01 + mode -> name, 0x02 + first LED -> 9 x (x, y, flags).
+  - `0xDA` size and intensity of the current effect: 0x00 get, 0x01 set, 0x02 save.
   - SignalRGB 0x21-0x28 (protocol 1.0.6); 0x25 enable / 0x24 stream / 0x26 disable is also ZXKB's direct mode.
   - Standard VIA lighting (0x07/0x08/0x09, channel 3) for effect, brightness, speed, colour, save.
   - Overlays drop back to the board's own effect after 5 s without data.
-- Keyboard runs **v11** (calibrated colours, flashing Caps Lock, hardware balance default). v12 = the module
-  build, not yet flashed.
+- Versions: see `docs/VERSIONS.md`. Every build handed to D0k gets a number (`ZXKB_FIRMWARE_VERSION` in the
+  keymap config.h, `ZXKB_VERSION_STR` in app/zxkb/res/resource.h) and is kept for fallback via
+  `sh firmware/build.sh release` and `pwsh tools/install_app.ps1`. Never reuse a released number.
+- The Q3 can hold at most 63 effects (QMK 6-bit mode field); it has 59.
 
 ## App: current state
 - `app/zxkb`: ZXKB, native C++ (Win32 only, no runtime): `make -C /h/ZXKB/app/zxkb` in QMK MSYS -> `build/ZXKB.exe`.

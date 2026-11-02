@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 #include "../res/resource.h"
+#define ZXKB_WIDEN2(s) L##s
+#define ZXKB_WIDEN(s)  ZXKB_WIDEN2(s)
+#define ZXKB_VERSION_WSTR ZXKB_WIDEN(ZXKB_VERSION_STR)
 #include "effects.h"
 #include "hidlink.h"
 #include "protocol.h"
@@ -55,8 +58,7 @@ VuMeter        g_vu(&g_link);
 Board         *g_board = nullptr;  // null while no keyboard is connected
 Status         g_st;               // last known keyboard state
 Tune           g_tune;             // size and intensity of the current effect
-bool           g_vu_on = true;
-int            g_vu_style = VU_BANDS;
+int            g_vu_style = VU_BANDS;  // how the VU meter effect is fed (the keyboard just draws the bars)
 std::vector<std::string>  g_favs;  // effect names
 std::wstring   g_slots[10];        // "effect:NAME" or "profile:NAME"
 
@@ -81,10 +83,14 @@ bool is_vu_name(const std::string &n) { return n.rfind("VU:", 0) == 0; }
 int  vu_style_of(const std::string &n) { return settings::vu_style_from(settings::widen(n.substr(3))); }
 std::wstring menu_name(const std::string &n) { return is_vu_name(n) ? vu_label(vu_style_of(n)) : effects::friendly(n); }
 
+// The VU meter is a normal keyboard effect; ZXKB feeds it while it shows.
+int  vu_mode() { return effect_number("VU_METER"); }
+bool vu_showing() { return g_board && g_st.enabled && g_st.mode && g_st.mode == vu_mode(); }
+
 std::wstring current_effect_text() {
     if (!g_board) return L"keyboard not connected";
-    if (g_vu_on) return vu_label(g_vu_style);
     if (!g_st.enabled) return L"lighting off";
+    if (vu_showing()) return vu_label(g_vu_style);
     return effects::friendly(effect_name(g_st.mode));
 }
 
@@ -127,29 +133,11 @@ void save_lists() {
 }
 
 // ---------- actions ----------
-ULONGLONG g_vu_sent = 0;                  // when ZXKB last switched the VU meter on or off on the keyboard
-constexpr ULONGLONG VU_GRACE_MS = 1000;   // replies take a few ms; ignore older status about the VU meter for this long
-
-// Listen to audio only while the VU meter could actually be seen: on, lighting on, and allowed by the keyboard
-// (not switched off with Fn + V, not in Spectrum mode). Anything else costs nothing.
+// Listen to audio only while the keyboard shows the VU meter effect and could be seen (lighting on, not in
+// Spectrum mode). Anything else costs nothing.
 void update_capture() {
-    if (g_board && g_vu_on && g_st.enabled && g_st.vu_possible) g_vu.start();
+    if (vu_showing() && g_st.vu_possible) g_vu.start();
     else g_vu.stop();
-}
-
-void set_vu(bool on) {
-    g_vu_on = on;
-    settings::set_int(L"vu", L"on", on);
-    if (!g_board) return;
-    if (on && !g_st.enabled) { // switching lighting back on: the keyboard reports at once if the VU still cannot show
-        via_set(proto::VIA_EFFECT, g_st.mode ? g_st.mode : 1);
-        g_st.enabled = 1;
-        g_st.vu_possible = 1;
-    }
-    send({proto::VU_MODE, (uint8_t)on});
-    g_vu_sent = GetTickCount64();
-    update_capture();
-    update_tray();
 }
 
 void set_vu_style(int style) {
@@ -161,10 +149,11 @@ void set_vu_style(int style) {
 
 void set_effect(int mode) { // 0 = lighting off
     if (!g_board) return;
-    if (g_vu_on) set_vu(false); // an effect replaces the VU meter (tick VU again to bring it back), as in ZX VU
     via_set(proto::VIA_EFFECT, (uint8_t)mode);
     if (mode) g_st.mode = (uint8_t)mode;
     g_st.enabled = mode != 0;
+    g_st.vu_possible = 1; // the keyboard reports at once if the VU meter cannot show (e.g. Spectrum mode)
+    update_capture();
     send({proto::TUNE, proto::TUNE_GET}); // this effect's own size and intensity
     schedule_save();
     update_tray();
@@ -209,7 +198,7 @@ Profile current_profile() {
     Profile p;
     p.effect = g_st.enabled ? effect_name(g_st.mode) : "OFF";
     p.speed = g_st.speed; p.hue = g_st.hue; p.sat = g_st.sat; p.val = g_st.val;
-    p.vu = g_vu_on; p.vu_style = g_vu_style;
+    p.vu_style = g_vu_style;
     if (g_tune.flags && g_tune.mode == g_st.mode) { p.size = g_tune.size; p.intensity = g_tune.intensity; }
     return p;
 }
@@ -217,7 +206,9 @@ Profile current_profile() {
 void apply_profile(const std::wstring &name) {
     Profile p;
     if (!g_board || !settings::load_profile(name, &p)) return;
-    if (p.effect == "OFF") set_effect(0);
+    set_vu_style(p.vu_style);
+    if (p.vu && vu_mode()) set_effect(vu_mode()); // profiles saved before the VU meter was a normal effect
+    else if (p.effect == "OFF") set_effect(0);
     else if (int m = effect_number(p.effect)) {
         set_effect(m);
         send({proto::TUNE, proto::TUNE_SET, (uint8_t)p.size, (uint8_t)p.intensity}); // ignored by effects without them
@@ -226,13 +217,11 @@ void apply_profile(const std::wstring &name) {
     set_colour((uint8_t)p.hue, (uint8_t)p.sat);
     set_speed(p.speed);
     set_brightness(p.val);
-    set_vu_style(p.vu_style);
-    set_vu(p.vu);
 }
 
 void select_vu(int style) {
     set_vu_style(style);
-    if (!g_vu_on) set_vu(true);
+    if (int m = vu_mode()) set_effect(m);
 }
 
 void select_by_name(const std::string &n) { // an effect or a VU style
@@ -336,9 +325,9 @@ bool replaced(size_t i) {
 void show_menu() {
     refresh_status();
     bool on = g_board != nullptr;
-    bool fx      = on && !g_vu_on && g_st.enabled; // a keyboard effect is showing (not the VU meter)
-    bool showing = fx || (on && g_vu_on);          // an effect or a VU style is showing
-    std::string cur = !showing ? "" : g_vu_on ? vu_name(g_vu_style) : effect_name(g_st.mode);
+    bool showing = on && g_st.enabled;              // an effect (or the VU meter) is showing
+    bool fx      = showing && !vu_showing();        // an effect other than the VU meter
+    std::string cur = !showing ? "" : vu_showing() ? vu_name(g_vu_style) : effect_name(g_st.mode);
     std::vector<std::wstring> profiles = settings::profile_names();
     if (profiles.size() > MAX_PROFILES) profiles.resize(MAX_PROFILES);
 
@@ -349,10 +338,10 @@ void show_menu() {
     // effects, grouped
     HMENU fxm = CreatePopupMenu();
     if (on) {
-        add(fxm, ID_OFF, L"Lighting off", !g_vu_on && !g_st.enabled, true, true);
+        add(fxm, ID_OFF, L"Lighting off", !g_st.enabled, true, true);
         HMENU vu = CreatePopupMenu(); // the audio VU meter, one entry per style
         const int order[3] = {VU_MUSIC, VU_BANDS, VU_ABC};
-        for (int s : order) add(vu, ID_STYLE_BANDS + s, vu_label(s), g_vu_on && g_vu_style == s, true, true);
+        for (int s : order) add(vu, ID_STYLE_BANDS + s, vu_label(s), vu_showing() && g_vu_style == s, true, true);
         add_sub(fxm, vu, L"VU meter");
         HMENU groups[effects::GROUP_COUNT] = {};
         for (size_t i = 0; i < g_board->names.size(); i++) {
@@ -429,6 +418,9 @@ void show_menu() {
     add_sub(menu, keys, L"Fn + number hotkeys");
     sep(menu);
     add(menu, ID_AUTOSTART, L"Start with Windows", settings::autostart());
+    std::wstring about = L"ZXKB " ZXKB_VERSION_WSTR;
+    if (on && g_st.fw_version) about += L", keyboard firmware v" + std::to_wstring(g_st.fw_version);
+    add(menu, 0, about, false, false);
     add(menu, ID_QUIT, L"Quit");
 
     POINT pt;
@@ -496,9 +488,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
         case WM_TRAY:
             switch (LOWORD(lp)) {
-                case WM_CONTEXTMENU: show_menu(); break;              // right click
-                case NIN_SELECT:
-                case NIN_KEYSELECT: if (g_board) set_vu(!g_vu_on); break; // left click toggles the VU meter, as in ZX VU
+                case WM_CONTEXTMENU: show_menu(); break; // right click (left click does nothing)
             }
             return 0;
         case WM_ZX_CONNECTED:
@@ -506,7 +496,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_board = reinterpret_cast<Board *>(lp);
             g_st    = g_board->status;
             send({proto::TUNE, proto::TUNE_GET});
-            if (g_vu_on) set_vu(true); // tell the keyboard and start listening
+            update_capture();
             update_tray();
             return 0;
         case WM_ZX_DISCONNECTED:
@@ -524,11 +514,6 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             Status *s = reinterpret_cast<Status *>(lp);
             if (g_board) {
                 g_st = *s;
-                // an effect picked on the keyboard itself replaces the VU meter, as picking one in ZXKB does
-                if (g_vu_on && !g_st.vu_requested && GetTickCount64() - g_vu_sent > VU_GRACE_MS) {
-                    g_vu_on = false;
-                    settings::set_int(L"vu", L"on", 0);
-                }
                 update_capture();
             }
             delete s;
@@ -550,7 +535,6 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_DESTROY:
             if (g_board) {
                 save_now();
-                if (g_vu_on) send({proto::VU_MODE, 0}); // hand the keyboard back to its own effect, as ZX VU did
             }
             g_vu.stop();
             g_link.stop();
@@ -571,7 +555,6 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); // for the Startup-folder shortcut
 
     settings::import_zx_vu();
-    g_vu_on  = settings::get_int(L"vu", L"on", 1) != 0;
     g_vu_style = settings::vu_style_from(settings::get(L"vu", L"style", L"bands"));
     g_vu.set_style(g_vu_style);
     std::string favs = settings::narrow(settings::get(L"favourites", L"effects"));

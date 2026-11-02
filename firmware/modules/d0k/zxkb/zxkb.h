@@ -46,6 +46,11 @@ enum zxkb_overlay { ZXKB_OVERLAY_NONE = 0, ZXKB_OVERLAY_VU = 1, ZXKB_OVERLAY_DIR
 #    define ZXKB_PC_TIMEOUT_MS 5000
 #endif
 
+/* The board's firmware version (set it in the keymap's config.h), reported in the status. 0 = not set. */
+#ifndef ZXKB_FIRMWARE_VERSION
+#    define ZXKB_FIRMWARE_VERSION 0
+#endif
+
 /* SignalRGB device identifier (its plugin matches on these). 0,0,0 unless the keymap sets them. */
 #ifndef ZXKB_SRGB_ID_1
 #    define ZXKB_SRGB_ID_1 0

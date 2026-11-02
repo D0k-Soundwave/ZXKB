@@ -26,7 +26,7 @@ uint8_t  zxkb_rip_col[ZXKB_RIPPLES];
 uint32_t zxkb_rip_time[ZXKB_RIPPLES];
 static uint8_t zxkb_rip_next, zxkb_rip_colour;
 
-static bool     vu_allowed = true; /* ZK_VU (Fn + V) turns the VU meter on/off on the keyboard */
+static const bool vu_allowed = true; /* kept for the status report; ZK_VU now switches to/from the VU effect */
 static bool     vu_requested;      /* the app wants the VU meter */
 static bool     direct_requested;  /* the app or SignalRGB wants direct colour */
 static uint32_t direct_last;
@@ -45,8 +45,10 @@ static uint8_t overlay_mode(uint8_t o) {
     return o == ZXKB_OVERLAY_VU ? RGB_MATRIX_COMMUNITY_MODULE_VU_METER : RGB_MATRIX_COMMUNITY_MODULE_PC_DIRECT;
 }
 
+/* Effects that only make sense while the PC drives them, so never the start-up effect. The VU meter is a normal
+ * effect (picked and saved like any other); it shows dark bars while nothing sends it levels. */
 static bool is_overlay_mode(uint8_t mode) {
-    return mode == RGB_MATRIX_COMMUNITY_MODULE_VU_METER || mode == RGB_MATRIX_COMMUNITY_MODULE_PC_DIRECT;
+    return mode == RGB_MATRIX_COMMUNITY_MODULE_PC_DIRECT;
 }
 
 /* ---------- Saved settings (module EEPROM datablock) ---------- */
@@ -174,9 +176,9 @@ static void overlay_update(void) {
     overlay_set(want);
 }
 
-/* Could the VU meter show right now? (lighting on, VU not switched off with ZK_VU, keymap allows it, e.g. Windows mode) */
+/* Could the VU meter show right now? (lighting on, and the keymap allows it, e.g. Windows mode) */
 static bool vu_possible(void) {
-    return rgb_matrix_is_enabled() && vu_allowed && zxkb_overlay_allowed_user(ZXKB_OVERLAY_VU);
+    return rgb_matrix_is_enabled() && zxkb_overlay_allowed_user(ZXKB_OVERLAY_VU);
 }
 static void info_status(uint8_t *data, uint8_t length);
 
@@ -225,10 +227,21 @@ bool process_record_zxkb(uint16_t keycode, keyrecord_t *record) {
         }
         return false;
     }
-    if (keycode == ZXKB_VU_TOGGLE) {
+    if (keycode == ZXKB_VU_TOGGLE) { /* switch between the VU meter effect and the effect before it */
         if (record->event.pressed) {
-            vu_allowed = !vu_allowed;
-            overlay_update();
+            uint8_t mode = own_mode();
+            if (mode == RGB_MATRIX_COMMUNITY_MODULE_VU_METER) {
+                uint8_t m = cfg.home_mode;
+                rgb_matrix_mode(m >= 1 && m < RGB_MATRIX_EFFECT_MAX && !is_overlay_mode(m) && m != mode ? m : RGB_MATRIX_SOLID_COLOR);
+            } else {
+                if (cfg.home_mode != mode) {
+                    cfg.home_mode = mode;
+                    eeconfig_update_zxkb_datablock(&cfg.home_mode, 0, 1);
+                }
+                overlay = ZXKB_OVERLAY_NONE;
+                vu_requested = direct_requested = false;
+                rgb_matrix_mode(RGB_MATRIX_COMMUNITY_MODULE_VU_METER);
+            }
         }
         return false;
     }
@@ -306,7 +319,7 @@ static void info_leds(uint8_t *data, uint8_t length) {
 }
 
 /* [0xD9, 0x00] -> [0xD9, 0x00, protocol, LED count, effect count, mode, enabled, brightness, speed, hue, sat,
- *                  max brightness, overlay, VU allowed, VU requested, VU possible]. Also sent unasked when
+ *                  max brightness, overlay, VU allowed, VU requested, VU possible, firmware version]. Also sent unasked when
  *                  lighting, effect, overlay or VU state changes. */
 static void info_status(uint8_t *data, uint8_t length) {
     memset(&data[2], 0, length - 2);
@@ -324,6 +337,7 @@ static void info_status(uint8_t *data, uint8_t length) {
     data[13] = vu_allowed;
     data[14] = vu_requested;
     data[15] = vu_possible();
+    data[16] = ZXKB_FIRMWARE_VERSION;
 }
 
 /* ---------- SignalRGB protocol ---------- */

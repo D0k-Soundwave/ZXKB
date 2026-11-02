@@ -98,6 +98,7 @@ static Status parse_status(const uint8_t *p) {
     Status s;
     s.mode = p[5]; s.enabled = p[6]; s.val = p[7]; s.speed = p[8]; s.hue = p[9]; s.sat = p[10];
     s.max_val = p[11]; s.overlay = p[12]; s.vu_allowed = p[13]; s.vu_requested = p[14]; s.vu_possible = p[15];
+    s.fw_version = p[16];
     return s;
 }
 
