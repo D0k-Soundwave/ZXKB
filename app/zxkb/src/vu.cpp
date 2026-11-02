@@ -18,12 +18,15 @@ const IID   IID_Capture      = {0xC8ADBD64, 0xE71E, 0x48A0, {0xA4, 0xDE, 0x18, 0
 const GUID  SUBTYPE_FLOAT    = {0x00000003, 0x0000, 0x0010, {0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71}};
 const GUID  SUBTYPE_PCM      = {0x00000001, 0x0000, 0x0010, {0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71}};
 
-constexpr double   FPS               = 40;       // approved: levels sent to the keyboard at most 40 times a second
-constexpr DWORD    POLL_MS           = 10;       // WASAPI's shared-mode period is 10 ms; polling at that rate keeps up
-constexpr DWORD    RETRY_MS          = 2000;     // as the old app: wait 2 s after an audio error, then retry
-constexpr DWORD    DEVICE_CHECK_MS   = 2000;     // how often to notice a new default output device
-constexpr ULONGLONG SILENCE_AFTER_MS = 100;      // Windows sends nothing while nothing plays; after this, feed silence
-constexpr REFERENCE_TIME BUFFER_HNS  = 1000000;  // 100 ms capture buffer (10 polls of headroom)
+// [A] chosen by D0k by eye with ZX VU: levels sent to the keyboard at most 40 times a second
+constexpr double   FPS               = 40;
+// [P] Microsoft WASAPI documentation: the shared-mode device period is typically 10 ms (not checked on this PC)
+constexpr DWORD    POLL_MS           = 10;
+constexpr DWORD    RETRY_MS          = 2000;     // [A] from ZX VU: wait 2 s after an audio error, then retry
+constexpr DWORD    DEVICE_CHECK_MS   = 2000;     // [A] how soon a new default output device (e.g. headphones) is followed
+// [A] Windows sends nothing while nothing plays; after 100 ms (10 polls) without data, silence is fed instead
+constexpr ULONGLONG SILENCE_AFTER_MS = 100;
+constexpr REFERENCE_TIME BUFFER_HNS  = 1000000;  // [C] 100 ms capture buffer = 10 polls of 10 ms headroom
 
 template <class T> void release(T *&p) { if (p) { p->Release(); p = nullptr; } }
 
@@ -39,6 +42,7 @@ double qpc_seconds() {
 void VuMeter::start() {
     if (thread_) return;
     stop_ev_ = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    // [A] 256 KB stack reserved (not committed), for the audio system's own calls
     thread_  = CreateThread(nullptr, 256 * 1024, thread_main, this, STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
 }
 

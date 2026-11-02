@@ -105,7 +105,7 @@ static void vu_make_spans(void) {
 static bool VU_METER(effect_params_t* params) {
     RGB_MATRIX_USE_LIMITS(led_min, led_max);
     if (params->init) { for (uint8_t b = 0; b < 16; b++) zxkb_vu_levels[b] = 0; }
-    bool stale = timer_elapsed32(zxkb_vu_last_update) > 150;
+    bool stale = timer_elapsed32(zxkb_vu_last_update) > 150; // [A] from v9; [C] 6 missed updates at 40 per second
     if (stale && led_min == 0) { for (uint8_t b = 0; b < 16; b++) zxkb_vu_levels[b] = (zxkb_vu_levels[b] * 7) / 8; }
     uint8_t bar_level[3];
     for (uint8_t k = 0; k < 3; k++) {
@@ -182,7 +182,7 @@ static bool TYPING_RIPPLE(effect_params_t* params) {
         for (uint8_t r = 0; r < ZXKB_RIPPLES; r++) {
             if (zxkb_rip_led[r] == 0xFF) continue;
             uint32_t age = now - zxkb_rip_time[r];
-            if (age > 900) continue;
+            if (age > 900) continue;   // [A] from v9: a ripple lasts 0.9 s
             int16_t dx = x - g_led_config.point[zxkb_rip_led[r]].x, dy = (y - g_led_config.point[zxkb_rip_led[r]].y) * 2;
             uint16_t dist = (dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy);
             uint16_t radius = age * size / 512;                          // ring grows ~250 units per second at size 128
@@ -213,13 +213,13 @@ static bool LOGO_SWEEP(effect_params_t* params) {
 #ifdef RGB_MATRIX_KEYREACTIVE_ENABLED
 // Key explosion: each key press fires a small four-pointed star that spreads out from the key,
 // starts white-hot, drifts in colour (from the chosen colour onwards) and fades to black.
-// Speed sets how long a star lives: 0.5 s (fastest) to 1.5 s. Size sets how far it spreads (about 3 keys at
+// [A] chosen, not judged by eye yet: speed sets how long a star lives, 0.5 s (fastest) to 1.52 s. Size sets how far it spreads (about 3 keys at
 // 128), intensity how bright it is.
 static bool KEY_EXPLOSION(effect_params_t* params) {
     RGB_MATRIX_USE_LIMITS(led_min, led_max);
     uint16_t life  = 500 + (uint16_t)(255 - rgb_matrix_config.speed) * 4;
     uint8_t  count = g_last_hit_tracker.count;
-    uint16_t reach_max = 42 * (uint16_t)zxkb_size() / 128;                    // 42 units (about 3 keys) at size 128
+    uint16_t reach_max = 42 * (uint16_t)zxkb_size() / 128;  // [A] 42 units; [C] about 3 keys at the 13-unit key pitch
     uint8_t  intensity = zxkb_intensity();
     for (uint8_t i = led_min; i < led_max; i++) {
         RGB_MATRIX_TEST_LED_FLAGS();

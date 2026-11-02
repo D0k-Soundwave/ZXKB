@@ -37,10 +37,14 @@ enum : UINT {
 };
 constexpr UINT WM_TRAY      = WM_APP + 50;
 constexpr UINT TIMER_SAVE   = 1;
-constexpr UINT SAVE_DELAY_MS = 3000; // write settings to the keyboard 3 s after the last change, not on every click
-constexpr int  STEP         = 16;    // brightness, speed, size, intensity step: as QMK's own keys (RGB_MATRIX_VAL_STEP / SPD_STEP)
-constexpr int  TUNE_MIN     = 16;    // the keyboard keeps size and intensity within 16-255
-constexpr int  MAX_PROFILES = 100;   // menu id range per slot
+// [A] write settings to the keyboard 3 s after the last change, not on every click. Not measured: how many
+// EEPROM writes the keyboard's flash can take; the delay just groups a burst of clicks into one write.
+constexpr UINT SAVE_DELAY_MS = 3000;
+// [P] QMK quantum/rgb_matrix/rgb_matrix.h, master f5db962 (2026-10-29): RGB_MATRIX_VAL_STEP and SPD_STEP are 16,
+// the same steps the keyboard's own keys use. Size and intensity use it too, for consistency.
+constexpr int  STEP         = 16;
+constexpr int  TUNE_MIN     = 16;    // must match ZXKB_TUNE_MIN in the firmware (zxkb.h)
+constexpr int  MAX_PROFILES = 100;   // [A] menu id space per Fn slot; more profiles than this are not listed
 
 // Spectrum BRIGHT palette as QMK hue/saturation (with D0k's calibrated colour balance the pure hues match)
 struct Colour { const wchar_t *name; uint8_t hue, sat; };
@@ -302,7 +306,8 @@ void refresh_status() {
     DWORD start = GetTickCount();
     bool  status = false, tune = false;
     MSG   msg;
-    while (GetTickCount() - start < 150 && !(status && tune)) { // replies normally take a few ms
+    // [C] replies take about 5 ms (hidlink.cpp, measured); waiting up to 150 ms (30x) keeps the menu current
+    while (GetTickCount() - start < 150 && !(status && tune)) {
         if (PeekMessageW(&msg, g_hwnd, WM_ZX_STATUS, WM_ZX_TUNE, PM_REMOVE)) {
             status |= msg.message == WM_ZX_STATUS;
             tune |= msg.message == WM_ZX_TUNE;

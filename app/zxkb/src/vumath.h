@@ -9,8 +9,9 @@ enum VuStyle { VU_BANDS = 0, VU_ABC = 1, VU_MUSIC = 2 };
 
 class VuMath {
 public:
-    static constexpr int BLOCK = 1024; // frames per analysis block
-    static constexpr int BANDS = 16;
+    // [A] from ZX VU: 1024 frames per analysis block (10.7 ms at 96 kHz, 21.3 ms at 48 kHz) and 16 bands
+    static constexpr int BLOCK = 1024;
+    static constexpr int BANDS = 16; // [P] the keyboard's VU command carries 16 levels (0xD0, zxkb.h)
 
     // Call when the sample rate is known (or changes). Keeps the running levels.
     void setup(int rate);

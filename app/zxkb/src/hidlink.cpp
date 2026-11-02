@@ -11,9 +11,12 @@ extern "C" {
 }
 
 namespace {
-constexpr DWORD REPLY_TIMEOUT_MS = 300;  // a reply normally takes a few ms; a board that says nothing is not ZXKB
-constexpr DWORD WRITE_TIMEOUT_MS = 1000;
-constexpr int   OPEN_ATTEMPTS    = 5;    // a keyboard needs a moment after it appears before it answers
+// [M] 2026-11-02, Q3: probe read status, 59 names and 88 LED positions (70 round trips) in 308-342 ms.
+// [C] about 5 ms per reply (342 / 70); 300 ms is ~60x that, so a board that stays silent is not ZXKB.
+constexpr DWORD REPLY_TIMEOUT_MS = 300;
+constexpr DWORD WRITE_TIMEOUT_MS = 1000; // [A] a 32-byte write completes within one 1 ms USB poll; 1 s only catches a dead link
+// [A] not measured: how long a keyboard takes to answer after Windows announces it. 5 x 400 ms = 2 s of retries.
+constexpr int   OPEN_ATTEMPTS    = 5;
 constexpr DWORD OPEN_RETRY_MS    = 400;
 }
 
@@ -24,6 +27,7 @@ void HidLink::start(HWND notify) {
     read_ev_   = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     write_ev_  = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     InitializeCriticalSection(&write_lock_);
+    // [A] 64 KB stack reserved (not committed); the thread's largest locals are a few hundred bytes
     thread_ = CreateThread(nullptr, 64 * 1024, thread_main, this, STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
 }
 

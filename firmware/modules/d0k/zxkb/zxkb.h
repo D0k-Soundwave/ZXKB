@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 #define ZXKB_PROTOCOL_VERSION 2 /* 2: status has "VU possible" and is also sent unasked on changes */
-#define ZXKB_REPORT_SIZE      32 /* QMK raw HID report size (RAW_EPSIZE) */
+#define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
 #define ZXKB_CMD_VU_LEVELS 0xD0 /* [0xD0, 16 x level 0-255], no reply */
@@ -28,7 +28,8 @@
 #define ZXKB_TUNE_SIZE      0x01
 #define ZXKB_TUNE_INTENSITY 0x02
 
-/* Size and intensity: 128 = QMK's own size, 255 = full intensity. Both kept within 16-255. */
+/* Size and intensity: [C] 128 = QMK's own size (effects scale distance by 128 / size), 255 = full intensity.
+ * [A] both kept within 16-255 so a setting can never make an effect vanish. */
 #define ZXKB_TUNE_DEFAULT_SIZE      128
 #define ZXKB_TUNE_DEFAULT_INTENSITY 255
 #define ZXKB_TUNE_MIN               16
@@ -41,7 +42,9 @@ uint8_t zxkb_intensity(void);
 /* "PC lighting" overlays: shown instead of the keyboard's own effect while the PC keeps sending. */
 enum zxkb_overlay { ZXKB_OVERLAY_NONE = 0, ZXKB_OVERLAY_VU = 1, ZXKB_OVERLAY_DIRECT = 2 };
 
-/* Seconds without data from the PC before an overlay gives way to the keyboard's own effect. */
+/* Time without data from the PC before an overlay gives way to the keyboard's own effect.
+ * [A] kept from v11's VU timeout. M 2026-11-02: the overlay was off 6 s after data stopped. Stage 2's PC effects
+ * and SignalRGB depend on it: a PC that pauses for longer than this loses the keyboard. */
 #ifndef ZXKB_PC_TIMEOUT_MS
 #    define ZXKB_PC_TIMEOUT_MS 5000
 #endif
@@ -66,7 +69,7 @@ enum zxkb_overlay { ZXKB_OVERLAY_NONE = 0, ZXKB_OVERLAY_VU = 1, ZXKB_OVERLAY_DIR
 extern uint8_t  zxkb_vu_levels[16];
 extern uint32_t zxkb_vu_last_update;
 extern uint8_t  zxkb_direct[][3];
-#define ZXKB_RIPPLES 8
+#define ZXKB_RIPPLES 8 /* [A] from v9: typing ripple remembers the last 8 key presses */
 extern uint8_t  zxkb_rip_led[ZXKB_RIPPLES];
 extern uint8_t  zxkb_rip_col[ZXKB_RIPPLES];
 extern uint32_t zxkb_rip_time[ZXKB_RIPPLES];

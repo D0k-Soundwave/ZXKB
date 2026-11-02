@@ -5,7 +5,8 @@
 #include <cmath>
 
 namespace {
-// Tunables approved by D0k (same names and values as zx_vu.py)
+// Tunables approved by D0k (same names and values as zx_vu.py). [A] chosen by D0k by eye with ZX VU, on this PC
+// (96 kHz output, M 2026-11-02). They are preferences, not measurements; per-block values scale with the sample rate.
 constexpr double RANGE_DB    = 30;   // dynamic range shown across the keyboard; lower = longer bars
 constexpr double HEADROOM_DB = 9;    // bars reach the far right only when this much louder than the recent average
 constexpr double CURVE       = 1.7;  // >1 = more up-and-down movement

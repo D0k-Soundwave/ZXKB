@@ -9,7 +9,8 @@ Every firmware and app build handed to D0k gets a number. Released builds are ke
 
 How to release: raise `ZXKB_FIRMWARE_VERSION` (keymap `config.h`) or `ZXKB_VERSION_STR` (`app/zxkb/res/resource.h`),
 then `sh firmware/build.sh release` / `pwsh tools/install_app.ps1`. A kept number is never reused: both refuse to
-replace a kept version with different contents.
+replace a kept version with different contents. App builds are reproducible from 0.8 on (no build time in the exe); the kept 0.7 contains its build time, so a
+rebuild of 0.7 differs from it in that stamp only.
 
 Versioning started on 2026-11-02 with firmware v15 and app 0.7. Earlier builds were not kept; their source is in
 git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f8 to 0.6 8aaae7b).
