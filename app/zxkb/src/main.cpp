@@ -20,7 +20,8 @@ namespace {
 
 // ---------- menu command ids ----------
 enum : UINT {
-    ID_VU = 100, ID_STYLE_BANDS, ID_STYLE_ABC, ID_STYLE_MUSIC, ID_OFF, ID_BRIGHTER, ID_DIMMER, ID_FASTER, ID_SLOWER,
+    ID_STYLE_BANDS = 100, ID_STYLE_ABC, ID_STYLE_MUSIC, // VU styles: ID_STYLE_BANDS + VuStyle
+    ID_OFF, ID_BRIGHTER, ID_DIMMER, ID_FASTER, ID_SLOWER,
     ID_FAV_ADD, ID_FAV_REMOVE, ID_PROFILE_SAVE, ID_AUTOSTART, ID_QUIT, ID_BIGGER, ID_SMALLER, ID_STRONGER, ID_SOFTER,
     ID_EFFECT  = 1000, // + effect number (1-255)
     ID_FAV     = 1300, // + favourite index
@@ -69,10 +70,20 @@ int effect_number(const std::string &name) {
         if (g_board->names[i] == name) return (int)i + 1;
     return 0;
 }
+// The VU styles are listed with the effects. As favourites and hotkeys they are stored as "VU:bands" etc.
+const wchar_t *vu_label(int style) {
+    return style == VU_MUSIC ? L"VU meter: music (treble, mids, bass)"
+         : style == VU_ABC   ? L"VU meter: AY channels (Spectrum music)"
+                             : L"VU meter: frequency bands";
+}
+std::string vu_name(int style) { return "VU:" + settings::narrow(settings::vu_style_name(style)); }
+bool is_vu_name(const std::string &n) { return n.rfind("VU:", 0) == 0; }
+int  vu_style_of(const std::string &n) { return settings::vu_style_from(settings::widen(n.substr(3))); }
+std::wstring menu_name(const std::string &n) { return is_vu_name(n) ? vu_label(vu_style_of(n)) : effects::friendly(n); }
+
 std::wstring current_effect_text() {
     if (!g_board) return L"keyboard not connected";
-    if (g_vu_on)
-        return g_vu_style == VU_ABC ? L"VU meter (AY channels)" : g_vu_style == VU_MUSIC ? L"VU meter (music)" : L"VU meter (frequency bands)";
+    if (g_vu_on) return vu_label(g_vu_style);
     if (!g_st.enabled) return L"lighting off";
     return effects::friendly(effect_name(g_st.mode));
 }
@@ -204,10 +215,20 @@ void apply_profile(const std::wstring &name) {
     set_vu(p.vu);
 }
 
+void select_vu(int style) {
+    set_vu_style(style);
+    if (!g_vu_on) set_vu(true);
+}
+
+void select_by_name(const std::string &n) { // an effect or a VU style
+    if (is_vu_name(n)) select_vu(vu_style_of(n));
+    else if (int m = effect_number(n)) set_effect(m);
+}
+
 void apply_slot(int slot) { // slot 1-10
     const std::wstring &s = g_slots[slot - 1];
     if (s.rfind(L"effect:", 0) == 0) {
-        if (int m = effect_number(settings::narrow(s.substr(7)))) set_effect(m);
+        select_by_name(settings::narrow(s.substr(7)));
     } else if (s.rfind(L"profile:", 0) == 0) {
         apply_profile(s.substr(8));
     }
@@ -216,7 +237,7 @@ void apply_slot(int slot) { // slot 1-10
 std::wstring slot_text(int i) {
     const std::wstring &s = g_slots[i];
     std::wstring key = L"Fn+" + std::to_wstring((i + 1) % 10) + L": ";
-    if (s.rfind(L"effect:", 0) == 0) return key + effects::friendly(settings::narrow(s.substr(7)));
+    if (s.rfind(L"effect:", 0) == 0) return key + menu_name(settings::narrow(s.substr(7)));
     if (s.rfind(L"profile:", 0) == 0) return key + L"profile " + s.substr(8);
     return key + L"(not set)";
 }
@@ -300,8 +321,9 @@ bool replaced(size_t i) {
 void show_menu() {
     refresh_status();
     bool on = g_board != nullptr;
-    bool fx = on && !g_vu_on && g_st.enabled; // an effect is showing
-    std::string cur = fx ? effect_name(g_st.mode) : "";
+    bool fx      = on && !g_vu_on && g_st.enabled; // a keyboard effect is showing (not the VU meter)
+    bool showing = fx || (on && g_vu_on);          // an effect or a VU style is showing
+    std::string cur = !showing ? "" : g_vu_on ? vu_name(g_vu_style) : effect_name(g_st.mode);
     std::vector<std::wstring> profiles = settings::profile_names();
     if (profiles.size() > MAX_PROFILES) profiles.resize(MAX_PROFILES);
 
@@ -309,16 +331,14 @@ void show_menu() {
     if (!on) { add(menu, 0, L"Keyboard not connected", false, false); sep(menu); }
     else { add(menu, 0, L"Now: " + current_effect_text(), false, false); sep(menu); }
 
-    add(menu, ID_VU, L"VU meter on keyboard", g_vu_on, on);
-    add(menu, ID_STYLE_MUSIC, L"Music: treble top, mids middle, bass bottom", g_vu_style == VU_MUSIC, true, true);
-    add(menu, ID_STYLE_BANDS, L"Frequency bands (bass bottom, treble top)", g_vu_style == VU_BANDS, true, true);
-    add(menu, ID_STYLE_ABC, L"AY channels (ACB) for Spectrum music: A top, B middle, C bottom", g_vu_style == VU_ABC, true, true);
-    sep(menu);
-
     // effects, grouped
     HMENU fxm = CreatePopupMenu();
     if (on) {
         add(fxm, ID_OFF, L"Lighting off", !g_vu_on && !g_st.enabled, true, true);
+        HMENU vu = CreatePopupMenu(); // the audio VU meter, one entry per style
+        const int order[3] = {VU_MUSIC, VU_BANDS, VU_ABC};
+        for (int s : order) add(vu, ID_STYLE_BANDS + s, vu_label(s), g_vu_on && g_vu_style == s, true, true);
+        add_sub(fxm, vu, L"VU meter");
         HMENU groups[effects::GROUP_COUNT] = {};
         for (size_t i = 0; i < g_board->names.size(); i++) {
             effects::Group gr = effects::group(g_board->names[i], g_board->kinds[i]);
@@ -335,17 +355,16 @@ void show_menu() {
     HMENU fav = CreatePopupMenu();
     bool any_fav = false;
     for (size_t i = 0; i < g_favs.size(); i++) {
-        int m = effect_number(g_favs[i]);
-        if (!m) continue;
-        add(fav, ID_FAV + (UINT)i, effects::friendly(g_favs[i]), fx && g_st.mode == m, true, true);
+        if (!is_vu_name(g_favs[i]) && !effect_number(g_favs[i])) continue; // not on this keyboard
+        add(fav, ID_FAV + (UINT)i, menu_name(g_favs[i]), g_favs[i] == cur, true, true);
         any_fav = true;
     }
     if (!any_fav) add(fav, 0, L"(none yet)", false, false);
     sep(fav);
     bool is_fav = false;
     for (const std::string &f : g_favs) is_fav |= f == cur;
-    if (is_fav) add(fav, ID_FAV_REMOVE, L"Remove " + effects::friendly(cur) + L" from favourites", false, fx);
-    else add(fav, ID_FAV_ADD, fx ? L"Add " + effects::friendly(cur) + L" to favourites" : L"Add current effect to favourites", false, fx);
+    if (is_fav) add(fav, ID_FAV_REMOVE, L"Remove " + menu_name(cur) + L" from favourites", false, showing);
+    else add(fav, ID_FAV_ADD, showing ? L"Add " + menu_name(cur) + L" to favourites" : L"Add current effect to favourites", false, showing);
     add_sub(menu, fav, L"Favourites", on);
 
     // effect settings
@@ -385,7 +404,7 @@ void show_menu() {
     HMENU keys = CreatePopupMenu();
     for (int s = 0; s < 10; s++) {
         HMENU k = CreatePopupMenu();
-        add(k, ID_SLOT_FX + s, fx ? L"Current effect (" + effects::friendly(cur) + L")" : L"Current effect", false, fx);
+        add(k, ID_SLOT_FX + s, showing ? L"Current effect (" + menu_name(cur) + L")" : L"Current effect", false, showing);
         for (size_t i = 0; i < profiles.size(); i++)
             add(k, ID_SLOT_PRO + s * MAX_PROFILES + (UINT)i, L"Profile " + profiles[i], g_slots[s] == L"profile:" + profiles[i]);
         sep(k);
@@ -405,10 +424,7 @@ void show_menu() {
     PostMessageW(g_hwnd, WM_NULL, 0, 0);
     if (!cmd) return;
 
-    if (cmd == ID_VU) set_vu(!g_vu_on);
-    else if (cmd == ID_STYLE_BANDS) set_vu_style(VU_BANDS);
-    else if (cmd == ID_STYLE_ABC) set_vu_style(VU_ABC);
-    else if (cmd == ID_STYLE_MUSIC) set_vu_style(VU_MUSIC);
+    if (cmd >= ID_STYLE_BANDS && cmd <= ID_STYLE_MUSIC) select_vu((int)(cmd - ID_STYLE_BANDS));
     else if (cmd == ID_OFF) set_effect(0);
     else if (cmd == ID_BRIGHTER) set_brightness(g_st.val + STEP);
     else if (cmd == ID_DIMMER) set_brightness(g_st.val - STEP);
@@ -444,7 +460,7 @@ void show_menu() {
         }
     } else if (cmd >= ID_PLOAD) apply_profile(profiles[cmd - ID_PLOAD]);
     else if (cmd >= ID_COLOUR) set_colour(colours[cmd - ID_COLOUR].hue, colours[cmd - ID_COLOUR].sat);
-    else if (cmd >= ID_FAV) { if (int m = effect_number(g_favs[cmd - ID_FAV])) set_effect(m); }
+    else if (cmd >= ID_FAV) select_by_name(g_favs[cmd - ID_FAV]);
     else if (cmd >= ID_EFFECT) set_effect((int)(cmd - ID_EFFECT));
 }
 
