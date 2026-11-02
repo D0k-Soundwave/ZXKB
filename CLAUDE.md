@@ -26,6 +26,11 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   in the QMK MSYS shell; it sets `user.overlay_dir`, builds, and copies the .bin to `build/`. Nothing is copied
   into qmk_firmware. QMK MSYS also has g++ and make (MINGW64) for the app.
 
+## Keyboard reference
+- `docs/keyboard/keycaps.json|md|png`: which Wraith cap sits on every physical key (legends, cap colour, position).
+- `docs/keyboard/layout.json|md`: physical layout, LED index (88 LEDs, Caps Lock 49), QMK keycode on all 4 layers, function in Windows / Spectrum / MiSTer core / Fn. Pictures: `windows.png`, `fn.png`, `spectrum.png`.
+- Regenerate after keymap changes: `python tools/gen_keyboard_docs.py firmware/keymaps/d0k/keymap.c docs/keyboard` (HTML pictures; render to PNG with Playwright).
+
 ## Colour calibration (done 2026-11-02, by eye against the true Spectrum BRIGHT palette)
 - Root cause found: Keychron ships SNLED27351 current tune red 0x44 (68), green/blue 0x9D (157),
   which starves red: no real white or yellow. Tune register i drives CB(i+1); on this board

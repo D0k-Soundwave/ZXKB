@@ -1,0 +1,900 @@
+{
+ "board": "Keychron Q3 UK ISO with knob (keychron/q3/iso_encoder)",
+ "keycaps": "KAM Wraith ZX Spectrum, grey and black sets mixed",
+ "units": "x/y/w in key units (1u = one standard key)",
+ "keys": [
+  {
+   "id": "esc",
+   "x": 0,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "ESC",
+   "sub": "EJECT",
+   "keyword": ""
+  },
+  {
+   "id": "f1",
+   "x": 2,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F1",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f2",
+   "x": 3,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F2",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f3",
+   "x": 4,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F3",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f4",
+   "x": 5,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F4",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f5",
+   "x": 6.5,
+   "y": 0,
+   "w": 1,
+   "cap": "light grey (F5-F8)",
+   "main": "F5",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f6",
+   "x": 7.5,
+   "y": 0,
+   "w": 1,
+   "cap": "light grey (F5-F8)",
+   "main": "F6",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f7",
+   "x": 8.5,
+   "y": 0,
+   "w": 1,
+   "cap": "light grey (F5-F8)",
+   "main": "F7",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f8",
+   "x": 9.5,
+   "y": 0,
+   "w": 1,
+   "cap": "light grey (F5-F8)",
+   "main": "F8",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f9",
+   "x": 11,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F9",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f10",
+   "x": 12,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F10",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f11",
+   "x": 13,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F11",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "f12",
+   "x": 14,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "F12",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "prt",
+   "x": 16.25,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "PRINT",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "scr",
+   "x": 17.25,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "LOCK",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "pau",
+   "x": 18.25,
+   "y": 0,
+   "w": 1,
+   "cap": "grey",
+   "main": "PAUSE",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "grv",
+   "x": 0,
+   "y": 1.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "`",
+   "sub": "~",
+   "keyword": ""
+  },
+  {
+   "id": "n1",
+   "x": 1,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "1",
+   "sub": "!",
+   "keyword": ""
+  },
+  {
+   "id": "n2",
+   "x": 2,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "2",
+   "sub": "@",
+   "keyword": ""
+  },
+  {
+   "id": "n3",
+   "x": 3,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "3",
+   "sub": "#",
+   "keyword": ""
+  },
+  {
+   "id": "n4",
+   "x": 4,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "4",
+   "sub": "$",
+   "keyword": ""
+  },
+  {
+   "id": "n5",
+   "x": 5,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "5",
+   "sub": "%",
+   "keyword": ""
+  },
+  {
+   "id": "n6",
+   "x": 6,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "6",
+   "sub": "^",
+   "keyword": ""
+  },
+  {
+   "id": "n7",
+   "x": 7,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "7",
+   "sub": "&",
+   "keyword": ""
+  },
+  {
+   "id": "n8",
+   "x": 8,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "8",
+   "sub": "*",
+   "keyword": ""
+  },
+  {
+   "id": "n9",
+   "x": 9,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "9",
+   "sub": "(",
+   "keyword": ""
+  },
+  {
+   "id": "n0",
+   "x": 10,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "0",
+   "sub": ")",
+   "keyword": ""
+  },
+  {
+   "id": "min",
+   "x": 11,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "-",
+   "sub": "_",
+   "keyword": ""
+  },
+  {
+   "id": "eq",
+   "x": 12,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "=",
+   "sub": "+",
+   "keyword": ""
+  },
+  {
+   "id": "bks",
+   "x": 13,
+   "y": 1.25,
+   "w": 2,
+   "cap": "grey",
+   "main": "DELETE",
+   "sub": "FORMAT",
+   "keyword": ""
+  },
+  {
+   "id": "ins",
+   "x": 16.25,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "BLUE",
+   "sub": "",
+   "keyword": "EDIT"
+  },
+  {
+   "id": "hom",
+   "x": 17.25,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "RED",
+   "sub": "",
+   "keyword": "LOCK"
+  },
+  {
+   "id": "pgu",
+   "x": 18.25,
+   "y": 1.25,
+   "w": 1,
+   "cap": "black",
+   "main": "MAG",
+   "sub": "",
+   "keyword": "TR.VID"
+  },
+  {
+   "id": "tab",
+   "x": 0,
+   "y": 2.25,
+   "w": 1.5,
+   "cap": "grey",
+   "main": "TAB",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "q",
+   "x": 1.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "Q",
+   "sub": "",
+   "keyword": "PLOT"
+  },
+  {
+   "id": "w",
+   "x": 2.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "W",
+   "sub": "",
+   "keyword": "DRAW"
+  },
+  {
+   "id": "e",
+   "x": 3.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "E",
+   "sub": "",
+   "keyword": "REM"
+  },
+  {
+   "id": "r",
+   "x": 4.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "R",
+   "sub": "",
+   "keyword": "RUN"
+  },
+  {
+   "id": "t",
+   "x": 5.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "T",
+   "sub": "",
+   "keyword": "RAND"
+  },
+  {
+   "id": "y",
+   "x": 6.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "Y",
+   "sub": "",
+   "keyword": "RETURN"
+  },
+  {
+   "id": "u",
+   "x": 7.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "U",
+   "sub": "",
+   "keyword": "IF"
+  },
+  {
+   "id": "i",
+   "x": 8.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "I",
+   "sub": "",
+   "keyword": "INPUT"
+  },
+  {
+   "id": "o",
+   "x": 9.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "O",
+   "sub": "",
+   "keyword": "POKE"
+  },
+  {
+   "id": "p",
+   "x": 10.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "P",
+   "sub": "",
+   "keyword": "PRINT"
+  },
+  {
+   "id": "lbr",
+   "x": 11.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "[",
+   "sub": "{",
+   "keyword": ""
+  },
+  {
+   "id": "rbr",
+   "x": 12.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "]",
+   "sub": "}",
+   "keyword": ""
+  },
+  {
+   "id": "del",
+   "x": 16.25,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "GREEN",
+   "sub": "",
+   "keyword": "INV.VID"
+  },
+  {
+   "id": "end",
+   "x": 17.25,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "GRAPH",
+   "sub": "CAT",
+   "keyword": ""
+  },
+  {
+   "id": "pgd",
+   "x": 18.25,
+   "y": 2.25,
+   "w": 1,
+   "cap": "black",
+   "main": "BLACK",
+   "sub": "",
+   "keyword": "DELETE"
+  },
+  {
+   "id": "cap",
+   "x": 0,
+   "y": 3.25,
+   "w": 1.75,
+   "cap": "grey",
+   "main": "CAPS LOCK",
+   "sub": "FN",
+   "keyword": ""
+  },
+  {
+   "id": "a",
+   "x": 1.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "A",
+   "sub": "",
+   "keyword": "NEW"
+  },
+  {
+   "id": "s",
+   "x": 2.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "S",
+   "sub": "",
+   "keyword": "SAVE"
+  },
+  {
+   "id": "d",
+   "x": 3.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "D",
+   "sub": "",
+   "keyword": "DIM"
+  },
+  {
+   "id": "f",
+   "x": 4.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "F",
+   "sub": "",
+   "keyword": "FOR"
+  },
+  {
+   "id": "g",
+   "x": 5.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "G",
+   "sub": "",
+   "keyword": "GOTO"
+  },
+  {
+   "id": "h",
+   "x": 6.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "H",
+   "sub": "",
+   "keyword": "GOSUB"
+  },
+  {
+   "id": "j",
+   "x": 7.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "J",
+   "sub": "",
+   "keyword": "LOAD"
+  },
+  {
+   "id": "k",
+   "x": 8.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "K",
+   "sub": "",
+   "keyword": "LIST"
+  },
+  {
+   "id": "l",
+   "x": 9.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "L",
+   "sub": "",
+   "keyword": "LET"
+  },
+  {
+   "id": "sem",
+   "x": 10.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": ";",
+   "sub": ":",
+   "keyword": ""
+  },
+  {
+   "id": "quo",
+   "x": 11.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "'",
+   "sub": "\"",
+   "keyword": ""
+  },
+  {
+   "id": "hsh",
+   "x": 12.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "black",
+   "main": "\\",
+   "sub": "|",
+   "keyword": ""
+  },
+  {
+   "id": "lsh",
+   "x": 0,
+   "y": 4.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "CAPS",
+   "sub": "",
+   "keyword": "SHIFT"
+  },
+  {
+   "id": "iso",
+   "x": 1.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "\\",
+   "sub": "|",
+   "keyword": ""
+  },
+  {
+   "id": "z",
+   "x": 2.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "Z",
+   "sub": "",
+   "keyword": "COPY"
+  },
+  {
+   "id": "x",
+   "x": 3.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "X",
+   "sub": "",
+   "keyword": "CLEAR"
+  },
+  {
+   "id": "c",
+   "x": 4.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "C",
+   "sub": "",
+   "keyword": "COUNT"
+  },
+  {
+   "id": "v",
+   "x": 5.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "V",
+   "sub": "",
+   "keyword": "CLS"
+  },
+  {
+   "id": "b",
+   "x": 6.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "B",
+   "sub": "",
+   "keyword": "BORDER"
+  },
+  {
+   "id": "n",
+   "x": 7.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "N",
+   "sub": "",
+   "keyword": "NEXT"
+  },
+  {
+   "id": "m",
+   "x": 8.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "M",
+   "sub": "",
+   "keyword": "PAUSE"
+  },
+  {
+   "id": "com",
+   "x": 9.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": ",",
+   "sub": "<",
+   "keyword": ""
+  },
+  {
+   "id": "dot",
+   "x": 10.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": ".",
+   "sub": ">",
+   "keyword": ""
+  },
+  {
+   "id": "sl",
+   "x": 11.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "black",
+   "main": "/",
+   "sub": "?",
+   "keyword": ""
+  },
+  {
+   "id": "rsh",
+   "x": 12.25,
+   "y": 4.25,
+   "w": 2.75,
+   "cap": "grey",
+   "main": "",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "up",
+   "x": 17.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "⇧",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "lct",
+   "x": 0,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "PEEK",
+   "sub": "OUT",
+   "keyword": ""
+  },
+  {
+   "id": "lwn",
+   "x": 1.25,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "CODE",
+   "sub": "IN",
+   "keyword": ""
+  },
+  {
+   "id": "lal",
+   "x": 2.5,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "RND",
+   "sub": "MERGE",
+   "keyword": ""
+  },
+  {
+   "id": "spc",
+   "x": 3.75,
+   "y": 5.25,
+   "w": 6.25,
+   "cap": "grey",
+   "main": "",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "ral",
+   "x": 10,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "RND",
+   "sub": "MERGE",
+   "keyword": ""
+  },
+  {
+   "id": "rwn",
+   "x": 11.25,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "CODE",
+   "sub": "IN",
+   "keyword": ""
+  },
+  {
+   "id": "fn",
+   "x": 12.5,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "EDIT",
+   "sub": "DEF FN",
+   "keyword": ""
+  },
+  {
+   "id": "rct",
+   "x": 13.75,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "grey",
+   "main": "PEEK",
+   "sub": "OUT",
+   "keyword": ""
+  },
+  {
+   "id": "lft",
+   "x": 16.25,
+   "y": 5.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "⇦",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "dn",
+   "x": 17.25,
+   "y": 5.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "⇩",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "rt",
+   "x": 18.25,
+   "y": 5.25,
+   "w": 1,
+   "cap": "grey",
+   "main": "⇨",
+   "sub": "",
+   "keyword": ""
+  },
+  {
+   "id": "ent",
+   "x": 13.5,
+   "y": 2.25,
+   "w": 1.5,
+   "h": 2,
+   "cap": "grey",
+   "main": "ENTER",
+   "sub": "",
+   "keyword": "",
+   "note": "ISO Enter (2 rows tall)"
+  },
+  {
+   "id": "knob",
+   "x": 15.12,
+   "y": 0,
+   "w": 1,
+   "cap": "Keychron knob",
+   "main": "KNOB",
+   "sub": "",
+   "keyword": "",
+   "note": "rotary encoder, no LED"
+  }
+ ]
+}

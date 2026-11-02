@@ -1,0 +1,1563 @@
+{
+ "board": "Keychron Q3 UK ISO with knob",
+ "led_count": 88,
+ "caps_lock_led": 49,
+ "layers": {
+  "0 SPEC_BASE": "Spectrum mode (side switch on Mac)",
+  "1 SPEC_FN": "Fn in Spectrum mode",
+  "2 WIN_BASE": "Windows mode (side switch on Windows)",
+  "3 WIN_FN": "Fn in Windows mode"
+ },
+ "knob_turn": {
+  "SPEC_BASE": "KC_LEFT, KC_RGHT",
+  "SPEC_FN": "RM_VALD, RM_VALU",
+  "WIN_BASE": "KC_VOLD, KC_VOLU",
+  "WIN_FN": "RM_VALD, RM_VALU"
+ },
+ "keys": [
+  {
+   "id": "esc",
+   "x": 0,
+   "y": 0,
+   "w": 1,
+   "cap": "ESC / EJECT",
+   "led": 0,
+   "keycodes": {
+    "SPEC_BASE": "KC_ESC",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_ESC",
+    "WIN_FN": "_______"
+   },
+   "windows": "Esc",
+   "spectrum": "Esc",
+   "fn": "",
+   "spectrum_core": "BREAK"
+  },
+  {
+   "id": "f1",
+   "x": 2,
+   "y": 0,
+   "w": 1,
+   "cap": "F1",
+   "led": 1,
+   "keycodes": {
+    "SPEC_BASE": "KC_F1",
+    "SPEC_FN": "KC_BRID",
+    "WIN_BASE": "KC_F1",
+    "WIN_FN": "KC_BRID"
+   },
+   "windows": "F1",
+   "spectrum": "F1",
+   "fn": "Screen brightness down",
+   "spectrum_core": "Tape pause"
+  },
+  {
+   "id": "f2",
+   "x": 3,
+   "y": 0,
+   "w": 1,
+   "cap": "F2",
+   "led": 2,
+   "keycodes": {
+    "SPEC_BASE": "KC_F2",
+    "SPEC_FN": "KC_BRIU",
+    "WIN_BASE": "KC_F2",
+    "WIN_FN": "KC_BRIU"
+   },
+   "windows": "F2",
+   "spectrum": "F2",
+   "fn": "Screen brightness up",
+   "spectrum_core": "Tape previous part"
+  },
+  {
+   "id": "f3",
+   "x": 4,
+   "y": 0,
+   "w": 1,
+   "cap": "F3",
+   "led": 3,
+   "keycodes": {
+    "SPEC_BASE": "KC_F3",
+    "SPEC_FN": "KC_NO",
+    "WIN_BASE": "KC_F3",
+    "WIN_FN": "KC_NO"
+   },
+   "windows": "F3",
+   "spectrum": "F3",
+   "fn": "(nothing)",
+   "spectrum_core": "Tape next part"
+  },
+  {
+   "id": "f4",
+   "x": 5,
+   "y": 0,
+   "w": 1,
+   "cap": "F4",
+   "led": 4,
+   "keycodes": {
+    "SPEC_BASE": "KC_F4",
+    "SPEC_FN": "KC_NO",
+    "WIN_BASE": "KC_F4",
+    "WIN_FN": "KC_NO"
+   },
+   "windows": "F4",
+   "spectrum": "F4",
+   "fn": "(nothing)",
+   "spectrum_core": "CPU 3.5 MHz"
+  },
+  {
+   "id": "f5",
+   "x": 6.5,
+   "y": 0,
+   "w": 1,
+   "cap": "F5",
+   "led": 5,
+   "keycodes": {
+    "SPEC_BASE": "KC_F5",
+    "SPEC_FN": "RM_VALD",
+    "WIN_BASE": "KC_F5",
+    "WIN_FN": "RM_VALD"
+   },
+   "windows": "F5",
+   "spectrum": "F5",
+   "fn": "Lights dimmer",
+   "spectrum_core": "CPU 7 MHz"
+  },
+  {
+   "id": "f6",
+   "x": 7.5,
+   "y": 0,
+   "w": 1,
+   "cap": "F6",
+   "led": 6,
+   "keycodes": {
+    "SPEC_BASE": "KC_F6",
+    "SPEC_FN": "RM_VALU",
+    "WIN_BASE": "KC_F6",
+    "WIN_FN": "RM_VALU"
+   },
+   "windows": "F6",
+   "spectrum": "F6",
+   "fn": "Lights brighter",
+   "spectrum_core": "CPU 14 MHz"
+  },
+  {
+   "id": "f7",
+   "x": 8.5,
+   "y": 0,
+   "w": 1,
+   "cap": "F7",
+   "led": 7,
+   "keycodes": {
+    "SPEC_BASE": "KC_F7",
+    "SPEC_FN": "KC_MPRV",
+    "WIN_BASE": "KC_F7",
+    "WIN_FN": "KC_MPRV"
+   },
+   "windows": "F7",
+   "spectrum": "F7",
+   "fn": "Previous track",
+   "spectrum_core": "CPU 28 MHz"
+  },
+  {
+   "id": "f8",
+   "x": 9.5,
+   "y": 0,
+   "w": 1,
+   "cap": "F8",
+   "led": 8,
+   "keycodes": {
+    "SPEC_BASE": "KC_F8",
+    "SPEC_FN": "KC_MPLY",
+    "WIN_BASE": "KC_F8",
+    "WIN_FN": "KC_MPLY"
+   },
+   "windows": "F8",
+   "spectrum": "F8",
+   "fn": "Play/Pause",
+   "spectrum_core": "CPU 56 MHz"
+  },
+  {
+   "id": "f9",
+   "x": 11,
+   "y": 0,
+   "w": 1,
+   "cap": "F9",
+   "led": 9,
+   "keycodes": {
+    "SPEC_BASE": "KC_F9",
+    "SPEC_FN": "KC_MNXT",
+    "WIN_BASE": "KC_F9",
+    "WIN_FN": "KC_MNXT"
+   },
+   "windows": "F9",
+   "spectrum": "F9",
+   "fn": "Next track",
+   "spectrum_core": "Pause / continue"
+  },
+  {
+   "id": "f10",
+   "x": 12,
+   "y": 0,
+   "w": 1,
+   "cap": "F10",
+   "led": 10,
+   "keycodes": {
+    "SPEC_BASE": "KC_F10",
+    "SPEC_FN": "KC_MUTE",
+    "WIN_BASE": "KC_F10",
+    "WIN_FN": "KC_MUTE"
+   },
+   "windows": "F10",
+   "spectrum": "F10",
+   "fn": "Mute",
+   "spectrum_core": "48K BASIC"
+  },
+  {
+   "id": "f11",
+   "x": 13,
+   "y": 0,
+   "w": 1,
+   "cap": "F11",
+   "led": 11,
+   "keycodes": {
+    "SPEC_BASE": "KC_F11",
+    "SPEC_FN": "KC_VOLD",
+    "WIN_BASE": "KC_F11",
+    "WIN_FN": "KC_VOLD"
+   },
+   "windows": "F11",
+   "spectrum": "F11",
+   "fn": "Volume down",
+   "spectrum_core": "+D snapshot / file browser"
+  },
+  {
+   "id": "f12",
+   "x": 14,
+   "y": 0,
+   "w": 1,
+   "cap": "F12",
+   "led": 12,
+   "keycodes": {
+    "SPEC_BASE": "KC_F12",
+    "SPEC_FN": "KC_VOLU",
+    "WIN_BASE": "KC_F12",
+    "WIN_FN": "KC_VOLU"
+   },
+   "windows": "F12",
+   "spectrum": "F12",
+   "fn": "Volume up",
+   "spectrum_core": "MiSTer OSD menu"
+  },
+  {
+   "id": "knob",
+   "x": 15.12,
+   "y": 0,
+   "w": 1,
+   "cap": "KNOB",
+   "led": null,
+   "keycodes": {
+    "SPEC_BASE": "KC_MUTE",
+    "SPEC_FN": "RM_TOGG",
+    "WIN_BASE": "KC_MUTE",
+    "WIN_FN": "RM_TOGG"
+   },
+   "windows": "Mute",
+   "spectrum": "Mute",
+   "fn": "Lights on/off"
+  },
+  {
+   "id": "prt",
+   "x": 16.25,
+   "y": 0,
+   "w": 1,
+   "cap": "PRINT",
+   "led": 13,
+   "keycodes": {
+    "SPEC_BASE": "KC_F11",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_PSCR",
+    "WIN_FN": "_______"
+   },
+   "windows": "Print Screen",
+   "spectrum": "F11",
+   "fn": "",
+   "spectrum_core": "+D snapshot / file browser (F11)"
+  },
+  {
+   "id": "scr",
+   "x": 17.25,
+   "y": 0,
+   "w": 1,
+   "cap": "LOCK",
+   "led": 14,
+   "keycodes": {
+    "SPEC_BASE": "KC_F12",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_SCRL",
+    "WIN_FN": "_______"
+   },
+   "windows": "Scroll Lock",
+   "spectrum": "F12",
+   "fn": "",
+   "spectrum_core": "MiSTer OSD menu (F12)"
+  },
+  {
+   "id": "pau",
+   "x": 18.25,
+   "y": 0,
+   "w": 1,
+   "cap": "PAUSE",
+   "led": 15,
+   "keycodes": {
+    "SPEC_BASE": "KC_F9",
+    "SPEC_FN": "RM_NEXT",
+    "WIN_BASE": "KC_PAUS",
+    "WIN_FN": "RM_NEXT"
+   },
+   "windows": "Pause",
+   "spectrum": "F9",
+   "fn": "Next effect",
+   "spectrum_core": "Pause / continue (F9)"
+  },
+  {
+   "id": "grv",
+   "x": 0,
+   "y": 1.25,
+   "w": 1,
+   "cap": "` / ~",
+   "led": 16,
+   "keycodes": {
+    "SPEC_BASE": "KC_GRV",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_GRV",
+    "WIN_FN": "_______"
+   },
+   "windows": "` ~",
+   "spectrum": "` ~",
+   "fn": ""
+  },
+  {
+   "id": "n1",
+   "x": 1,
+   "y": 1.25,
+   "w": 1,
+   "cap": "1 / !",
+   "led": 17,
+   "keycodes": {
+    "SPEC_BASE": "KC_1",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_1",
+    "WIN_FN": "_______"
+   },
+   "windows": "1",
+   "spectrum": "1",
+   "fn": ""
+  },
+  {
+   "id": "n2",
+   "x": 2,
+   "y": 1.25,
+   "w": 1,
+   "cap": "2 / @",
+   "led": 18,
+   "keycodes": {
+    "SPEC_BASE": "KC_2",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_2",
+    "WIN_FN": "_______"
+   },
+   "windows": "2",
+   "spectrum": "2",
+   "fn": ""
+  },
+  {
+   "id": "n3",
+   "x": 3,
+   "y": 1.25,
+   "w": 1,
+   "cap": "3 / #",
+   "led": 19,
+   "keycodes": {
+    "SPEC_BASE": "KC_3",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_3",
+    "WIN_FN": "_______"
+   },
+   "windows": "3",
+   "spectrum": "3",
+   "fn": ""
+  },
+  {
+   "id": "n4",
+   "x": 4,
+   "y": 1.25,
+   "w": 1,
+   "cap": "4 / $",
+   "led": 20,
+   "keycodes": {
+    "SPEC_BASE": "KC_4",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_4",
+    "WIN_FN": "_______"
+   },
+   "windows": "4",
+   "spectrum": "4",
+   "fn": ""
+  },
+  {
+   "id": "n5",
+   "x": 5,
+   "y": 1.25,
+   "w": 1,
+   "cap": "5 / %",
+   "led": 21,
+   "keycodes": {
+    "SPEC_BASE": "KC_5",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_5",
+    "WIN_FN": "_______"
+   },
+   "windows": "5",
+   "spectrum": "5",
+   "fn": ""
+  },
+  {
+   "id": "n6",
+   "x": 6,
+   "y": 1.25,
+   "w": 1,
+   "cap": "6 / ^",
+   "led": 22,
+   "keycodes": {
+    "SPEC_BASE": "KC_6",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_6",
+    "WIN_FN": "_______"
+   },
+   "windows": "6",
+   "spectrum": "6",
+   "fn": ""
+  },
+  {
+   "id": "n7",
+   "x": 7,
+   "y": 1.25,
+   "w": 1,
+   "cap": "7 / &",
+   "led": 23,
+   "keycodes": {
+    "SPEC_BASE": "KC_7",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_7",
+    "WIN_FN": "_______"
+   },
+   "windows": "7",
+   "spectrum": "7",
+   "fn": ""
+  },
+  {
+   "id": "n8",
+   "x": 8,
+   "y": 1.25,
+   "w": 1,
+   "cap": "8 / *",
+   "led": 24,
+   "keycodes": {
+    "SPEC_BASE": "KC_8",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_8",
+    "WIN_FN": "_______"
+   },
+   "windows": "8",
+   "spectrum": "8",
+   "fn": ""
+  },
+  {
+   "id": "n9",
+   "x": 9,
+   "y": 1.25,
+   "w": 1,
+   "cap": "9 / (",
+   "led": 25,
+   "keycodes": {
+    "SPEC_BASE": "KC_9",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_9",
+    "WIN_FN": "_______"
+   },
+   "windows": "9",
+   "spectrum": "9",
+   "fn": ""
+  },
+  {
+   "id": "n0",
+   "x": 10,
+   "y": 1.25,
+   "w": 1,
+   "cap": "0 / )",
+   "led": 26,
+   "keycodes": {
+    "SPEC_BASE": "KC_0",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_0",
+    "WIN_FN": "_______"
+   },
+   "windows": "0",
+   "spectrum": "0",
+   "fn": ""
+  },
+  {
+   "id": "min",
+   "x": 11,
+   "y": 1.25,
+   "w": 1,
+   "cap": "- / _",
+   "led": 27,
+   "keycodes": {
+    "SPEC_BASE": "KC_MINS",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_MINS",
+    "WIN_FN": "_______"
+   },
+   "windows": "- _",
+   "spectrum": "- _",
+   "fn": ""
+  },
+  {
+   "id": "eq",
+   "x": 12,
+   "y": 1.25,
+   "w": 1,
+   "cap": "= / +",
+   "led": 28,
+   "keycodes": {
+    "SPEC_BASE": "KC_EQL",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_EQL",
+    "WIN_FN": "_______"
+   },
+   "windows": "= +",
+   "spectrum": "= +",
+   "fn": ""
+  },
+  {
+   "id": "bks",
+   "x": 13,
+   "y": 1.25,
+   "w": 2,
+   "cap": "DELETE / FORMAT",
+   "led": 29,
+   "keycodes": {
+    "SPEC_BASE": "KC_BSPC",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_BSPC",
+    "WIN_FN": "_______"
+   },
+   "windows": "Backspace",
+   "spectrum": "Backspace",
+   "fn": "",
+   "spectrum_core": "DELETE"
+  },
+  {
+   "id": "ins",
+   "x": 16.25,
+   "y": 1.25,
+   "w": 1,
+   "cap": "BLUE / EDIT",
+   "led": 30,
+   "keycodes": {
+    "SPEC_BASE": "S(KC_1)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_INS",
+    "WIN_FN": "_______"
+   },
+   "windows": "Insert",
+   "spectrum": "Shift+1 (Spectrum EDIT)",
+   "fn": ""
+  },
+  {
+   "id": "hom",
+   "x": 17.25,
+   "y": 1.25,
+   "w": 1,
+   "cap": "RED / LOCK",
+   "led": 31,
+   "keycodes": {
+    "SPEC_BASE": "S(KC_2)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_HOME",
+    "WIN_FN": "_______"
+   },
+   "windows": "Home",
+   "spectrum": "Shift+2 (CAPS LOCK)",
+   "fn": ""
+  },
+  {
+   "id": "pgu",
+   "x": 18.25,
+   "y": 1.25,
+   "w": 1,
+   "cap": "MAG / TR.VID",
+   "led": 32,
+   "keycodes": {
+    "SPEC_BASE": "S(KC_3)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_PGUP",
+    "WIN_FN": "_______"
+   },
+   "windows": "Page Up",
+   "spectrum": "Shift+3 (TRUE VIDEO)",
+   "fn": ""
+  },
+  {
+   "id": "tab",
+   "x": 0,
+   "y": 2.25,
+   "w": 1.5,
+   "cap": "TAB",
+   "led": 33,
+   "keycodes": {
+    "SPEC_BASE": "KC_TAB",
+    "SPEC_FN": "RM_TOGG",
+    "WIN_BASE": "KC_TAB",
+    "WIN_FN": "RM_TOGG"
+   },
+   "windows": "Tab",
+   "spectrum": "Tab",
+   "fn": "Lights on/off",
+   "spectrum_core": "GRAPHICS"
+  },
+  {
+   "id": "q",
+   "x": 1.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "Q / PLOT",
+   "led": 34,
+   "keycodes": {
+    "SPEC_BASE": "KC_Q",
+    "SPEC_FN": "RM_NEXT",
+    "WIN_BASE": "KC_Q",
+    "WIN_FN": "RM_NEXT"
+   },
+   "windows": "Q",
+   "spectrum": "Q",
+   "fn": "Next effect"
+  },
+  {
+   "id": "w",
+   "x": 2.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "W / DRAW",
+   "led": 35,
+   "keycodes": {
+    "SPEC_BASE": "KC_W",
+    "SPEC_FN": "RM_VALU",
+    "WIN_BASE": "KC_W",
+    "WIN_FN": "RM_VALU"
+   },
+   "windows": "W",
+   "spectrum": "W",
+   "fn": "Lights brighter"
+  },
+  {
+   "id": "e",
+   "x": 3.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "E / REM",
+   "led": 36,
+   "keycodes": {
+    "SPEC_BASE": "KC_E",
+    "SPEC_FN": "RM_HUEU",
+    "WIN_BASE": "KC_E",
+    "WIN_FN": "RM_HUEU"
+   },
+   "windows": "E",
+   "spectrum": "E",
+   "fn": "Hue +"
+  },
+  {
+   "id": "r",
+   "x": 4.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "R / RUN",
+   "led": 37,
+   "keycodes": {
+    "SPEC_BASE": "KC_R",
+    "SPEC_FN": "RM_SATU",
+    "WIN_BASE": "KC_R",
+    "WIN_FN": "RM_SATU"
+   },
+   "windows": "R",
+   "spectrum": "R",
+   "fn": "Saturation +"
+  },
+  {
+   "id": "t",
+   "x": 5.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "T / RAND",
+   "led": 38,
+   "keycodes": {
+    "SPEC_BASE": "KC_T",
+    "SPEC_FN": "RM_SPDU",
+    "WIN_BASE": "KC_T",
+    "WIN_FN": "RM_SPDU"
+   },
+   "windows": "T",
+   "spectrum": "T",
+   "fn": "Effect speed +"
+  },
+  {
+   "id": "y",
+   "x": 6.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "Y / RETURN",
+   "led": 39,
+   "keycodes": {
+    "SPEC_BASE": "KC_Y",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_Y",
+    "WIN_FN": "_______"
+   },
+   "windows": "Y",
+   "spectrum": "Y",
+   "fn": ""
+  },
+  {
+   "id": "u",
+   "x": 7.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "U / IF",
+   "led": 40,
+   "keycodes": {
+    "SPEC_BASE": "KC_U",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_U",
+    "WIN_FN": "_______"
+   },
+   "windows": "U",
+   "spectrum": "U",
+   "fn": ""
+  },
+  {
+   "id": "i",
+   "x": 8.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "I / INPUT",
+   "led": 41,
+   "keycodes": {
+    "SPEC_BASE": "KC_I",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_I",
+    "WIN_FN": "_______"
+   },
+   "windows": "I",
+   "spectrum": "I",
+   "fn": ""
+  },
+  {
+   "id": "o",
+   "x": 9.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "O / POKE",
+   "led": 42,
+   "keycodes": {
+    "SPEC_BASE": "KC_O",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_O",
+    "WIN_FN": "_______"
+   },
+   "windows": "O",
+   "spectrum": "O",
+   "fn": ""
+  },
+  {
+   "id": "p",
+   "x": 10.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "P / PRINT",
+   "led": 43,
+   "keycodes": {
+    "SPEC_BASE": "KC_P",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_P",
+    "WIN_FN": "_______"
+   },
+   "windows": "P",
+   "spectrum": "P",
+   "fn": ""
+  },
+  {
+   "id": "lbr",
+   "x": 11.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "[ / {",
+   "led": 44,
+   "keycodes": {
+    "SPEC_BASE": "KC_LBRC",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_LBRC",
+    "WIN_FN": "_______"
+   },
+   "windows": "[ {",
+   "spectrum": "[ {",
+   "fn": "",
+   "spectrum_core": "("
+  },
+  {
+   "id": "rbr",
+   "x": 12.5,
+   "y": 2.25,
+   "w": 1,
+   "cap": "] / }",
+   "led": 45,
+   "keycodes": {
+    "SPEC_BASE": "KC_RBRC",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_RBRC",
+    "WIN_FN": "_______"
+   },
+   "windows": "] }",
+   "spectrum": "] }",
+   "fn": "",
+   "spectrum_core": ")"
+  },
+  {
+   "id": "del",
+   "x": 16.25,
+   "y": 2.25,
+   "w": 1,
+   "cap": "GREEN / INV.VID",
+   "led": 46,
+   "keycodes": {
+    "SPEC_BASE": "S(KC_4)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_DEL",
+    "WIN_FN": "_______"
+   },
+   "windows": "Delete",
+   "spectrum": "Shift+4 (INV VIDEO)",
+   "fn": ""
+  },
+  {
+   "id": "end",
+   "x": 17.25,
+   "y": 2.25,
+   "w": 1,
+   "cap": "GRAPH / CAT",
+   "led": 47,
+   "keycodes": {
+    "SPEC_BASE": "S(KC_9)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_END",
+    "WIN_FN": "_______"
+   },
+   "windows": "End",
+   "spectrum": "Shift+9 (GRAPHICS)",
+   "fn": ""
+  },
+  {
+   "id": "pgd",
+   "x": 18.25,
+   "y": 2.25,
+   "w": 1,
+   "cap": "BLACK / DELETE",
+   "led": 48,
+   "keycodes": {
+    "SPEC_BASE": "S(KC_0)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_PGDN",
+    "WIN_FN": "_______"
+   },
+   "windows": "Page Down",
+   "spectrum": "Shift+0 (DELETE)",
+   "fn": ""
+  },
+  {
+   "id": "cap",
+   "x": 0,
+   "y": 3.25,
+   "w": 1.75,
+   "cap": "CAPS LOCK / FN",
+   "led": 49,
+   "keycodes": {
+    "SPEC_BASE": "KC_CAPS",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_CAPS",
+    "WIN_FN": "_______"
+   },
+   "windows": "Caps Lock",
+   "spectrum": "Caps Lock",
+   "fn": "",
+   "spectrum_core": "CAPS LOCK"
+  },
+  {
+   "id": "a",
+   "x": 1.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "A / NEW",
+   "led": 50,
+   "keycodes": {
+    "SPEC_BASE": "KC_A",
+    "SPEC_FN": "RM_PREV",
+    "WIN_BASE": "KC_A",
+    "WIN_FN": "RM_PREV"
+   },
+   "windows": "A",
+   "spectrum": "A",
+   "fn": "Previous effect"
+  },
+  {
+   "id": "s",
+   "x": 2.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "S / SAVE",
+   "led": 51,
+   "keycodes": {
+    "SPEC_BASE": "KC_S",
+    "SPEC_FN": "RM_VALD",
+    "WIN_BASE": "KC_S",
+    "WIN_FN": "RM_VALD"
+   },
+   "windows": "S",
+   "spectrum": "S",
+   "fn": "Lights dimmer"
+  },
+  {
+   "id": "d",
+   "x": 3.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "D / DIM",
+   "led": 52,
+   "keycodes": {
+    "SPEC_BASE": "KC_D",
+    "SPEC_FN": "RM_HUED",
+    "WIN_BASE": "KC_D",
+    "WIN_FN": "RM_HUED"
+   },
+   "windows": "D",
+   "spectrum": "D",
+   "fn": "Hue -"
+  },
+  {
+   "id": "f",
+   "x": 4.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "F / FOR",
+   "led": 53,
+   "keycodes": {
+    "SPEC_BASE": "KC_F",
+    "SPEC_FN": "RM_SATD",
+    "WIN_BASE": "KC_F",
+    "WIN_FN": "RM_SATD"
+   },
+   "windows": "F",
+   "spectrum": "F",
+   "fn": "Saturation -"
+  },
+  {
+   "id": "g",
+   "x": 5.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "G / GOTO",
+   "led": 54,
+   "keycodes": {
+    "SPEC_BASE": "KC_G",
+    "SPEC_FN": "RM_SPDD",
+    "WIN_BASE": "KC_G",
+    "WIN_FN": "RM_SPDD"
+   },
+   "windows": "G",
+   "spectrum": "G",
+   "fn": "Effect speed -"
+  },
+  {
+   "id": "h",
+   "x": 6.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "H / GOSUB",
+   "led": 55,
+   "keycodes": {
+    "SPEC_BASE": "KC_H",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_H",
+    "WIN_FN": "_______"
+   },
+   "windows": "H",
+   "spectrum": "H",
+   "fn": ""
+  },
+  {
+   "id": "j",
+   "x": 7.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "J / LOAD",
+   "led": 56,
+   "keycodes": {
+    "SPEC_BASE": "KC_J",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_J",
+    "WIN_FN": "_______"
+   },
+   "windows": "J",
+   "spectrum": "J",
+   "fn": ""
+  },
+  {
+   "id": "k",
+   "x": 8.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "K / LIST",
+   "led": 57,
+   "keycodes": {
+    "SPEC_BASE": "KC_K",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_K",
+    "WIN_FN": "_______"
+   },
+   "windows": "K",
+   "spectrum": "K",
+   "fn": ""
+  },
+  {
+   "id": "l",
+   "x": 9.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "L / LET",
+   "led": 58,
+   "keycodes": {
+    "SPEC_BASE": "KC_L",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_L",
+    "WIN_FN": "_______"
+   },
+   "windows": "L",
+   "spectrum": "L",
+   "fn": ""
+  },
+  {
+   "id": "sem",
+   "x": 10.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "; / :",
+   "led": 59,
+   "keycodes": {
+    "SPEC_BASE": "KC_SCLN",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_SCLN",
+    "WIN_FN": "_______"
+   },
+   "windows": "; :",
+   "spectrum": "; :",
+   "fn": ""
+  },
+  {
+   "id": "quo",
+   "x": 11.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "' / \"",
+   "led": 60,
+   "keycodes": {
+    "SPEC_BASE": "KC_QUOT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_QUOT",
+    "WIN_FN": "_______"
+   },
+   "windows": "' \"",
+   "spectrum": "' \"",
+   "fn": "",
+   "spectrum_core": "\" (Symbol Shift + P)"
+  },
+  {
+   "id": "hsh",
+   "x": 12.75,
+   "y": 3.25,
+   "w": 1,
+   "cap": "\\ / |",
+   "led": 61,
+   "keycodes": {
+    "SPEC_BASE": "KC_NUHS",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_NUHS",
+    "WIN_FN": "_______"
+   },
+   "windows": "\\ | (non-US #, with the US-based Windows layout)",
+   "spectrum": "\\ | (non-US #, with the US-based Windows layout)",
+   "fn": "",
+   "spectrum_core": "*"
+  },
+  {
+   "id": "ent",
+   "x": 13.5,
+   "y": 2.25,
+   "w": 1.5,
+   "cap": "ENTER",
+   "led": 62,
+   "keycodes": {
+    "SPEC_BASE": "KC_ENT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_ENT",
+    "WIN_FN": "_______"
+   },
+   "windows": "Enter",
+   "spectrum": "Enter",
+   "fn": ""
+  },
+  {
+   "id": "lsh",
+   "x": 0,
+   "y": 4.25,
+   "w": 1.25,
+   "cap": "CAPS / SHIFT",
+   "led": 63,
+   "keycodes": {
+    "SPEC_BASE": "KC_LSFT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_LSFT",
+    "WIN_FN": "_______"
+   },
+   "windows": "Left Shift",
+   "spectrum": "Left Shift",
+   "fn": "",
+   "spectrum_core": "CAPS SHIFT"
+  },
+  {
+   "id": "iso",
+   "x": 1.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "\\ / |",
+   "led": 64,
+   "keycodes": {
+    "SPEC_BASE": "S(KC_1)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_NUBS",
+    "WIN_FN": "_______"
+   },
+   "windows": "\\ | (ISO key, with the US-based Windows layout)",
+   "spectrum": "Shift+1 (Spectrum EDIT)",
+   "fn": ""
+  },
+  {
+   "id": "z",
+   "x": 2.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "Z / COPY",
+   "led": 65,
+   "keycodes": {
+    "SPEC_BASE": "KC_Z",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_Z",
+    "WIN_FN": "_______"
+   },
+   "windows": "Z",
+   "spectrum": "Z",
+   "fn": ""
+  },
+  {
+   "id": "x",
+   "x": 3.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "X / CLEAR",
+   "led": 66,
+   "keycodes": {
+    "SPEC_BASE": "KC_X",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_X",
+    "WIN_FN": "_______"
+   },
+   "windows": "X",
+   "spectrum": "X",
+   "fn": ""
+  },
+  {
+   "id": "c",
+   "x": 4.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "C / COUNT",
+   "led": 67,
+   "keycodes": {
+    "SPEC_BASE": "KC_C",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_C",
+    "WIN_FN": "_______"
+   },
+   "windows": "C",
+   "spectrum": "C",
+   "fn": ""
+  },
+  {
+   "id": "v",
+   "x": 5.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "V / CLS",
+   "led": 68,
+   "keycodes": {
+    "SPEC_BASE": "KC_V",
+    "SPEC_FN": "VU_TOGG",
+    "WIN_BASE": "KC_V",
+    "WIN_FN": "VU_TOGG"
+   },
+   "windows": "V",
+   "spectrum": "V",
+   "fn": "VU meter on/off"
+  },
+  {
+   "id": "b",
+   "x": 6.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "B / BORDER",
+   "led": 69,
+   "keycodes": {
+    "SPEC_BASE": "KC_B",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_B",
+    "WIN_FN": "_______"
+   },
+   "windows": "B",
+   "spectrum": "B",
+   "fn": ""
+  },
+  {
+   "id": "n",
+   "x": 7.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "N / NEXT",
+   "led": 70,
+   "keycodes": {
+    "SPEC_BASE": "KC_N",
+    "SPEC_FN": "NK_TOGG",
+    "WIN_BASE": "KC_N",
+    "WIN_FN": "NK_TOGG"
+   },
+   "windows": "N",
+   "spectrum": "N",
+   "fn": "NKRO on/off"
+  },
+  {
+   "id": "m",
+   "x": 8.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "M / PAUSE",
+   "led": 71,
+   "keycodes": {
+    "SPEC_BASE": "KC_M",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_M",
+    "WIN_FN": "_______"
+   },
+   "windows": "M",
+   "spectrum": "M",
+   "fn": ""
+  },
+  {
+   "id": "com",
+   "x": 9.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": ", / <",
+   "led": 72,
+   "keycodes": {
+    "SPEC_BASE": "KC_COMM",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_COMM",
+    "WIN_FN": "_______"
+   },
+   "windows": ", <",
+   "spectrum": ", <",
+   "fn": ""
+  },
+  {
+   "id": "dot",
+   "x": 10.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": ". / >",
+   "led": 73,
+   "keycodes": {
+    "SPEC_BASE": "KC_DOT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_DOT",
+    "WIN_FN": "_______"
+   },
+   "windows": ". >",
+   "spectrum": ". >",
+   "fn": ""
+  },
+  {
+   "id": "sl",
+   "x": 11.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "/ / ?",
+   "led": 74,
+   "keycodes": {
+    "SPEC_BASE": "KC_SLSH",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_SLSH",
+    "WIN_FN": "_______"
+   },
+   "windows": "/ ?",
+   "spectrum": "/ ?",
+   "fn": ""
+  },
+  {
+   "id": "rsh",
+   "x": 12.25,
+   "y": 4.25,
+   "w": 2.75,
+   "cap": "(blank)",
+   "led": 75,
+   "keycodes": {
+    "SPEC_BASE": "KC_RCTL",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_RSFT",
+    "WIN_FN": "_______"
+   },
+   "windows": "Right Shift",
+   "spectrum": "Right Ctrl",
+   "fn": "",
+   "spectrum_core": "SYMBOL SHIFT (sends Right Ctrl)"
+  },
+  {
+   "id": "up",
+   "x": 17.25,
+   "y": 4.25,
+   "w": 1,
+   "cap": "⇧",
+   "led": 76,
+   "keycodes": {
+    "SPEC_BASE": "KC_UP",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_UP",
+    "WIN_FN": "_______"
+   },
+   "windows": "Up",
+   "spectrum": "Up",
+   "fn": "",
+   "spectrum_core": "Cursor up"
+  },
+  {
+   "id": "lct",
+   "x": 0,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "PEEK / OUT",
+   "led": 77,
+   "keycodes": {
+    "SPEC_BASE": "KC_LCTL",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_LCTL",
+    "WIN_FN": "_______"
+   },
+   "windows": "Left Ctrl",
+   "spectrum": "Left Ctrl",
+   "fn": "",
+   "spectrum_core": "SYMBOL SHIFT"
+  },
+  {
+   "id": "lwn",
+   "x": 1.25,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "CODE / IN",
+   "led": 78,
+   "keycodes": {
+    "SPEC_BASE": "ZX_EXT",
+    "SPEC_FN": "GU_TOGG",
+    "WIN_BASE": "KC_LWIN",
+    "WIN_FN": "GU_TOGG"
+   },
+   "windows": "Windows",
+   "spectrum": "EXTENDED MODE (Ctrl + Left Shift)",
+   "fn": "Windows key lock"
+  },
+  {
+   "id": "lal",
+   "x": 2.5,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "RND / MERGE",
+   "led": 79,
+   "keycodes": {
+    "SPEC_BASE": "KC_LALT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_LALT",
+    "WIN_FN": "_______"
+   },
+   "windows": "Alt",
+   "spectrum": "Alt",
+   "fn": ""
+  },
+  {
+   "id": "spc",
+   "x": 3.75,
+   "y": 5.25,
+   "w": 6.25,
+   "cap": "(blank)",
+   "led": 80,
+   "keycodes": {
+    "SPEC_BASE": "KC_SPC",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_SPC",
+    "WIN_FN": "_______"
+   },
+   "windows": "Space",
+   "spectrum": "Space",
+   "fn": ""
+  },
+  {
+   "id": "ral",
+   "x": 10,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "RND / MERGE",
+   "led": 81,
+   "keycodes": {
+    "SPEC_BASE": "KC_RALT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_RALT",
+    "WIN_FN": "_______"
+   },
+   "windows": "AltGr",
+   "spectrum": "AltGr",
+   "fn": ""
+  },
+  {
+   "id": "rwn",
+   "x": 11.25,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "CODE / IN",
+   "led": 82,
+   "keycodes": {
+    "SPEC_BASE": "ZX_LOAD",
+    "SPEC_FN": "GU_TOGG",
+    "WIN_BASE": "KC_RWIN",
+    "WIN_FN": "GU_TOGG"
+   },
+   "windows": "Windows",
+   "spectrum": "Types LOAD \"\" + Enter (60 ms per key)",
+   "fn": "Windows key lock"
+  },
+  {
+   "id": "fn",
+   "x": 12.5,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "EDIT / DEF FN",
+   "led": 83,
+   "keycodes": {
+    "SPEC_BASE": "MO(SPEC_FN)",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "MO(WIN_FN)",
+    "WIN_FN": "_______"
+   },
+   "windows": "Fn (hold for WIN_FN)",
+   "spectrum": "Fn (hold for SPEC_FN)",
+   "fn": ""
+  },
+  {
+   "id": "rct",
+   "x": 13.75,
+   "y": 5.25,
+   "w": 1.25,
+   "cap": "PEEK / OUT",
+   "led": 84,
+   "keycodes": {
+    "SPEC_BASE": "KC_RCTL",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_RCTL",
+    "WIN_FN": "_______"
+   },
+   "windows": "Right Ctrl",
+   "spectrum": "Right Ctrl",
+   "fn": "",
+   "spectrum_core": "SYMBOL SHIFT"
+  },
+  {
+   "id": "lft",
+   "x": 16.25,
+   "y": 5.25,
+   "w": 1,
+   "cap": "⇦",
+   "led": 85,
+   "keycodes": {
+    "SPEC_BASE": "KC_LEFT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_LEFT",
+    "WIN_FN": "_______"
+   },
+   "windows": "Left",
+   "spectrum": "Left",
+   "fn": "",
+   "spectrum_core": "Cursor left"
+  },
+  {
+   "id": "dn",
+   "x": 17.25,
+   "y": 5.25,
+   "w": 1,
+   "cap": "⇩",
+   "led": 86,
+   "keycodes": {
+    "SPEC_BASE": "KC_DOWN",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_DOWN",
+    "WIN_FN": "_______"
+   },
+   "windows": "Down",
+   "spectrum": "Down",
+   "fn": "",
+   "spectrum_core": "Cursor down"
+  },
+  {
+   "id": "rt",
+   "x": 18.25,
+   "y": 5.25,
+   "w": 1,
+   "cap": "⇨",
+   "led": 87,
+   "keycodes": {
+    "SPEC_BASE": "KC_RGHT",
+    "SPEC_FN": "_______",
+    "WIN_BASE": "KC_RGHT",
+    "WIN_FN": "_______"
+   },
+   "windows": "Right",
+   "spectrum": "Right",
+   "fn": "",
+   "spectrum_core": "Cursor right"
+  }
+ ]
+}
