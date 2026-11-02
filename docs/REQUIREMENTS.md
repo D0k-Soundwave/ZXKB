@@ -9,16 +9,16 @@ Rule: do not build until D0k confirms the list is complete.
 - [ ] Key explosion effect: pressed key fires a small star that spreads, changes colour and fades to black
 - [ ] Fn+1 to Fn+0 report to ZXKB as hotkey slots
 - [ ] Package as a QMK community module so any QMK keyboard can add it; board reports LED positions
-- [~] Calibrated Spectrum colours in all Spectrum effects and the VU meter
-- [~] Hardware balance red 192 / green 72 / blue 58 as firmware default
-- [~] Caps Lock flashing magenta/white (320 ms)
+- [x] Calibrated Spectrum colours in all Spectrum effects and the VU meter (v11)
+- [x] Hardware balance red 192 / green 72 / blue 58 as firmware default (v11)
+- [x] Caps Lock flashing magenta/white (320 ms) (v11)
 - [x] Live LED current tune commands 0xD3/0xD4/0xD5 (v10)
 - [x] Spectrum effects: stripes, tape loading, VU, border flash, attribute clash, typing ripple, logo sweep (v9/v10)
 
 ## ZXKB app (renamed from ZX VU)
 - [ ] Every effect by name in the tray: QMK built-ins, Spectrum, PC-driven, drop-ins
 - [ ] Effect settings panel (speed, colours, direction...) and favourites
-- [?] Overall brightness control: presets (25/50/75/100) or steps
+- [ ] Overall brightness control: steps (Brighter / Dimmer), decided 2026-11-02
 - [ ] Profiles: save/load whole setup by name
 - [ ] Playlists: cycle effects on a timer
 - [ ] Scheduler: switch profiles at set times
@@ -38,5 +38,5 @@ Rule: do not build until D0k confirms the list is complete.
 
 ## Release
 - [ ] GitHub repo under D0k-Soundwave, GPL-3.0, no Claude attribution
-- [?] Public from day one, or private until first release
+- [ ] Private for now (decided 2026-11-02); make public at first release
 - [ ] README and user manual (existing Q3 keyboard manual doc to be updated for the custom firmware)

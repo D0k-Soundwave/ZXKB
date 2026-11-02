@@ -41,14 +41,14 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
 - Custom effects (`rgb_matrix_user.inc`): SPECTRUM_STRIPES, TAPE_LOADING, VU_METER (3 thick bars,
   left-to-right red|yellow|green|cyan blocks), BORDER_FLASH, ATTR_CLASH, TYPING_RIPPLE, LOGO_SWEEP.
 - Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after).
-- Caps Lock: flashing magenta/white every 320 ms (Spectrum FLASH rate). *(in source, not yet flashed)*
+- Caps Lock: flashing magenta/white every 320 ms (Spectrum FLASH rate).
 - Raw HID commands (handled in `via_command_kb`):
   - `0xD0` + 16 levels: VU data. `0xD1` + 0/1: VU mode request (5 s timeout).
   - `0xD2` + n (1-6): select Spectrum effect (saved).
   - `0xD3` + r,g,b: set LED driver current tune live (clamped 16-192), replies.
   - `0xD4`: save current tune to EEPROM (eeconfig user word, magic 0xA5), replies.
   - `0xD5`: get current tune, replies `[0xD5, r, g, b]`.
-- Keyboard currently runs **v10** (has 0xD2-0xD5; colours in source are newer than v10).
+- Keyboard runs **v11** (calibrated colours, flashing Caps Lock, hardware balance default).
 
 ## App: current state
 - `app/legacy/zx_vu.py`: the ZX VU tray app (pyaudiowpatch WASAPI loopback, numpy FFT, hidapi,

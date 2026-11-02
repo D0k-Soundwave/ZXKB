@@ -222,8 +222,11 @@ void housekeeping_task_user(void) {
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     if (host_keyboard_led_state().caps_lock) {
         /* FLASH attribute: swap magenta and white every 320 ms, like the Spectrum's own FLASH */
-        if ((g_rgb_timer / 320) & 1) RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 195, 195, 195);
-        else                         RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 200, 0, 200);
+        if ((g_rgb_timer / 320) & 1) {
+            RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 195, 195, 195);
+        } else {
+            RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 200, 0, 200);
+        }
     }
     return false;   /* skip the board's default white Caps Lock light */
 }
