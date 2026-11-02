@@ -21,9 +21,10 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
 - Side switch: active = Windows layers (2/3), inactive ("Mac") = Spectrum layers (0/1).
 - Flashing: QMK Toolbox (runs elevated). Hold **Esc while plugging in** = DFU + EEPROM clear.
   STM32 DFU 0483:DF11 with WinUSB driver.
-- Build: upstream `qmk_firmware` master, `make keychron/q3/iso_encoder:d0k`
-  (on this PC build with QMK MSYS, the official Windows QMK environment; do not use WSL. The final `dfu-suffix` error is harmless, the .bin is produced).
-  Copy `firmware/keymaps/d0k` into `qmk_firmware/keyboards/keychron/q3/iso_encoder/keymaps/d0k`.
+- Build: upstream `qmk_firmware` master (in `%USERPROFILE%\qmk_firmware`) with QMK MSYS (`C:\QMK_MSYS`, the official
+  Windows QMK environment; do not use WSL). `firmware/` is a QMK userspace: run `sh /h/ZXKB/firmware/build.sh`
+  in the QMK MSYS shell; it sets `user.overlay_dir`, builds, and copies the .bin to `build/`. Nothing is copied
+  into qmk_firmware. QMK MSYS also has g++ and make (MINGW64) for the app.
 
 ## Colour calibration (done 2026-11-02, by eye against the true Spectrum BRIGHT palette)
 - Root cause found: Keychron ships SNLED27351 current tune red 0x44 (68), green/blue 0x9D (157),
@@ -34,21 +35,28 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   red 204,0,0 · yellow 255,255,0 · green 0,205,0 · cyan 0,205,205 · blue 0,0,170 · magenta 200,0,200 · white 195,195,195.
 - Raw values: `calibration/ZX_colours.json`. Tool: `tools/zx_colour_cal.py` (to be folded into ZXKB).
 
-## Firmware: current state (`firmware/keymaps/d0k`)
-- Layers: SPEC_BASE, SPEC_FN, WIN_BASE, WIN_FN. Spectrum layer maps for the MiSTer core
-  (Shift = Caps Shift, Ctrl = Symbol Shift, ZX_EXT = Ctrl+LShift, ZX_LOAD types LOAD "" with 60 ms per key).
-- Fn layers: media/brightness on F-row, RM_* lighting keys, Fn+V = VU toggle, Fn+N = NKRO, Win lock.
-- Custom effects (`rgb_matrix_user.inc`): SPECTRUM_STRIPES, TAPE_LOADING, VU_METER (3 thick bars,
-  left-to-right red|yellow|green|cyan blocks), BORDER_FLASH, ATTR_CLASH, TYPING_RIPPLE, LOGO_SWEEP.
-- Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after).
+## Firmware: current state
+- `firmware/modules/d0k/zxkb`: ZXKB QMK community module (any QMK RGB matrix board). Effects
+  (`rgb_matrix_module.inc`): SPECTRUM_STRIPES, TAPE_LOADING, VU_METER (3 thick bars, left-to-right
+  red|yellow|green|cyan blocks), BORDER_FLASH, ATTR_CLASH, TYPING_RIPPLE, LOGO_SWEEP, KEY_EXPLOSION, PC_DIRECT.
+  Keycodes ZK_1..ZK_0 (hotkey slots), ZK_VU (VU toggle). Hooks `via_command_kb` (or `raw_hid_receive` without VIA).
+- `firmware/keyboards/keychron/q3/iso_encoder/keymaps/d0k`: Q3 keymap using the module. Layers SPEC_BASE, SPEC_FN,
+  WIN_BASE, WIN_FN. Spectrum layer maps for the MiSTer core (Shift = Caps Shift, Ctrl = Symbol Shift,
+  ZX_EXT = Ctrl+LShift, ZX_LOAD types LOAD "" with 60 ms per key). Fn layers: media/brightness on F-row, RM_*
+  lighting keys, Fn+1..0 = hotkey slots, Fn+V = VU toggle, Fn+N = NKRO, Win lock.
+- Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after). PC overlays
+  (VU, direct) only in Windows mode.
 - Caps Lock: flashing magenta/white every 320 ms (Spectrum FLASH rate).
-- Raw HID commands (handled in `via_command_kb`):
-  - `0xD0` + 16 levels: VU data. `0xD1` + 0/1: VU mode request (5 s timeout).
-  - `0xD2` + n (1-6): select Spectrum effect (saved).
-  - `0xD3` + r,g,b: set LED driver current tune live (clamped 16-192), replies.
-  - `0xD4`: save current tune to EEPROM (eeconfig user word, magic 0xA5), replies.
-  - `0xD5`: get current tune, replies `[0xD5, r, g, b]`.
-- Keyboard runs **v11** (calibrated colours, flashing Caps Lock, hardware balance default).
+- Raw HID (32-byte reports, `zxkb.h`):
+  - `0xD0` + 16 levels: VU data. `0xD1` + 0/1: VU mode request. `0xD2` + n (1-6): Spectrum effect (old app).
+  - `0xD3` + r,g,b / `0xD4` / `0xD5`: LED driver current tune set / save / get (keymap, replies).
+  - `0xD8` + slot: keyboard -> app, Fn+number pressed.
+  - `0xD9` 0x00 status, 0x01 + mode -> name, 0x02 + first LED -> 9 x (x, y, flags).
+  - SignalRGB 0x21-0x28 (protocol 1.0.6); 0x25 enable / 0x24 stream / 0x26 disable is also ZXKB's direct mode.
+  - Standard VIA lighting (0x07/0x08/0x09, channel 3) for effect, brightness, speed, colour, save.
+  - Overlays drop back to the board's own effect after 5 s without data.
+- Keyboard runs **v11** (calibrated colours, flashing Caps Lock, hardware balance default). v12 = the module
+  build, not yet flashed.
 
 ## App: current state
 - `app/legacy/zx_vu.py`: the ZX VU tray app (pyaudiowpatch WASAPI loopback, numpy FFT, hidapi,

@@ -9,11 +9,11 @@ Rule: do not build until D0k confirms the list is complete.
 - [ ] App core in native C++ (Win32 only, no runtime), decided 2026-11-02 over slimmed Python for idle weight
 
 ## Firmware
-- [ ] PC direct mode: ZXKB streams a colour per LED (for drop-ins, PC effects, OpenRGB SDK server)
-- [ ] SignalRGB protocol module included (so SignalRGB can be tried without reflashing)
-- [ ] Key explosion effect: pressed key fires a small star that spreads, changes colour and fades to black
-- [ ] Fn+1 to Fn+0 report to ZXKB as hotkey slots
-- [ ] Package as a QMK community module so any QMK keyboard can add it; board reports LED positions
+- [~] PC direct mode: ZXKB streams a colour per LED (for drop-ins, PC effects, OpenRGB SDK server)
+- [~] SignalRGB protocol module included (so SignalRGB can be tried without reflashing)
+- [~] Key explosion effect: pressed key fires a small star that spreads, changes colour and fades to black
+- [~] Fn+1 to Fn+0 report to ZXKB as hotkey slots
+- [~] Package as a QMK community module so any QMK keyboard can add it; board reports LED positions
 - [x] Calibrated Spectrum colours in all Spectrum effects and the VU meter (v11)
 - [x] Hardware balance red 192 / green 72 / blue 58 as firmware default (v11)
 - [x] Caps Lock flashing magenta/white (320 ms) (v11)
