@@ -36,6 +36,8 @@ Rule: do not build until D0k confirms the list is complete.
 - [ ] Drop-in effects: ZXKB Python format in an `Effects` folder
 - [ ] Drop-in effects: SignalRGB Lightscripts (HTML canvas via WebView2; `<meta>` properties become settings;
       audio visualisers fed by ZXKB audio; game integrations not at first)
+- [ ] PC-streamed effects (effects worked out by ZXKB and streamed live through direct mode): Stage 2,
+      decided 2026-11-02. Direct mode measured at 91 frames/s on the Q3.
 - [~] Built-in PC effects: VU meter (bands + ACB) ported, identical output; screen ambient, system load (CPU/RAM/GPU), beat pulse,
       notification flash
 - [ ] OpenRGB SDK server
