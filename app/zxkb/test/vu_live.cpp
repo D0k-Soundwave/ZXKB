@@ -1,9 +1,10 @@
 // Capture what Windows is playing and report how the three VU bars behave, for both styles, without sending
 // anything to the keyboard. For checking whether the bars move independently.
-//   vu_live <seconds>
+//   vu_live <seconds> [file]   (file: also save the audio, 32-bit float interleaved, for vu_tune)
 // Copyright 2026 D0k
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "../src/vumath.h"
+#include <algorithm>
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
@@ -46,7 +47,11 @@ struct Stats { // per style: the three bars (top, middle, bottom) over time
         for (int k = 0; k < 3; k++) {
             double m = 0, mx = 0;
             for (double v : bar[k]) { m += v; if (v > mx) mx = v; }
-            std::printf("  %-6s bar: average %5.1f / 255, peak %3.0f\n", nm[k], m / bar[k].size(), mx);
+            std::vector<double> s = bar[k];
+            std::sort(s.begin(), s.end());
+            double p10 = s[s.size() / 10], p90 = s[s.size() * 9 / 10];
+            std::printf("  %-6s bar: average %5.1f / 255, peak %3.0f, 10%%-90%% range %3.0f-%3.0f (swing %3.0f)\n", nm[k],
+                        m / bar[k].size(), mx, p10, p90, p90 - p10);
         }
         std::printf("  top vs middle: correlation %.2f, average gap %.1f\n", corr(bar[0], bar[1]), mad(bar[0], bar[1]));
         std::printf("  top vs bottom: correlation %.2f, average gap %.1f\n", corr(bar[0], bar[2]), mad(bar[0], bar[2]));
@@ -56,6 +61,7 @@ struct Stats { // per style: the three bars (top, middle, bottom) over time
 
 int main(int argc, char **argv) {
     int secs = argc > 1 ? std::atoi(argv[1]) : 20;
+    FILE *save = argc > 2 ? std::fopen(argv[2], "wb") : nullptr;
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     IMMDeviceEnumerator *en; IMMDevice *dev; IAudioClient *cl; IAudioCaptureClient *cap; WAVEFORMATEX *fmt;
     if (FAILED(CoCreateInstance(CLSID_Enumerator, nullptr, CLSCTX_ALL, IID_Enumerator, (void **)&en)) ||
@@ -90,6 +96,7 @@ int main(int argc, char **argv) {
                     if (std::fabs(v) > peak_in) peak_in = std::fabs(v);
                 }
                 if (++fill == VuMath::BLOCK) {
+                    if (save) std::fwrite(block.data(), sizeof(float), block.size(), save);
                     uint8_t lb[16], la[16], lm[16];
                     bands.process(block.data(), ch, VU_BANDS, lb);
                     abc.process(block.data(), ch, VU_ABC, la);
@@ -103,6 +110,7 @@ int main(int argc, char **argv) {
             cap->ReleaseBuffer(frames);
         }
     }
+    if (save) std::fclose(save);
     std::printf("loudest sample %.2f (1.00 = full scale)\n", peak_in);
     if (sb.bar[0].empty()) { std::printf("no audio arrived - is anything playing?\n"); return 1; }
     sa.print("AY channels (ACB)");

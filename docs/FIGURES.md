@@ -46,3 +46,13 @@ When an A figure is measured, its old value stays here, struck through.
 | VU send rate cap | 40 per second | A | D0k approved (FPS 40) |
 | Save delay | 3 s after the last change | A | avoids an EEPROM write per click; not a constraint |
 | Silence fed after | 100 ms without audio | A | Windows sends nothing while nothing plays; 10 polls of 10 ms |
+| D0k's audio output rate | 96 kHz, 2 channels, 32-bit float | M | vu_live, 2026-11-02 (VU maths were tested at 48 kHz; same results either way) |
+| AY style on ordinary music: top vs middle bar correlation | 0.54-0.66 | M | vu_live 20 s x3, 2026-11-02 |
+| Music style: bar correlations | 0.01-0.25 | M | vu_live 20 s, 2026-11-02 |
+| Music style swing, ZX VU values (30 dB, 0.03/block, x0.72/block) | 84 of 255 | M | vu_tune on 20 s of D0k's music, first 3 s skipped |
+| Frequency-bands swing (reference for "enough movement") | 86 of 255 | M | same recording |
+| Music style swing, chosen values | 118 of 255 | M | same recording |
+| Music style range / reference time / fall half-time | 18 dB / 4 s / 120 ms | A | best of the sweep on one song; to be judged by eye by D0k |
+| VU key span at row ends | +/- 7 units | C | half the Q3 key pitch of 13 units (LED map, number row) |
+| Firmware v14 size | 59,984 bytes | M | arm-none-eabi-size, 2026-11-02 |
+| Effect slots left on the Q3 | 4 | C | QMK maximum 63 (P: rgb_config_t mode is 6 bits) - 59 effects |

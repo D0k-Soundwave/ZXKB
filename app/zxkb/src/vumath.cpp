@@ -141,9 +141,12 @@ void VuMath::process(const float *frames, int ch, int style, uint8_t out[BANDS])
         uint8_t lv[3];
         for (int i = 0; i < 3; i++) {
             double db = 10 * std::log10(e[i] / ((double)N * N) + 1e-12);
-            music_ref_[i] = std::fmax(music_ref_[i] + 0.03 * (db - music_ref_[i]), -70.0);
-            double t = std::pow(clip01((db - (music_ref_[i] + HEADROOM_DB - RANGE_DB)) / RANGE_DB), CURVE);
-            music_[i] = t > music_[i] ? t : music_[i] * FALL;
+            const double block_s = (double)N / rate_;
+            double k    = music.ref_seconds > 0 ? 1 - std::exp(-block_s / music.ref_seconds) : 0.03;
+            double fall = music.fall_seconds > 0 ? std::pow(0.5, block_s / music.fall_seconds) : FALL;
+            music_ref_[i] = std::fmax(music_ref_[i] + k * (db - music_ref_[i]), -70.0);
+            double t = std::pow(clip01((db - (music_ref_[i] + music.headroom_db - music.range_db)) / music.range_db), music.curve);
+            music_[i] = t > music_[i] ? t : music_[i] * fall;
             lv[i] = to_level(music_[i]);
         }
         for (int i = 0; i < 5; i++) out[i] = lv[2];
