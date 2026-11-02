@@ -3,6 +3,11 @@
 Status: `[x]` done · `[~]` in source, not yet built/flashed · `[ ]` to do · `[?]` decision pending.
 Rule: do not build until D0k confirms the list is complete.
 
+## Across the board
+- [ ] As small and lightweight as possible everywhere: app RAM, CPU, disk/download size, and firmware
+      flash/RAM (requested 2026-11-02). Measure and report real figures at every stage.
+- [?] App core language: slimmed Python vs native C++ (decision pending, 2026-11-02)
+
 ## Firmware
 - [ ] PC direct mode: ZXKB streams a colour per LED (for drop-ins, PC effects, OpenRGB SDK server)
 - [ ] SignalRGB protocol module included (so SignalRGB can be tried without reflashing)
