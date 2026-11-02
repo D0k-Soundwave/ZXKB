@@ -18,14 +18,14 @@
 #include "protocol.h"
 #include "settings.h"
 #include "vu.h"
-
-namespace {
+#include "app.h"
+#include "window.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
     ID_STYLE_BANDS = 100, ID_STYLE_ABC, ID_STYLE_MUSIC, // VU styles: ID_STYLE_BANDS + VuStyle
     ID_OFF, ID_BRIGHTER, ID_DIMMER, ID_FASTER, ID_SLOWER,
-    ID_FAV_ADD, ID_FAV_REMOVE, ID_PROFILE_SAVE, ID_AUTOSTART, ID_QUIT, ID_BIGGER, ID_SMALLER, ID_STRONGER, ID_SOFTER,
+    ID_FAV_ADD, ID_FAV_REMOVE, ID_PROFILE_SAVE, ID_AUTOSTART, ID_QUIT, ID_WINDOW, ID_BIGGER, ID_SMALLER, ID_STRONGER, ID_SOFTER,
     ID_EFFECT  = 1000, // + effect number (1-255)
     ID_FAV     = 1300, // + favourite index
     ID_COLOUR  = 1400, // + colour index
@@ -43,14 +43,13 @@ constexpr UINT SAVE_DELAY_MS = 3000;
 // [P] QMK quantum/rgb_matrix/rgb_matrix.h, master f5db962 (2026-10-29): RGB_MATRIX_VAL_STEP and SPD_STEP are 16,
 // the same steps the keyboard's own keys use. Size and intensity use it too, for consistency.
 constexpr int  STEP         = 16;
-constexpr int  TUNE_MIN     = 16;    // must match ZXKB_TUNE_MIN in the firmware (zxkb.h)
 constexpr int  MAX_PROFILES = 100;   // [A] menu id space per Fn slot; more profiles than this are not listed
 
-// Spectrum BRIGHT palette as QMK hue/saturation (with D0k's calibrated colour balance the pure hues match)
-struct Colour { const wchar_t *name; uint8_t hue, sat; };
-const Colour colours[] = {
-    {L"Red", 0, 255}, {L"Yellow", 43, 255}, {L"Green", 85, 255}, {L"Cyan", 128, 255},
-    {L"Blue", 170, 255}, {L"Magenta", 213, 255}, {L"White", 0, 0},
+// Spectrum BRIGHT palette; swatches are the calibrated colours from CLAUDE.md (measured by eye 2026-11-02)
+const Colour colours[7] = {
+    {L"Red", 0, 255, RGB(204, 0, 0)},     {L"Yellow", 43, 255, RGB(255, 255, 0)}, {L"Green", 85, 255, RGB(0, 205, 0)},
+    {L"Cyan", 128, 255, RGB(0, 205, 205)}, {L"Blue", 170, 255, RGB(0, 0, 170)},    {L"Magenta", 213, 255, RGB(200, 0, 200)},
+    {L"White", 0, 0, RGB(195, 195, 195)},
 };
 
 HINSTANCE      g_inst;
@@ -90,6 +89,27 @@ std::wstring menu_name(const std::string &n) { return is_vu_name(n) ? vu_label(v
 // The VU meter is a normal keyboard effect; ZXKB feeds it while it shows.
 int  vu_mode() { return effect_number("VU_METER"); }
 bool vu_showing() { return g_board && g_st.enabled && g_st.mode && g_st.mode == vu_mode(); }
+
+std::string current_name() {
+    if (!g_board || !g_st.enabled) return "";
+    return vu_showing() ? vu_name(g_vu_style) : effect_name(g_st.mode);
+}
+
+bool is_favourite(const std::string &n) {
+    for (const std::string &f : g_favs)
+        if (f == n) return true;
+    return false;
+}
+
+void save_lists();
+void set_favourite(const std::string &n, bool on) {
+    if (n.empty() || is_favourite(n) == on) return;
+    if (on) g_favs.push_back(n);
+    else
+        for (size_t i = 0; i < g_favs.size(); i++)
+            if (g_favs[i] == n) { g_favs.erase(g_favs.begin() + i); break; }
+    save_lists();
+}
 
 std::wstring current_effect_text() {
     if (!g_board) return L"keyboard not connected";
@@ -339,6 +359,9 @@ void show_menu() {
     HMENU menu = CreatePopupMenu();
     if (!on) { add(menu, 0, L"Keyboard not connected", false, false); sep(menu); }
     else { add(menu, 0, L"Now: " + current_effect_text(), false, false); sep(menu); }
+    add(menu, ID_WINDOW, L"Open ZXKB window");
+    SetMenuDefaultItem(menu, ID_WINDOW, FALSE);
+    sep(menu);
 
     // effects, grouped
     HMENU fxm = CreatePopupMenu();
@@ -436,7 +459,8 @@ void show_menu() {
     PostMessageW(g_hwnd, WM_NULL, 0, 0);
     if (!cmd) return;
 
-    if (cmd >= ID_STYLE_BANDS && cmd <= ID_STYLE_MUSIC) select_vu((int)(cmd - ID_STYLE_BANDS));
+    if (cmd == ID_WINDOW) window_show();
+    else if (cmd >= ID_STYLE_BANDS && cmd <= ID_STYLE_MUSIC) select_vu((int)(cmd - ID_STYLE_BANDS));
     else if (cmd == ID_OFF) set_effect(0);
     else if (cmd == ID_BRIGHTER) set_brightness(g_st.val + STEP);
     else if (cmd == ID_DIMMER) set_brightness(g_st.val - STEP);
@@ -493,7 +517,8 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
         case WM_TRAY:
             switch (LOWORD(lp)) {
-                case WM_CONTEXTMENU: show_menu(); break; // right click (left click does nothing)
+                case WM_CONTEXTMENU: show_menu(); window_refresh(); break; // right click (single left click does nothing)
+                case WM_LBUTTONDBLCLK: window_show(); break;              // double click opens the ZXKB window
             }
             return 0;
         case WM_ZX_CONNECTED:
@@ -503,6 +528,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             send({proto::TUNE, proto::TUNE_GET});
             update_capture();
             update_tray();
+            window_refresh();
             return 0;
         case WM_ZX_DISCONNECTED:
             g_vu.stop();
@@ -511,9 +537,11 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             KillTimer(hwnd, TIMER_SAVE);
             g_save_pending = false;
             update_tray();
+            window_refresh();
             return 0;
         case WM_ZX_SLOT:
             apply_slot((int)wp);
+            window_refresh();
             return 0;
         case WM_ZX_STATUS: { // a reply, or the keyboard telling us its state changed
             Status *s = reinterpret_cast<Status *>(lp);
@@ -523,12 +551,14 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             }
             delete s;
             update_tray();
+            window_refresh();
             return 0;
         }
         case WM_ZX_TUNE: {
             Tune *t = reinterpret_cast<Tune *>(lp);
             if (g_board) g_tune = *t;
             delete t;
+            window_refresh();
             return 0;
         }
         case WM_TIMER:
@@ -538,6 +568,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (wp == DBT_DEVICEARRIVAL && !g_board) g_link.rescan();
             return TRUE;
         case WM_DESTROY:
+            window_close();
             if (g_board) {
                 save_now();
             }
@@ -550,8 +581,6 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     if (msg == g_taskbar_created && msg) { add_tray_icon(); return 0; } // Explorer restarted
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
-
-} // namespace
 
 int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
     HANDLE single = CreateMutexW(nullptr, TRUE, L"Local\\ZXKB.single");
@@ -588,6 +617,8 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
 
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
+        HWND win = window_handle();
+        if (win && IsDialogMessageW(win, &msg)) continue; // Tab, arrows and Esc in the ZXKB window
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }

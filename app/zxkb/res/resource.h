@@ -6,5 +6,5 @@
 #define IDD_NAME 201
 #define IDC_NAME 202
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 7
-#define ZXKB_VERSION_STR   "0.7" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 8
+#define ZXKB_VERSION_STR   "0.8" // raise for every build installed for D0k (docs/VERSIONS.md)

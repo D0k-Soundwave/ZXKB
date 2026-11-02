@@ -29,5 +29,6 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.8 | 2026-11-02 | 400,384 bytes | The ZXKB window (Stage 2, step 1): double-click the tray icon, or "Open ZXKB window" in the menu. Effect list in groups with the VU styles, lighting on/off, favourite, sliders for brightness, speed, size and intensity, Spectrum colours and a full colour picker. Opens next to the tray, follows the keyboard, freed on close. |
 | 0.7 | 2026-11-02 | 390,144 bytes | VU meter styles listed with the effects and chosen like one; audio captured only while the VU meter effect shows; left click on the tray icon does nothing; version shown in the menu. |
 | 0.1-0.6 | 2026-11-02 | | First builds (tray, effects, profiles, Fn slots, VU port, size/intensity, music style). Not kept. |

@@ -70,6 +70,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Open retries | 5 x 400 ms | A | time for a keyboard to answer after it appears not measured |
 | Thread stacks reserved | 64 KB link, 256 KB audio | A | reserved, not committed |
 | Max profiles listed per hotkey | 100 | A | menu id space |
+| ZXKB window size | 456 x 708 px at 125% scaling (360 x ~566 at 100%) | M / C | window_test, 2026-11-02 |
 | Reproducible build | two clean builds identical | M | cmp, 2026-11-02, from 0.8 on (kept 0.7 contains its build time) |
 
 ## VU meter
@@ -94,6 +95,8 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 |---|---|---|---|
 | ZXKB idle RAM | 2-5 MB | 1.8-2.8 MB private (working set 13-24 MB incl. shared Windows DLLs) | 2026-11-02 |
 | ZXKB.exe size | under 1 MB | 385,536 bytes (0.1), 390,144 bytes (0.7) | 2026-11-02 |
+| ZXKB window, RAM while open | 10-20 MB | +0.6 MB private (1.9 -> 2.5 MB); no growth on a second open and close | 2026-11-02 |
+| Direct2D and UI libraries in QMK MSYS | believed present | all present: d2d1, dwrite, dxgi, d3d11, uxtheme, dwmapi, comctl32 | 2026-11-02 |
 | Python version of the app, idle | 20-22 MB | never measured: option dropped (Python tray floor M: 19.3 MB) | 2026-11-02 |
 | Python app download / native app | 15-20 MB / under 1 MB | Python not built; native 390 KB | 2026-11-02 |
 | Effect names in flash | ~1 KB | 888 bytes | 2026-11-02 |

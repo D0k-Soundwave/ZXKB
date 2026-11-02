@@ -23,7 +23,7 @@ Rule: do not build until D0k confirms the list is complete.
 ## ZXKB app (renamed from ZX VU)
 - [~] Every effect by name in the tray: QMK built-ins, Spectrum (done); PC-driven, drop-ins (later stages)
 - [~] Effect settings (speed, Spectrum colours) and favourites in the tray; a settings panel window is Stage 2
-- [ ] Double-click the tray icon to open the ZXKB window next to the tray, so settings can be adjusted without
+- [~] Double-click the tray icon to open the ZXKB window next to the tray (step 1 in 0.8: effects and settings), so settings can be adjusted without
       right-clicking every time (requested 2026-11-02); opened on demand and fully released on close.
       It is a full RGB keyboard tool, not a cut-down panel: everything the keyboard and ZXKB can do is in it
       (clarified 2026-11-02)
