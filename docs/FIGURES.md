@@ -60,6 +60,9 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Idle, keyboard connected, VU off | 2.8 MB / 4.4 MB / 0.000% of one core | M | tools/measure.py 60 s, 2026-11-02 15:36 |
 | Start-up CPU (once) | 0.59 s | M | Get-Process CPU after 177 s running, 2026-11-02 |
 | Busy, VU on with music | 2.1-2.6 MB / 3.5-4.2 MB / 0.156-0.312% of one core | M | tools/measure.py 60 s x2, 2026-11-02 15:42 and 15:45 |
+| 0.7 + v15: Key explosion (no audio) | 3.5 MB private / 0.000% of one core | M | tools/measure.py 20 s, 2026-11-02 17:44 |
+| 0.7 + v15: VU meter showing | 3.8 MB private / 0.469% of one core | M | tools/measure.py 30 s, 17:44; music playing not confirmed |
+| 0.7 + v15: lighting off, VU meter chosen | 3.7 MB private / 0.000% of one core | M | tools/measure.py 30 s, 17:45; audio thread stopped on the keyboard's own status message |
 | Old ZX VU, VU on with music | 28.7 MB / 771.8 MB / 1.458% of one core; 2 processes, 36 threads | M | tools/measure.py 60 s, 2026-11-02 15:44 |
 | Old ZX VU, earlier sample | 70.7 MB working set, 1.41% of one core | M | Get-Process 10 s, 2026-11-02 (audio state not recorded) |
 | Save delay | 3 s | A | groups a burst of clicks into one EEPROM write |

@@ -54,7 +54,7 @@ Rule: do not build until D0k confirms the list is complete.
 ## Process
 - [x] Number every firmware and app build handed to D0k and keep each for fallback (docs/VERSIONS.md), from
       firmware v15 / app 0.7 on (requested 2026-11-02; earlier builds not kept, by D0k's choice)
-- [~] VU meter is a normal effect, not an override; tray left click does nothing (requested 2026-11-02)
+- [x] VU meter is a normal effect, not an override; tray left click does nothing (v15 / 0.7, tested 2026-11-02)
 
 ## Release
 - [ ] GitHub repo under D0k-Soundwave, GPL-3.0, no Claude attribution

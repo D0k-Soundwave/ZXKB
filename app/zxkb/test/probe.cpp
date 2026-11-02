@@ -90,6 +90,11 @@ int main(int argc, char **argv) {
         std::printf("streamed %d frames (%d packets) in %.2f s: %.1f frames/s, %.0f packets/s\n", frames, packets, el, frames / el, packets / el);
         uint8_t dis[1] = {proto::DIRECT_DISABLE};
         link.send(dis, 1);
+    } else if (!std::strcmp(cmd, "off")) { // probe off: lighting off, as Fn + knob click (not saved)
+        uint8_t q[4] = {proto::VIA_SET, proto::VIA_RGB_MATRIX, proto::VIA_EFFECT, 0};
+        link.send(q, 4);
+        std::printf("lighting off\n");
+        pump(100, false);
     } else if (!std::strcmp(cmd, "effect") && argc > 2) { // probe effect NAME: switch effect (not saved)
         for (size_t i = 0; i < board->names.size(); i++)
             if (board->names[i] == argv[2]) {
