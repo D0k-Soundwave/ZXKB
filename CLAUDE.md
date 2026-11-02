@@ -59,12 +59,15 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   build, not yet flashed.
 
 ## App: current state
-- `app/legacy/zx_vu.py`: the ZX VU tray app (pyaudiowpatch WASAPI loopback, numpy FFT, hidapi,
-  pystray; PyInstaller onefile `ZX_VU.exe`; settings in `%APPDATA%\ZX_VU.json`). Styles: frequency
-  bands, and AY channels in ACB order (A left/top, C centre/bottom, B right/middle). Effects submenu.
-  Installed copy runs from `Documents\Keyboard Layouts\ZX VU\ZX_VU.exe` via HKCU Run key "ZX VU".
-- ZXKB replaces it (rename agreed). Tunables that D0k approved for the VU: FPS 40, RANGE_DB 30,
-  HEADROOM_DB 9, CURVE 1.7, FALL 0.72, reference = moving average.
+- `app/zxkb`: ZXKB, native C++ (Win32 only, no runtime): `make -C /h/ZXKB/app/zxkb` in QMK MSYS -> `build/ZXKB.exe`.
+  `src/hidlink` (find ZXKB boards by raw HID + 0xD9 probe, effect names, LED positions, reconnect),
+  `src/vumath` (VU maths ported from zx_vu.py; `test/run_vu_test.sh` compares it with the real legacy code:
+  worst difference 0), `src/vu` (WASAPI loopback, only while the VU is on), `src/settings` (`%APPDATA%\ZXKB\zxkb.ini`,
+  `profiles\*.ini`, HKCU Run "ZXKB"), `src/effects` (menu names and groups), `src/main` (tray and menus).
+- `app/legacy/zx_vu.py`: the old ZX VU tray app (Python; PyInstaller onefile `ZX_VU.exe`; settings in
+  `%APPDATA%\ZX_VU.json`), still installed in `Documents\Keyboard Layouts\ZX VU\ZX_VU.exe` via HKCU Run key "ZX VU".
+- VU tunables D0k approved: FPS 40, RANGE_DB 30, HEADROOM_DB 9, CURVE 1.7, FALL 0.72, reference = moving average.
+- Measure with `python tools/measure.py ZXKB.exe 60` (private working set is the honest RAM figure).
 
 ## Target design (agreed)
 See `docs/REQUIREMENTS.md` for the full checklist and status. Architecture:
