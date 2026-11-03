@@ -100,7 +100,10 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       any keyboard with a direct protocol gets them (D0k, 2026-11-03). On standard VIA firmware only whole-keyboard
       versions are possible (Border flash, Tape loading flicker). Downsides: they stop when ZXKB is not running
       (e.g. on the MiSTer), small PC cost (under 1% of one core, A), key reactions later by Windows + USB time
-      (10-30 ms, A). Decision pending: whether the on-keyboard versions stay in the ZXKB firmware as well
+      (10-30 ms, A). Decided by D0k 2026-11-03: app only. The ZXKB firmware drops its own ZX effects, Key
+      explosion and ZX typing effects once the streamed versions work (step 8), freeing flash and effect slots.
+      Consequence: with no PC (e.g. on the MiSTer) the keyboard shows only QMK's own effects; the automatic Spectrum
+      stripes in Spectrum mode go with them
 - [ ] Find out what a keyboard can do when it is plugged in, and offer only that:
       - ZXKB module boards: everything; the firmware reports its features and physical layout
       - Vial boards: the keyboard hands over its own layout; keymap, macros, VIA lighting
