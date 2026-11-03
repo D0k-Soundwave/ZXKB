@@ -42,6 +42,12 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Fn+number hotkey slots, each assignable to an effect or profile
 - [ ] Live preview window with the Wraith legends
 - [ ] Per-key paint editor
+- [ ] Per-key effects (D0k, 2026-11-03): each key its own effect over its colour, run by the keyboard: steady, flash
+      between two colours (in step with each other, Spectrum FLASH rate 320 ms by default), breathe, colour cycle,
+      twinkle; own colours and speed per key. Planned cost: 7 bytes per key in the keyboard's settings memory (616 on the
+      Q3, up from 275), taken from the space for macros stored on the keyboard; first start of that firmware resets the
+      keymap, macros and key colours. ZXKB firmware only at first
+- [ ] Clear gives every key black as its own colour, lighting stays on (D0k, 2026-11-03; done in 0.19)
 - [ ] LED mirror sends a frame only when a colour changed (firmware): a still keyboard then costs nothing while the
       window is open (0.47% of one core measured 2026-11-03, from 300 unchanged packets/s reaching both copies)
 - [~] Per-key colour on/off in the app on an ongoing basis (v19 + 0.17: select keys in the preview; ZXKB firmware only,
