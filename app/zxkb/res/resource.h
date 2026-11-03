@@ -14,5 +14,5 @@
 #define IDC_FW_PROGRESS  216
 #define IDC_FW_INSTALL   217
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 20 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.20" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 21 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.21" // raise for every build installed for D0k (docs/VERSIONS.md)

@@ -113,32 +113,45 @@ void send(std::initializer_list<uint8_t> bytes);
 void request_keymap() {
     if (g_board && g_board->via_protocol && g_board->rows && g_board->cols) g_link.request_keymap(g_board->rows, g_board->cols);
 }
-bool per_key_possible() { return zxkb_board() && g_board->protocol >= 6; }
+bool per_key_possible() { return zxkb_board() && g_board->protocol >= 7; }
 void schedule_save();
 
-void set_key_colours(const std::vector<int> &leds, bool on, uint8_t r, uint8_t g, uint8_t b) {
+const uint8_t *key_state(int led) {
+    if (!per_key_possible() || led < 0 || led >= g_board->led_count) return nullptr;
+    return &g_board->key[led * proto::KEY_BYTES];
+}
+
+void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r, uint8_t g, uint8_t b) {
     if (!per_key_possible()) return;
-    std::vector<int> l = leds;
+    std::vector<int> l;
+    for (int led : leds)
+        if (led >= 0 && led < g_board->led_count) l.push_back(led);
     std::sort(l.begin(), l.end());
+    l.erase(std::unique(l.begin(), l.end()), l.end());
     for (int led : l) {
-        if (led < 0 || led >= g_board->led_count) continue;
-        g_board->key_set[led] = on;
-        g_board->key_rgb[led * 3] = r; g_board->key_rgb[led * 3 + 1] = g; g_board->key_rgb[led * 3 + 2] = b;
+        uint8_t *k = &g_board->key[led * proto::KEY_BYTES];
+        uint8_t fx = k[0] >> 4, speed = k[0] & 15;
+        if (fx == proto::KEY_NONE && what != KEY_FOLLOW) { fx = proto::KEY_STEADY; speed = proto::KEY_SPEED_DEFAULT; }
+        switch (what) {
+            case KEY_FIRST: k[1] = r; k[2] = g; k[3] = b; break;
+            case KEY_SECOND: k[4] = r; k[5] = g; k[6] = b; break;
+            case KEY_EFFECT: fx = (uint8_t)value; break;
+            case KEY_SPEED: speed = (uint8_t)(value < 0 ? 0 : value > 15 ? 15 : value); break;
+            case KEY_FOLLOW: fx = proto::KEY_NONE; break;
+        }
+        k[0] = (uint8_t)(fx << 4 | speed);
     }
-    // runs of neighbouring LEDs, up to 7 per report
+    // runs of neighbouring LEDs, up to 4 per report
     for (size_t i = 0; i < l.size();) {
         int first = l[i], n = 0;
         uint8_t q[proto::REPORT] = {proto::KEYS, proto::KEYS_SET, (uint8_t)first};
         while (i < l.size() && l[i] == first + n && n < proto::KEYS_PER_PACKET) {
-            int led = l[i];
-            q[4 + n * 4] = g_board->key_set[led];
-            std::memcpy(&q[5 + n * 4], &g_board->key_rgb[led * 3], 3);
+            std::memcpy(&q[4 + n * proto::KEY_BYTES], &g_board->key[l[i] * proto::KEY_BYTES], proto::KEY_BYTES);
             n++;
             i++;
         }
-        if (!n) { i++; continue; } // out of range
         q[3] = (uint8_t)n;
-        g_link.send(q, 4 + n * 4);
+        g_link.send(q, 4 + n * proto::KEY_BYTES);
     }
     schedule_save();
 }

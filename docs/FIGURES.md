@@ -99,6 +99,11 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Per-key colours in settings memory (Q3) | 275 bytes | C | 88 LEDs x 3 + (88 + 7) / 8 = 264 + 11 |
 | 0.17 ZXKB.exe size | 506,880 bytes | M | 2026-11-03 |
 | Per-key colour, one key (0.18 + v19) | keyboard holds LED 51 = 255, 255, 0 and its LED mirror reports the same; 0 other keys changed | M | probe keys / probe mirror, 2026-11-03 |
+| Firmware v20 size / static RAM | 61,472 bytes / .bss 7,204 bytes | M | build.sh, 2026-11-03 |
+| Per-key effects in settings memory (Q3) | 616 bytes (module block 645) | C | 88 LEDs x 7 bytes; + 29 |
+| Per-key effect speeds | flash step 80 ms (speed 15) to 1,280 ms (speed 0); breath 5 steps, twinkle 6, colour cycle 10 | A | chosen so speed 12 = 320 ms (Spectrum FLASH, M by eye 2026-11-02 for Caps Lock); judge by eye |
+| Macro space left on the keyboard after v20 | about 560 bytes | A | not measured: read VIA's macro buffer size once v20 is on |
+| 0.21 ZXKB.exe size | 510,464 bytes | M | 2026-11-03 |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

@@ -106,14 +106,17 @@ int main(int argc, char **argv) {
             if (want < 0 || i == want) std::printf("LED %2d: %3d %3d %3d\n", i, rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
         q[1] = 0;
         link.send(q, 2);
-    } else if (!std::strcmp(cmd, "keys")) { // probe keys: per-key colours as the keyboard holds them (read at connect)
-        int set = 0;
-        for (int i = 0; i < board->led_count && i < (int)board->key_set.size(); i++)
-            if (board->key_set[i]) {
-                set++;
-                std::printf("LED %2d: %3d %3d %3d\n", i, board->key_rgb[i * 3], board->key_rgb[i * 3 + 1], board->key_rgb[i * 3 + 2]);
-            }
-        std::printf("%d of %d keys have their own colour\n", set, board->led_count);
+    } else if (!std::strcmp(cmd, "keys")) { // probe keys: per-key colours and effects as the keyboard holds them
+        static const char *fx[6] = {"effect", "steady", "flash", "breathe", "cycle", "twinkle"};
+        int own = 0;
+        for (int i = 0; i < board->led_count && (i + 1) * proto::KEY_BYTES <= (int)board->key.size(); i++) {
+            const uint8_t *k = &board->key[i * proto::KEY_BYTES];
+            if (!(k[0] >> 4)) continue;
+            own++;
+            std::printf("LED %2d: %-7s speed %2d  %3d %3d %3d / %3d %3d %3d\n", i, (k[0] >> 4) < 6 ? fx[k[0] >> 4] : "?", k[0] & 15,
+                        k[1], k[2], k[3], k[4], k[5], k[6]);
+        }
+        std::printf("%d of %d keys have their own colour or effect\n", own, board->led_count);
     } else if (!std::strcmp(cmd, "bright") && argc > 2) { // probe bright N: brightness 0-255 (not saved)
         uint8_t q[4] = {proto::VIA_SET, proto::VIA_RGB_MATRIX, proto::VIA_BRIGHTNESS, (uint8_t)std::atoi(argv[2])};
         link.send(q, 4);

@@ -11,6 +11,7 @@
 #include "raw_hid.h"
 #include "version.h"
 #include "zxkb.h"
+#include "lib/lib8tion/lib8tion.h" /* sin8, as QMK's own effects use */
 
 ASSERT_COMMUNITY_MODULES_MIN_API_VERSION(1, 1, 3);
 
@@ -69,8 +70,7 @@ typedef struct PACKED {
     uint8_t home_mode;                    /* the keyboard's own effect, kept while an overlay shows */
     uint8_t size[ZXKB_TUNABLES];          /* per tunable effect, see tunables[] */
     uint8_t intensity[ZXKB_TUNABLES];
-    uint8_t key_set[(RGB_MATRIX_LED_COUNT + 7) / 8]; /* per-key colour in use (bit per LED) */
-    uint8_t key_rgb[RGB_MATRIX_LED_COUNT][3];        /* per-key colour, before brightness; 0, 0, 0 = off */
+    uint8_t key[RGB_MATRIX_LED_COUNT][ZXKB_KEY_BYTES]; /* per key: fx and speed, first colour, second colour */
 } zxkb_config_t;
 _Static_assert(sizeof(zxkb_config_t) == EECONFIG_MODULE_ZXKB_DATA_SIZE, "update EECONFIG_MODULE_ZXKB_DATA_SIZE in config.h");
 static zxkb_config_t cfg;
@@ -107,36 +107,28 @@ void eeconfig_init_zxkb_datablock(void) { /* first start, or the saved layout ch
         def.size[i]      = ZXKB_TUNE_DEFAULT_SIZE;
         def.intensity[i] = ZXKB_TUNE_DEFAULT_INTENSITY;
     }
-    memset(def.key_set, 0, sizeof(def.key_set));
-    memset(def.key_rgb, 0, sizeof(def.key_rgb));
+    memset(def.key, 0, sizeof(def.key));
     eeconfig_update_zxkb_datablock(&def, 0, sizeof(def));
 }
 
-/* ---------- Per-key colours ---------- */
-static bool key_is_set(uint8_t i) { return cfg.key_set[i / 8] & (1 << (i % 8)); }
+/* ---------- Per-key colours and effects ---------- */
+#define KEYS_PER_PACKET 4 /* [C] (32 - 4 header bytes) / 7 bytes a key */
 
 static void keys_command(uint8_t *data, uint8_t length) {
     uint8_t sub = data[1];
     if (sub == ZXKB_KEYS_GET) {
         uint8_t first = data[2], n = 0;
         memset(&data[3], 0, length - 3);
-        while (n < 7 && first + n < RGB_MATRIX_LED_COUNT) {
-            uint8_t i = first + n;
-            data[5 + n * 4] = key_is_set(i);
-            memcpy(&data[6 + n * 4], cfg.key_rgb[i], 3);
+        while (n < KEYS_PER_PACKET && first + n < RGB_MATRIX_LED_COUNT) {
+            memcpy(&data[4 + n * ZXKB_KEY_BYTES], cfg.key[first + n], ZXKB_KEY_BYTES);
             n++;
         }
         data[2] = first;
         data[3] = n;
-        /* data[4] spare */
     } else if (sub == ZXKB_KEYS_SET) {
         uint8_t first = data[2], n = data[3];
-        for (uint8_t k = 0; k < n && k < 7 && first + k < RGB_MATRIX_LED_COUNT; k++) {
-            uint8_t i = first + k;
-            if (data[4 + k * 4]) cfg.key_set[i / 8] |= 1 << (i % 8);
-            else cfg.key_set[i / 8] &= ~(1 << (i % 8));
-            memcpy(cfg.key_rgb[i], &data[5 + k * 4], 3);
-        }
+        for (uint8_t k = 0; k < n && k < KEYS_PER_PACKET && first + k < RGB_MATRIX_LED_COUNT; k++)
+            memcpy(cfg.key[first + k], &data[4 + k * ZXKB_KEY_BYTES], ZXKB_KEY_BYTES);
         memset(&data[2], 0, length - 2);
         data[2] = 1;
     } else if (sub == ZXKB_KEYS_SAVE) {
@@ -144,7 +136,7 @@ static void keys_command(uint8_t *data, uint8_t length) {
         memset(&data[2], 0, length - 2);
         data[2] = 1;
     } else if (sub == ZXKB_KEYS_CLEAR) {
-        memset(cfg.key_set, 0, sizeof(cfg.key_set));
+        for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT; i++) cfg.key[i][0] = 0;
         memset(&data[2], 0, length - 2);
         data[2] = 1;
     } else {
@@ -158,9 +150,38 @@ static void keys_command(uint8_t *data, uint8_t length) {
 bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
     if (!rgb_matrix_indicators_advanced_zxkb_kb(led_min, led_max)) return false;
     if (overlay == ZXKB_OVERLAY_DIRECT) return true;
-    uint16_t v = rgb_matrix_get_val();
-    for (uint8_t i = led_min; i < led_max && i < RGB_MATRIX_LED_COUNT; i++)
-        if (key_is_set(i)) rgb_matrix_set_color(i, cfg.key_rgb[i][0] * v / 255, cfg.key_rgb[i][1] * v / 255, cfg.key_rgb[i][2] * v / 255);
+    uint16_t v   = rgb_matrix_get_val();
+    uint32_t now = timer_read32();
+    for (uint8_t i = led_min; i < led_max && i < RGB_MATRIX_LED_COUNT; i++) {
+        const uint8_t *k  = cfg.key[i];
+        uint8_t        fx = k[0] >> 4, speed = k[0] & 15;
+        if (fx == ZXKB_KEY_NONE) continue;
+        const uint8_t *a = &k[1], *b = &k[4];
+        uint8_t        c[3];
+        uint8_t        mix = 255; /* 255 = first colour, 0 = second */
+        /* [A] speeds chosen so speed 12 gives the Spectrum FLASH rate (320 ms) and 0-15 spans 16x */
+        uint32_t step = 80u * (16 - speed); /* 80 ms (speed 15) to 1,280 ms (speed 0) */
+        switch (fx) {
+            case ZXKB_KEY_FLASH: mix = (now / step) & 1 ? 0 : 255; break;
+            case ZXKB_KEY_BREATHE: mix = sin8((uint8_t)(now * 256 / (step * 5))); break; /* one breath = 5 steps */
+            case ZXKB_KEY_TWINKLE: {
+                uint8_t w = sin8((uint8_t)(now * 256 / (step * 6) + i * 97)); /* each key its own phase */
+                mix = w > 200 ? (uint8_t)((w - 200) * 255 / 55) : 0;          /* short sparks */
+                break;
+            }
+            case ZXKB_KEY_CYCLE: {
+                uint8_t peak = a[0] > a[1] ? (a[0] > a[2] ? a[0] : a[2]) : (a[1] > a[2] ? a[1] : a[2]);
+                HSV hsv = {(uint8_t)(now * 256 / (step * 10) + i * 3), 255, peak};
+                RGB rgb = hsv_to_rgb(hsv);
+                c[0] = rgb.r; c[1] = rgb.g; c[2] = rgb.b;
+                rgb_matrix_set_color(i, c[0] * v / 255, c[1] * v / 255, c[2] * v / 255);
+                continue;
+            }
+            default: break; /* steady */
+        }
+        for (uint8_t j = 0; j < 3; j++) c[j] = (uint8_t)((a[j] * mix + b[j] * (255 - mix)) / 255);
+        rgb_matrix_set_color(i, c[0] * v / 255, c[1] * v / 255, c[2] * v / 255);
+    }
     return true;
 }
 

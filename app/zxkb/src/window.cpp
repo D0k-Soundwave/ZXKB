@@ -10,6 +10,7 @@
 #include "flash.h"
 #include "boards.h"
 #include "keycaps.h"
+#include "protocol.h"
 #include "labels.h"
 #include "../res/resource.h"
 #include <windowsx.h>
@@ -26,6 +27,7 @@ namespace {
 enum : int {
     IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP, IDC_KEYCAPS,
     IDC_KEYS_INFO, IDC_KEYS_ALL, IDC_KEYS_NONE, IDC_KEYS_EFFECT, IDC_KEYS_OFF, IDC_KEYS_COLOUR,
+    IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -40,13 +42,18 @@ constexpr int VU_GROUP = 100; // list group for the VU styles
 
 // Layout in device-independent pixels (scaled for the screen's DPI). [A] sizes chosen to fit the controls:
 // the preview across the top, the effect list on the left, the controls on the right.
-constexpr int W = 680, MARGIN = 12, ROW = 30, LIST_W = 300, LIST_H = 226, SWATCH = 24, GUTTER = 16, KEYS_ROW = 36;
+constexpr int W = 680, MARGIN = 12, ROW = 30, LIST_W = 300, LIST_H = 226, SWATCH = 24, GUTTER = 16, KEYS_ROW = 70; // two rows: selection, then the keys' effect
 constexpr UINT TIMER_MIRROR = 1;
 constexpr UINT WM_LOOKED_UP = WM_APP + 120; // wParam 1 = found; lParam: error text (new std::wstring) or 0
 void look_up();
 void fill_keycaps();
 void refresh_keys();
 bool keys_mode() { return per_key_possible() && preview_selected_count() > 0; } // the colours go to the selected keys
+int  g_key_target = 1; // which colour of the selected keys the colour boxes set: 1 first, 2 second
+void key_colour(uint8_t r, uint8_t g, uint8_t b) { // a colour picked for the selected keys
+    edit_keys(preview_selected_leds(), g_key_target == 2 ? KEY_SECOND : KEY_FIRST, 0, r, g, b);
+}
+const wchar_t *const key_fx_names[5] = {L"Steady", L"Flash", L"Breathe", L"Colour cycle", L"Twinkle"};
 constexpr UINT MIRROR_KEEPALIVE_MS = 1000; // [C] half the keyboard's 2 s keep-alive, so the colours never stop
 
 HWND  g_win = nullptr;
@@ -86,6 +93,15 @@ void layout() {
             bx -= i == 1 ? 14 : 6; // a wider gap between the colour buttons and the selection buttons
         }
         MoveWindow(item(IDC_KEYS_INFO), px(MARGIN), px(y + 4), px(bx - MARGIN), px(20), FALSE);
+        // second row: the selected keys' effect, its speed, and which of their two colours the colour boxes set
+        int r2 = y + 34;
+        MoveWindow(item(IDC_KEY_FX_LABEL), px(MARGIN), px(r2 + 4), px(70), px(20), FALSE);
+        MoveWindow(item(IDC_KEY_FX), px(MARGIN + 72), px(r2), px(130), px(200), FALSE);
+        MoveWindow(item(IDC_KEY_SPEED_LABEL), px(MARGIN + 216), px(r2 + 4), px(44), px(20), FALSE);
+        MoveWindow(item(IDC_KEY_SPEED), px(MARGIN + 260), px(r2), px(150), px(26), FALSE);
+        MoveWindow(item(IDC_KEY_COLOURS_LABEL), px(W - MARGIN - 196), px(r2 + 4), px(110), px(20), FALSE);
+        MoveWindow(item(IDC_KEY_C1), px(W - MARGIN - 82), px(r2), px(38), px(26), FALSE);
+        MoveWindow(item(IDC_KEY_C2), px(W - MARGIN - 38), px(r2), px(38), px(26), FALSE);
     }
     y += KEYS_ROW;
     int top = y;
@@ -310,7 +326,7 @@ void refresh_keys() {
     bool can = per_key_possible();
     int  n   = preview_selected_count();
     std::wstring t = !g_board ? L""
-                   : !can ? L"Key colours need ZXKB firmware v19"
+                   : !can ? L"Key colours need ZXKB firmware v20"
                    : n == 0 ? L"Click keys to colour them (Ctrl: more; empty spot: none)"
                    : std::to_wstring(n) + (n == 1 ? L" key: pick a colour below, Off or Follow effect"
                                                     : L" keys: pick a colour below, Off or Follow effect");
@@ -319,6 +335,46 @@ void refresh_keys() {
     EnableWindow(item(IDC_KEYS_NONE), can);
     EnableWindow(item(IDC_KEYS_EFFECT), can && n > 0);
     EnableWindow(item(IDC_KEYS_OFF), can && n > 0);
+    // the first selected key's effect, speed and colours (changes go to every selected key)
+    std::vector<int> sel = preview_selected_leds();
+    const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
+    bool on = can && n > 0;
+    int fx = k ? k[0] >> 4 : 0;
+    g_updating = true;
+    SendMessageW(item(IDC_KEY_FX), CB_SETCURSEL, fx >= proto::KEY_STEADY && fx <= proto::KEY_TWINKLE ? fx - 1 : 0, 0);
+    SendMessageW(item(IDC_KEY_SPEED), TBM_SETPOS, TRUE, k && fx ? (k[0] & 15) : proto::KEY_SPEED_DEFAULT);
+    g_updating = false;
+    for (int id : {IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2})
+        EnableWindow(item(id), on);
+    // the second colour only matters for effects that use it
+    bool two = on && (fx == proto::KEY_FLASH || fx == proto::KEY_BREATHE || fx == proto::KEY_TWINKLE);
+    EnableWindow(item(IDC_KEY_C2), two);
+    if (!two) g_key_target = 1;
+    InvalidateRect(item(IDC_KEY_C1), nullptr, FALSE);
+    InvalidateRect(item(IDC_KEY_C2), nullptr, FALSE);
+}
+
+// The two colour buttons show the first selected key's colours; the framed one is what the colour boxes set
+void draw_key_colour(const DRAWITEMSTRUCT *d) {
+    int which = d->CtlID == IDC_KEY_C2 ? 2 : 1;
+    std::vector<int> sel = preview_selected_leds();
+    const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
+    COLORREF c = k ? RGB(k[which == 2 ? 4 : 1], k[which == 2 ? 5 : 2], k[which == 2 ? 6 : 3]) : GetSysColor(COLOR_BTNFACE);
+    bool enabled = IsWindowEnabled(d->hwndItem) != 0;
+    FillRect(d->hDC, &d->rcItem, GetSysColorBrush(COLOR_WINDOW));
+    RECT r = d->rcItem;
+    InflateRect(&r, -px(4), -px(4));
+    HBRUSH fill = CreateSolidBrush(enabled ? c : GetSysColor(COLOR_BTNFACE));
+    FillRect(d->hDC, &r, fill);
+    DeleteObject(fill);
+    HBRUSH frame = CreateSolidBrush(GetSysColor(enabled && which == g_key_target ? COLOR_HIGHLIGHT : COLOR_BTNSHADOW));
+    RECT o = d->rcItem;
+    for (int i = 0; i < (enabled && which == g_key_target ? 3 : 1); i++) { FrameRect(d->hDC, &o, frame); InflateRect(&o, -1, -1); }
+    DeleteObject(frame);
+    SetBkMode(d->hDC, TRANSPARENT);
+    SetTextColor(d->hDC, (GetRValue(c) + GetGValue(c) + GetBValue(c)) > 380 ? RGB(0, 0, 0) : RGB(255, 255, 255));
+    RECT t = r;
+    DrawTextW(d->hDC, which == 2 ? L"2" : L"1", 1, &t, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
 void pick_key_colour() {
@@ -337,7 +393,7 @@ void pick_key_colour() {
     cc.Flags        = CC_FULLOPEN | CC_RGBINIT;
     if (!ChooseColorW(&cc)) return;
     last = cc.rgbResult;
-    set_key_colours(preview_selected_leds(), true, GetRValue(last), GetGValue(last), GetBValue(last));
+    key_colour(GetRValue(last), GetGValue(last), GetBValue(last));
 }
 
 void on_slider(int s) {
@@ -413,6 +469,8 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (!g_updating)
                 for (int s = 0; s < SLIDERS; s++)
                     if ((HWND)lp == item(IDC_SLIDER + s)) on_slider(s);
+            if (!g_updating && (HWND)lp == item(IDC_KEY_SPEED) && LOWORD(wp) != TB_ENDTRACK)
+                edit_keys(preview_selected_leds(), KEY_SPEED, (int)SendMessageW(item(IDC_KEY_SPEED), TBM_GETPOS, 0, 0));
             return 0;
         case WM_COMMAND: {
             int id = LOWORD(wp);
@@ -425,11 +483,25 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDC_KEYS_NONE) { // Clear: every key off (black), whatever is selected (D0k, 2026-11-03)
                 std::vector<int> all;
                 for (int i = 0; g_board && i < g_board->led_count; i++) all.push_back(i);
-                set_key_colours(all, true, 0, 0, 0);
+                edit_keys(all, KEY_FIRST, 0, 0, 0, 0);
+                edit_keys(all, KEY_EFFECT, proto::KEY_STEADY);
+                refresh();
                 return 0;
             }
-            if (id == IDC_KEYS_EFFECT) { set_key_colours(preview_selected_leds(), false, 0, 0, 0); return 0; }
-            if (id == IDC_KEYS_OFF) { set_key_colours(preview_selected_leds(), true, 0, 0, 0); return 0; }
+            if (id == IDC_KEYS_EFFECT) { edit_keys(preview_selected_leds(), KEY_FOLLOW, 0); refresh(); return 0; }
+            if (id == IDC_KEYS_OFF) {
+                edit_keys(preview_selected_leds(), KEY_FIRST, 0, 0, 0, 0);
+                edit_keys(preview_selected_leds(), KEY_EFFECT, proto::KEY_STEADY);
+                refresh();
+                return 0;
+            }
+            if (id == IDC_KEY_FX && HIWORD(wp) == CBN_SELCHANGE && !g_updating) {
+                int sel = (int)SendMessageW(item(IDC_KEY_FX), CB_GETCURSEL, 0, 0);
+                if (sel >= 0) edit_keys(preview_selected_leds(), KEY_EFFECT, sel + 1);
+                refresh();
+                return 0;
+            }
+            if (id == IDC_KEY_C1 || id == IDC_KEY_C2) { g_key_target = id == IDC_KEY_C2 ? 2 : 1; refresh(); return 0; }
             if (g_updating) return 0;
             if (id == IDC_ON) {
                 set_effect(Button_GetCheck(item(IDC_ON)) == BST_CHECKED ? (g_st.mode ? g_st.mode : 1) : 0);
@@ -441,18 +513,19 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 else pick_colour();
                 refresh();
             } else if (id == IDC_SWATCH + BLACK) {
-                if (keys_mode()) set_key_colours(preview_selected_leds(), true, 0, 0, 0);
+                if (keys_mode()) key_colour(0, 0, 0);
                 refresh();
             } else if (id >= IDC_SWATCH && id < IDC_SWATCH + 7) {
                 const Colour &c = colours[id - IDC_SWATCH];
-                if (keys_mode()) set_key_colours(preview_selected_leds(), true, GetRValue(c.swatch), GetGValue(c.swatch), GetBValue(c.swatch));
+                if (keys_mode()) key_colour(GetRValue(c.swatch), GetGValue(c.swatch), GetBValue(c.swatch));
                 else set_colour(c.hue, c.sat);
                 refresh();
             }
             return 0;
         }
         case WM_DRAWITEM:
-            draw_swatch(reinterpret_cast<DRAWITEMSTRUCT *>(lp));
+            if (wp == IDC_KEY_C1 || wp == IDC_KEY_C2) draw_key_colour(reinterpret_cast<DRAWITEMSTRUCT *>(lp));
+            else draw_swatch(reinterpret_cast<DRAWITEMSTRUCT *>(lp));
             return TRUE;
         case WM_CTLCOLORSTATIC:
         case WM_CTLCOLORBTN:
@@ -584,6 +657,15 @@ void window_show() {
     make(L"BUTTON", L"Clear", WS_TABSTOP, IDC_KEYS_NONE);
     make(L"BUTTON", L"Follow effect", WS_TABSTOP, IDC_KEYS_EFFECT);
     make(L"BUTTON", L"Off", WS_TABSTOP, IDC_KEYS_OFF);
+    make(L"STATIC", L"Key effect", 0, IDC_KEY_FX_LABEL);
+    HWND kfx = make(WC_COMBOBOXW, L"", WS_TABSTOP | CBS_DROPDOWNLIST, IDC_KEY_FX);
+    for (const wchar_t *n : key_fx_names) SendMessageW(kfx, CB_ADDSTRING, 0, (LPARAM)n);
+    make(L"STATIC", L"Speed", 0, IDC_KEY_SPEED_LABEL);
+    HWND ksp = make(TRACKBAR_CLASSW, L"", WS_TABSTOP | TBS_HORZ | TBS_NOTICKS, IDC_KEY_SPEED);
+    SendMessageW(ksp, TBM_SETRANGE, TRUE, MAKELPARAM(0, 15));
+    make(L"STATIC", L"Colour boxes set", SS_RIGHT, IDC_KEY_COLOURS_LABEL);
+    make(L"BUTTON", L"1", WS_TABSTOP | BS_OWNERDRAW, IDC_KEY_C1);
+    make(L"BUTTON", L"2", WS_TABSTOP | BS_OWNERDRAW, IDC_KEY_C2);
 
     set_font();
     layout();

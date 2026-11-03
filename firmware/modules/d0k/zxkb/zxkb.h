@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 6 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+#define ZXKB_PROTOCOL_VERSION 7 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
                                  * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
-                                 * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD) */
+                                 * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD). 7: per-key effects (0xDD, 7 bytes a key) */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -34,11 +34,19 @@
                                   * stray reports. Settings are kept (no EEPROM clear). */
 #define ZXKB_BOOT_NONE      0 /* status byte 17: bootloader the app can flash */
 #define ZXKB_BOOT_STM32_DFU 1 /* STM32 ROM DFU, USB 0483:DF11 */
-#define ZXKB_CMD_KEYS      0xDD /* per-key colours, drawn over any effect (indicators such as Caps Lock still on top),
-                                 * scaled by the brightness. Always replies [0xDD, sub, ...]:
-                                 * [0xDD, 0x00, first] get -> [0xDD, 0x00, first, n, n x (set, r, g, b)] (n <= 7)
-                                 * [0xDD, 0x01, first, n, n x (set, r, g, b)] change (live, not saved), n <= 7
+#define ZXKB_CMD_KEYS      0xDD /* per-key colours and effects, drawn over any effect (indicators such as Caps Lock still on
+                                 * top), scaled by the brightness. A key: fx (high 4 bits ZXKB_KEY_*, low 4 bits speed 0-15),
+                                 * first colour r, g, b, second colour r, g, b. Always replies [0xDD, sub, ...]:
+                                 * [0xDD, 0x00, first] get -> [0xDD, 0x00, first, n, n x 7 bytes] (n <= 4)
+                                 * [0xDD, 0x01, first, n, n x 7 bytes] change (live, not saved), n <= 4
                                  * [0xDD, 0x02] save, [0xDD, 0x03] all keys back to the effect (live) */
+#define ZXKB_KEY_NONE    0 /* the key shows the keyboard's effect */
+#define ZXKB_KEY_STEADY  1 /* first colour */
+#define ZXKB_KEY_FLASH   2 /* first and second colour in turn, all flashing keys in step (Spectrum FLASH) */
+#define ZXKB_KEY_BREATHE 3 /* fades between second and first colour */
+#define ZXKB_KEY_CYCLE   4 /* through the rainbow, as bright as the first colour */
+#define ZXKB_KEY_TWINKLE 5 /* first colour sparkling over the second, each key at its own moment */
+#define ZXKB_KEY_BYTES   7
 #define ZXKB_KEYS_GET   0x00
 #define ZXKB_KEYS_SET   0x01
 #define ZXKB_KEYS_SAVE  0x02

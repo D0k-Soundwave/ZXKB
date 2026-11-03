@@ -144,16 +144,13 @@ bool HidLink::probe(HANDLE h, int in_len, int out_len, Board *board) {
             first += n;
             if (n == 0 || first >= total || first >= 256) break;
         }
-    board->key_set.assign(board->led_count, 0);
-    board->key_rgb.assign(board->led_count * 3, 0);
-    if (board->protocol >= 6) // per-key colours as the keyboard keeps them
+    board->key.assign(board->led_count * proto::KEY_BYTES, 0);
+    if (board->protocol >= 7) // per-key colours and effects as the keyboard keeps them
         for (int first = 0; first < board->led_count;) {
             uint8_t q[proto::REPORT] = {proto::KEYS, proto::KEYS_GET, (uint8_t)first};
             if (!transact(h, q, in_len, out_len) || q[3] == 0) break;
-            for (int k = 0; k < q[3] && first + k < board->led_count; k++) {
-                board->key_set[first + k] = q[5 + k * 4];
-                std::memcpy(&board->key_rgb[(first + k) * 3], &q[6 + k * 4], 3);
-            }
+            for (int k = 0; k < q[3] && first + k < board->led_count; k++)
+                std::memcpy(&board->key[(first + k) * proto::KEY_BYTES], &q[4 + k * proto::KEY_BYTES], proto::KEY_BYTES);
             first += q[3];
         }
     { // most ZXKB keyboards have VIA too: needed to read their keymap for the key labels

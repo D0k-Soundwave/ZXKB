@@ -52,9 +52,15 @@ bool is_favourite(const std::string &n);
 void keyboard_mirror(uint8_t *rgb, int leds); // the LED colours the keyboard last reported
 void mirror_request(bool on);                 // ask the keyboard to keep sending its LED colours (for 2 s)
 void set_favourite(const std::string &n, bool on);
-void enter_bootloader();
-void settings_changed();
-void request_keymap();
-bool per_key_possible();                      // the keyboard keeps per-key colours (ZXKB firmware v19 on)
-// Give keys (LED numbers) their own colour (on) or hand them back to the effect (off); kept on the keyboard
-void set_key_colours(const std::vector<int> &leds, bool on, uint8_t r, uint8_t g, uint8_t b);                        // read the keyboard's keymap (for key labels), if its matrix is known                      // tell the other ZXKB copy to read settings (and keyboard files) again                      // the keyboard restarts into its bootloader (firmware v17 on)
+void enter_bootloader();                      // the keyboard restarts into its bootloader (firmware v17 on)
+void settings_changed();                      // tell the other ZXKB copy to read settings (and keyboard files) again
+void request_keymap();                        // read the keyboard's keymap (for key labels), if its matrix is known
+
+// Per-key colours and effects, kept on the keyboard (ZXKB firmware v20 on). A key: proto::KEY_* effect, speed 0-15,
+// first and second colour. Changes go to the keys given (LED numbers) and are saved with the other settings.
+bool per_key_possible();
+const uint8_t *key_state(int led);            // 7 bytes: effect << 4 | speed, first r g b, second r g b (or null)
+enum KeyEdit { KEY_FIRST, KEY_SECOND, KEY_EFFECT, KEY_SPEED, KEY_FOLLOW };
+// KEY_FIRST / KEY_SECOND: colour r, g, b; KEY_EFFECT: value = proto::KEY_*; KEY_SPEED: value 0-15; KEY_FOLLOW: back
+// to the keyboard's effect. A key that follows the effect becomes Steady when it is given a colour.
+void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);

@@ -42,8 +42,7 @@ struct Board {
     std::vector<uint16_t>    keymap;            // layer 0 as the keyboard has it now (read through VIA), row * cols + col
     std::vector<uint8_t>     led_map;           // ZXKB firmware: LED under each matrix position (255 none), row * map_cols + col
     int                      map_rows = 0, map_cols = 0;
-    std::vector<uint8_t>     key_set;           // ZXKB firmware (protocol 6): per-key colour in use, per LED
-    std::vector<uint8_t>     key_rgb;           // per-key colour, r, g, b per LED
+    std::vector<uint8_t>     key;               // ZXKB firmware (protocol 7): proto::KEY_BYTES per LED
     std::vector<std::string> names; // names[m - 1] = effect number m
     std::vector<uint8_t>     kinds; // 0 QMK, 1 module, 2 board/keymap
     std::vector<uint8_t>     leds;  // x, y, flags per LED

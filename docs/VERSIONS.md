@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v20 | 2026-11-03 | 61,472 bytes | Per-key effects (protocol 7): each key Steady, Flash (two colours, all in step; speed 12 = Spectrum FLASH 320 ms), Breathe, Colour cycle or Twinkle, with its own speed (0-15) and two colours; 7 bytes a key (module block version 4, 645 bytes on the Q3), so the first start resets the keymap, macros and key colours. |
 | v19 | 2026-11-03 | 61,212 bytes | Per-key colours kept on the keyboard (0xDD, protocol 6): any key its own colour or off, over any effect, scaled by brightness; Caps Lock still on top. Settings memory grows by 275 bytes (module block version 3), so the first start resets the VIA keymap and macros to the firmware defaults. |
 | v18 | 2026-11-03 | 60,760 bytes | Reports which LED sits under each key (0xD9 0x03, protocol 5), so ZXKB can light any keyboard drawn from its published layout. |
 | v17 | 2026-11-03 | 60,688 bytes | Restarts into its bootloader when ZXKB asks (0xDC, settings kept), so ZXKB can install firmware without QMK Toolbox or holding Esc. Reports its bootloader type. LED mirror sends only LEDs that changed (protocol 4). |
@@ -39,6 +40,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.21 | 2026-11-03 | 510,464 bytes | Second row under the preview for the selected keys: Key effect, Speed, and buttons 1 / 2 choosing which of the keys' two colours the colour boxes set. Needs firmware v20. |
 | 0.20 | 2026-11-03 | 506,880 bytes | Black added to the colour boxes, for keys (turns the selected keys off); greyed out for the effect colour, which has no black. |
 | 0.19 | 2026-11-03 | 506,880 bytes | Clear gives every key black as its own colour (lighting stays on, keys can then be coloured from the app); clicking an empty spot in the preview deselects. |
 | 0.18 | 2026-11-03 | 506,880 bytes | With keys selected, the colour swatches and More colours... colour those keys (in 0.17 they still set the effect's colour for the whole board, which is what D0k hit; only a separate Colour... button coloured keys). The selection outline sits on the cap, so the key's light stays visible. |
