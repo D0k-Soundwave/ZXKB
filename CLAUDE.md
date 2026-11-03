@@ -78,6 +78,10 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   feeds the VU meter and answers Fn + number; each tells the other (message "ZXKB.settings") to reread settings.
   `src/flash`: Firmware... dialog (bootloader command 0xDC, then `dfu-util -a 0 -d 0483:DF11 -s 0x08000000:leave -D`;
   dfu-util.exe sits next to ZXKB.exe, copied from QMK MSYS by tools/install_app.ps1; log in %APPDATA%\ZXKB\firmware.log).
+  `src/boards` + `src/json` + `src/layout`: plain VIA keyboards (Board::VIA): VIA definition from
+  usevia.app/definitions/v3/<vid*65536+pid>.json (asked first, kept in %APPDATA%\ZXKB\boards), effect names and
+  layout from it. Test switch: environment ZXKB_TEST_VIA=1 makes the app treat a ZXKB keyboard as plain VIA.
+  Keychron's own firmware source: %USERPROFILE%\keychron_qmk (branch 2025q3), `make keychron/q3/iso_encoder:keychron`.
   Build from PowerShell with TMP set to a writable folder (g++ otherwise tries C:\WINDOWS for temp files).
 - Installed copy: `Documents\Keyboard Layouts\ZXKB\ZXKB.exe`, started with Windows by a shortcut in the Startup
   folder (`shell:startup\ZXKB.lnk`), switched from ZX VU on 2026-11-02. Copy a new build there after quitting ZXKB.

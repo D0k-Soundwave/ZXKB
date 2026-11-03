@@ -7,6 +7,7 @@
 #include "app.h"
 #include <d2d1.h>
 #include <dwrite.h>
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <cwchar>
@@ -149,10 +150,33 @@ void draw_cap(const BoardKey &k, float ox, float oy, float unit) {
         text(k.keyword, g_fmt[4], DWRITE_TEXT_ALIGNMENT_CENTER, D2D1::RectF(l - lip, b - unit * 0.17f, r + lip, b + lip), 0xF2F5F8);
 }
 
+// Size of the drawing in keys: the Q3 picture, the keyboard's own layout, or its LED space (224 x 64) as 15 x 5 keys
+void board_size(float *bw, float *bh) {
+    *bw = 15.f;
+    *bh = 5.f;
+    if (!g_board) return;
+    if (is_q3()) { *bw = Q3_W / 100.f; *bh = Q3_H / 100.f; return; }
+    if (!g_board->keys.empty()) {
+        int w, h;
+        kle::bounds(g_board->keys, &w, &h);
+        if (w > 0 && h > 0) { *bw = w / 100.f; *bh = h / 100.f; }
+    }
+}
+
 std::vector<BoardKey> board_keys(bool *q3) { // the keys to draw for the connected keyboard
     std::vector<BoardKey> keys;
     *q3 = is_q3();
     if (*q3) keys.assign(q3_keys, q3_keys + sizeof(q3_keys) / sizeof(q3_keys[0]));
+    else if (!g_board->keys.empty()) // the layout from the keyboard's definition (no LEDs known: drawn unlit)
+        for (const KeyRect &r : g_board->keys) {
+            BoardKey k = {r.x, r.y, r.w, r.h, -1, r.knob ? 2 : 0, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xFF5A4A, L"", L"", L""};
+            if (r.w2) { // ISO Enter: drawn as the usual two-part shape over both rectangles
+                int x0 = std::min(r.x, r.x2), x1 = std::max(r.x + r.w, r.x2 + r.w2);
+                int y0 = std::min(r.y, r.y2), y1 = std::max(r.y + r.h, r.y2 + r.h2);
+                k = {x0, y0, x1 - x0, y1 - y0, -1, 1, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xFF5A4A, L"", L"", L""};
+            }
+            keys.push_back(k);
+        }
     else // keys at the LED positions the keyboard reported
         for (int i = 0; i < g_board->led_count && i * 3 + 1 < (int)g_board->leds.size(); i++)
             keys.push_back({(int)(g_board->leds[i * 3] / 224.f * 1400), (int)(g_board->leds[i * 3 + 1] / 64.f * 400), 100, 100, i, 0,
@@ -186,7 +210,8 @@ void render() {
     float unit = 0, ox = 0, oy = 0;
     if (g_board) {
         keys = board_keys(&q3);
-        float bw = q3 ? Q3_W / 100.f : 15.f, bh = q3 ? Q3_H / 100.f : 5.f; // other boards: 224 x 64 LED space as 15 x 5 keys
+        float bw, bh;
+        board_size(&bw, &bh);
         unit = std::fmin((W - 8) / bw, (H - 8) / bh);
         ox = (W - bw * unit) / 2;
         oy = (H - bh * unit) / 2;
@@ -290,5 +315,7 @@ void preview_update() {
 }
 
 double preview_aspect() {
-    return is_q3() ? (double)Q3_H / Q3_W : 5.0 / 15.0;
+    float bw, bh;
+    board_size(&bw, &bh);
+    return bh / bw;
 }

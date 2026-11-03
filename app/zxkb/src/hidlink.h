@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "layout.h"
 
 // Messages posted to the app window
 #define WM_ZX_CONNECTED    (WM_APP + 1) // lParam = Board* (receiver deletes)
@@ -34,6 +35,7 @@ struct Board {
     uint16_t                 via_protocol = 0;  // VIA protocol version (0 = no VIA)
     uint8_t                  via_channel  = 3;  // VIA lighting channel: 3 RGB matrix, 2 RGB light, 0 none
     std::wstring             def_name;          // keyboard name from its VIA definition
+    std::vector<KeyRect>     keys;              // physical layout (VIA definition), empty if not known
     std::vector<std::string> names; // names[m - 1] = effect number m
     std::vector<uint8_t>     kinds; // 0 QMK, 1 module, 2 board/keymap
     std::vector<uint8_t>     leds;  // x, y, flags per LED

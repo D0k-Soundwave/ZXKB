@@ -13,6 +13,7 @@
 #include <commdlg.h>
 #include <setupapi.h>
 #include <algorithm>
+#include <cwchar>
 #include <string>
 #include <vector>
 
@@ -213,6 +214,17 @@ void set_busy(bool busy, bool can_cancel) {
 }
 
 // The chosen file must be firmware for this keyboard: its USB name is stored in the file (UTF-16, as USB sends it)
+// Is this text in the file? ("PC_DIRECT", the name of ZXKB's direct-colour effect, marks a ZXKB build)
+bool file_has(const std::wstring &path, const char *text) {
+    HANDLE f = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (f == INVALID_HANDLE_VALUE) return false;
+    DWORD size = GetFileSize(f, nullptr), n = 0;
+    std::vector<char> data(size <= MAX_FILE ? size : 0);
+    bool ok = size <= MAX_FILE && ReadFile(f, data.data(), size, &n, nullptr) && n == size;
+    CloseHandle(f);
+    return ok && std::search(data.begin(), data.end(), text, text + strlen(text)) != data.end();
+}
+
 bool check_file(const std::wstring &path, std::wstring *why) {
     HANDLE f = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
     if (f == INVALID_HANDLE_VALUE) { *why = L"The file could not be opened."; return false; }
@@ -221,14 +233,26 @@ bool check_file(const std::wstring &path, std::wstring *why) {
     bool read = size > 1024 && size <= MAX_FILE && ReadFile(f, data.data(), size, &n, nullptr) && n == size;
     CloseHandle(f);
     if (!read) { *why = L"This is not a keyboard firmware file (wrong size)."; return false; }
-    std::wstring product = g_board ? g_board->product : settings::get(L"firmware", L"product");
-    if (product.empty()) return true; // never connected: nothing to compare with
-    const char *p = reinterpret_cast<const char *>(product.c_str());
-    if (std::search(data.begin(), data.end(), p, p + product.size() * 2) == data.end()) {
-        *why = L"This firmware is not for this keyboard (" + product + L").";
-        return false;
+    // Every QMK firmware holds its USB device descriptor: 0x12 0x01, USB version, class, subclass, protocol, packet
+    // size, then vendor and product ID. The IDs must be this keyboard's. They stay the same across firmwares for the
+    // same keyboard (M 2026-11-03: ZXKB v17 and Keychron's own Q3 build both 3434:0123; the Q3 HE file 3434:0B31),
+    // while the USB name can differ ("keychron/q3/iso_encoder" in ZXKB builds, "Keychron Q3" in Keychron's).
+    unsigned want = g_board ? ((unsigned)g_board->vid << 16 | g_board->pid) : (unsigned)settings::get_int(L"firmware", L"usb", 0);
+    if (!want) return true; // never connected: nothing to compare with
+    std::vector<unsigned> found;
+    for (DWORD i = 0; i + 12 <= size; i++) {
+        const uint8_t *d = reinterpret_cast<const uint8_t *>(data.data()) + i;
+        if (d[0] == 0x12 && d[1] == 0x01 && d[2] <= 0x03 && d[3] == 0x02) found.push_back((unsigned)(d[8] | d[9] << 8) << 16 | (d[10] | d[11] << 8));
     }
-    return true;
+    for (unsigned id : found)
+        if (id == want) return true;
+    wchar_t ids[64];
+    swprintf(ids, 64, found.empty() ? L"no USB ID found in it" : L"it is for USB ID %04X:%04X", found.empty() ? 0 : found[0] >> 16,
+             found.empty() ? 0 : found[0] & 0xFFFF);
+    wchar_t mine[16];
+    swprintf(mine, 16, L"%04X:%04X", want >> 16, want & 0xFFFF);
+    *why = std::wstring(L"This firmware is not for this keyboard (") + mine + L"): " + ids + L".";
+    return false;
 }
 
 void install() {
@@ -245,7 +269,11 @@ void install() {
         return;
     }
     std::wstring ask = L"Install " + g_files[sel] + L" on the keyboard?\n\n";
-    ask += by_command || in_dfu ? L"The keyboard stops working for a few seconds while it is written. Its settings are kept."
+    // a ZXKB build keeps the keyboard's settings; another kind of firmware may reset them on its first start
+    bool zxkb_file = file_has(g_file, "PC_DIRECT");
+    ask += by_command || in_dfu ? (zxkb_file ? L"The keyboard stops working for a few seconds while it is written. Its settings are kept."
+                                             : L"The keyboard stops working for a few seconds while it is written. This is not ZXKB "
+                                               L"firmware, so the keyboard may reset its settings when it starts.")
                                 : L"This keyboard's firmware cannot restart itself into its bootloader, so you will be asked to "
                                   L"unplug it and plug it back in while holding Esc. Holding Esc also clears its settings.";
     if (MessageBoxW(g_dlg, ask.c_str(), L"ZXKB", MB_YESNO | MB_ICONQUESTION) != IDYES) return;
@@ -363,8 +391,8 @@ void flash_dialog(HWND owner) {
 }
 
 void flash_refresh() {
-    if (g_board && settings::get(L"firmware", L"product") != g_board->product)
-        settings::set(L"firmware", L"product", g_board->product); // to check files while it is in its bootloader
+    if (g_board && settings::get_int(L"firmware", L"usb", 0) != (int)((unsigned)g_board->vid << 16 | g_board->pid))
+        settings::set_int(L"firmware", L"usb", (int)((unsigned)g_board->vid << 16 | g_board->pid)); // to check files while it is in its bootloader
     if (!g_dlg) return;
     show_keyboard();
     if (g_state == IDLE) fill_list();

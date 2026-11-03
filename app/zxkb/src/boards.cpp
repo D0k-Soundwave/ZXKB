@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "boards.h"
 #include "json.h"
+#include "layout.h"
 #include "settings.h"
 #include <windows.h>
 #include <winhttp.h>
@@ -112,6 +113,7 @@ bool apply_definition(Board *b) {
     Json def = Json::parse(text);
     if (!def.is(Json::OBJ)) return false;
     b->def_name = settings::widen(def["name"].to_str());
+    b->keys     = kle::from_via(def["layouts"]);
     // lighting: RGB matrix (VIA channel 3) or RGB light (channel 2)
     const Json *fx = find_control(def["menus"], "id_qmk_rgb_matrix_effect");
     if (!fx) fx = find_control(def["menus"], "id_qmk_rgblight_effect");

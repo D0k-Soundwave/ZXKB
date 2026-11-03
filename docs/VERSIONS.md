@@ -27,10 +27,17 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 | v12 | 2026-11-02 | 59,456 bytes | ZXKB community module: PC direct mode, SignalRGB protocol, Fn + number slots, Key explosion. Not kept. |
 | v11 | 2026-11-02 | 56,596 bytes | Last firmware before ZXKB (calibrated colours, flashing Caps Lock). Not kept. |
 
+## Other firmware kept for testing
+
+| File | Date | Size | What |
+|---|---|---|---|
+| Keychron_Q3_ISO_knob_standard_2025q3.bin | 2026-11-03 | 61,192 bytes | Keychron's own Q3 ISO knob firmware (keymap `keychron`), built from github.com/Keychron/qmk_firmware branch 2025q3 (shallow clone in `%USERPROFILE%\keychron_qmk`). Standard VIA firmware for testing ZXKB with keyboards that do not run ZXKB. Keychron's LED colour balance (weak red). |
+
 ## App (ZXKB.exe)
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.13 | 2026-11-03 | 485,888 bytes | Plain VIA keyboards (standard firmware): recognised, lighting controlled through VIA, effect names and key layout from the keyboard's VIA definition, looked up online once by USB ID after asking. Firmware check by USB ID instead of USB name (so Keychron's own firmware for the same keyboard is accepted, other keyboards' refused); honest warning that non-ZXKB firmware may reset settings. |
 | 0.12 | 2026-11-03 | 433,664 bytes | Firmware install: clearer message when the keyboard does not restart by itself after writing (unplug and replug, firmware is already written); firmware.log records the time of each phase. |
 | 0.11 | 2026-11-03 | 433,152 bytes | Firmware... button in the window: lists the kept firmware files, checks a file is for this keyboard, restarts the keyboard into its bootloader (v17 on; older firmware: unplug and hold Esc) and writes it with dfu-util, with progress, then waits for the keyboard to come back. dfu-util.exe installed next to ZXKB.exe. |
 | 0.10 | 2026-11-03 | 419,328 bytes | Live preview made light: keycaps and legends drawn once, each frame only paints the lights (36% -> 2.2% of one core while animating); frames with no colour change are skipped. Version number in the file properties fixed (0.9 said 0.8 there). |
