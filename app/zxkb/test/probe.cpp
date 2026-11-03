@@ -95,6 +95,16 @@ int main(int argc, char **argv) {
         link.send(q, 4);
         std::printf("lighting off\n");
         pump(100, false);
+    } else if (!std::strcmp(cmd, "bright") && argc > 2) { // probe bright N: brightness 0-255 (not saved)
+        uint8_t q[4] = {proto::VIA_SET, proto::VIA_RGB_MATRIX, proto::VIA_BRIGHTNESS, (uint8_t)std::atoi(argv[2])};
+        link.send(q, 4);
+        std::printf("brightness %d\n", q[3]);
+        pump(100, false);
+    } else if (!std::strcmp(cmd, "save")) { // probe save: keep the current lighting after unplugging
+        uint8_t q[2] = {proto::VIA_SAVE, proto::VIA_RGB_MATRIX};
+        link.send(q, 2);
+        std::printf("lighting saved\n");
+        pump(300, false);
     } else if (!std::strcmp(cmd, "effect") && argc > 2) { // probe effect NAME: switch effect (not saved)
         for (size_t i = 0; i < board->names.size(); i++)
             if (board->names[i] == argv[2]) {

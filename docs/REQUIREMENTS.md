@@ -42,6 +42,9 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Fn+number hotkey slots, each assignable to an effect or profile
 - [ ] Live preview window with the Wraith legends
 - [ ] Per-key paint editor
+- [ ] Per-key colour on/off in the app on an ongoing basis: any key can be set to no colour (dark) or a colour,
+      over any effect, while indicators such as Caps Lock keep their own behaviour (D0k, 2026-11-03). Until then,
+      keys-off is solid colour at brightness 0 (Caps Lock ignores brightness), set 2026-11-03
 - [ ] Gradient builder (multi-point colour waves)
 - [ ] Drop-in effects: ZXKB Python format in an `Effects` folder
 - [ ] Drop-in effects: SignalRGB Lightscripts (HTML canvas via WebView2; `<meta>` properties become settings;
