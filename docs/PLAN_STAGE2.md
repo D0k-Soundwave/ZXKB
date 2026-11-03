@@ -50,7 +50,8 @@ Written 2026-11-03, after D0k confirmed the requirements list complete. Replaces
    - Layers and zones as one combined effect on the keyboard (one effect slot), streamed from the PC on boards
      without the module or room.
    - More effect controls: direction, two or more colours, full colour picker.
-   - Per-key paint editor, gradient builder, calibration tool with reset to defaults.
+   - Per-key paint editor, including per-key colour on/off over any effect (indicators keep their own
+     behaviour), gradient builder, calibration tool with reset to defaults.
 
 7. **Automation in the tray** (app 0.14)
    - Per-app profiles (Windows reports when the front program changes: no polling), playlists, scheduler.
