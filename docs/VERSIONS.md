@@ -39,6 +39,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.18 | 2026-11-03 | 506,880 bytes | With keys selected, the colour swatches and More colours... colour those keys (in 0.17 they still set the effect's colour for the whole board, which is what D0k hit; only a separate Colour... button coloured keys). The selection outline sits on the cap, so the key's light stays visible. |
 | 0.17 | 2026-11-03 | 506,880 bytes | Click keys in the preview to select them (Ctrl+click for more), then Colour..., Off or Follow effect; Select all, Clear. The picker offers the calibrated Spectrum colours first. The preview builds its key list only when the board, size or labels change, not every frame. |
 | 0.16 | 2026-11-03 | 500,736 bytes | Key labels name the Windows keyboard layout itself, not the language (D0k's English (UK) uses his custom "US - Spectrum (GBP on AltGr+4)" layout); any installed layout can be chosen for the labels, or "as Windows types", which follows a layout switch. |
 | 0.15 | 2026-11-03 | 498,688 bytes | One preview for every keyboard: layout from the keyboard's VIA definition (looked up once after asking), lit through the firmware's key-to-LED map (v18), with labels from what each key does in the Windows keyboard language (keymap read through VIA) or a keycap set. Keycap sets are KLE files; D0k's KAM Wraith set is the first, no longer built in. Import a KLE file from the window. The built-in Q3 picture is gone. |

@@ -303,9 +303,11 @@ void render() {
         for (size_t i = 0; i < keys.size() && i < g_sel.size(); i++) {
             if (!g_sel[i]) continue;
             const BoardKey &k = keys[i];
-            D2D1_ROUNDED_RECT r = D2D1::RoundedRect(D2D1::RectF(ox + k.x / 100.f * unit + 1.5f, oy + k.y / 100.f * unit + 1.5f,
-                                                                ox + (k.x + k.w) / 100.f * unit - 1.5f, oy + (k.y + k.h) / 100.f * unit - 1.5f),
-                                                    unit * 0.1f, unit * 0.1f);
+            // on the cap, inside the gap where the key's light shows, so the light stays visible (D0k, 2026-11-03)
+            float in = GAP * unit + 3.f;
+            D2D1_ROUNDED_RECT r = D2D1::RoundedRect(D2D1::RectF(ox + k.x / 100.f * unit + in, oy + k.y / 100.f * unit + in,
+                                                                ox + (k.x + k.w) / 100.f * unit - in, oy + (k.y + k.h) / 100.f * unit - in),
+                                                    unit * 0.08f, unit * 0.08f);
             g_brush->SetColor(hex(0x000000));
             g_rt->DrawRoundedRectangle(r, g_brush, 4.f);
             g_brush->SetColor(hex(0xFFFFFF));

@@ -95,6 +95,25 @@ int main(int argc, char **argv) {
         link.send(q, 4);
         std::printf("lighting off\n");
         pump(100, false);
+    } else if (!std::strcmp(cmd, "mirror")) { // probe mirror [led]: the colours actually on the LEDs (LED mirror)
+        uint8_t q[2] = {proto::MIRROR, 1};
+        link.send(q, 2);
+        pump(500, false);
+        uint8_t rgb[256 * 3];
+        link.mirror(rgb, board->led_count);
+        int want = argc > 2 ? std::atoi(argv[2]) : -1;
+        for (int i = 0; i < board->led_count; i++)
+            if (want < 0 || i == want) std::printf("LED %2d: %3d %3d %3d\n", i, rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
+        q[1] = 0;
+        link.send(q, 2);
+    } else if (!std::strcmp(cmd, "keys")) { // probe keys: per-key colours as the keyboard holds them (read at connect)
+        int set = 0;
+        for (int i = 0; i < board->led_count && i < (int)board->key_set.size(); i++)
+            if (board->key_set[i]) {
+                set++;
+                std::printf("LED %2d: %3d %3d %3d\n", i, board->key_rgb[i * 3], board->key_rgb[i * 3 + 1], board->key_rgb[i * 3 + 2]);
+            }
+        std::printf("%d of %d keys have their own colour\n", set, board->led_count);
     } else if (!std::strcmp(cmd, "bright") && argc > 2) { // probe bright N: brightness 0-255 (not saved)
         uint8_t q[4] = {proto::VIA_SET, proto::VIA_RGB_MATRIX, proto::VIA_BRIGHTNESS, (uint8_t)std::atoi(argv[2])};
         link.send(q, 4);

@@ -44,6 +44,7 @@ constexpr UINT WM_LOOKED_UP = WM_APP + 120; // wParam 1 = found; lParam: error t
 void look_up();
 void fill_keycaps();
 void refresh_keys();
+bool keys_mode() { return per_key_possible() && preview_selected_count() > 0; } // the colours go to the selected keys
 constexpr UINT MIRROR_KEEPALIVE_MS = 1000; // [C] half the keyboard's 2 s keep-alive, so the colours never stop
 
 HWND  g_win = nullptr;
@@ -74,13 +75,13 @@ void layout() {
     MoveWindow(item(IDC_PREVIEW), px(MARGIN), px(y), px(inner), px(preview_h()), FALSE);
     y += preview_h() + 6;
     { // per-key colours: what is selected, then the buttons, right to left
-        const int bw[5] = {84, 62, 96, 50, 80}; // Colour..., Off, Follow effect, Clear, Select all
-        const int ids[5] = {IDC_KEYS_COLOUR, IDC_KEYS_OFF, IDC_KEYS_EFFECT, IDC_KEYS_NONE, IDC_KEYS_ALL};
+        const int bw[4] = {62, 96, 50, 80}; // Off, Follow effect, Clear, Select all
+        const int ids[4] = {IDC_KEYS_OFF, IDC_KEYS_EFFECT, IDC_KEYS_NONE, IDC_KEYS_ALL};
         int bx = W - MARGIN;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             bx -= bw[i];
             MoveWindow(item(ids[i]), px(bx), px(y), px(bw[i]), px(26), FALSE);
-            bx -= i == 2 ? 14 : 6; // a wider gap between the colour buttons and the selection buttons
+            bx -= i == 1 ? 14 : 6; // a wider gap between the colour buttons and the selection buttons
         }
         MoveWindow(item(IDC_KEYS_INFO), px(MARGIN), px(y + 4), px(bx - MARGIN), px(20), FALSE);
     }
@@ -200,11 +201,13 @@ void refresh() {
     set_slider(SIZE, TUNE_MIN, 255, g_tune.size, tuned && (g_tune.flags & 1), pct(g_tune.size, 128));
     set_slider(INTENSITY, TUNE_MIN, 255, g_tune.intensity, tuned && (g_tune.flags & 2), pct(g_tune.intensity, 255));
 
+    // with keys selected in the preview the colours below colour those keys; otherwise the effect (D0k, 2026-11-03)
+    bool keys = keys_mode();
     for (int c = 0; c < 7; c++) {
-        EnableWindow(item(IDC_SWATCH + c), fx);
+        EnableWindow(item(IDC_SWATCH + c), fx || keys);
         InvalidateRect(item(IDC_SWATCH + c), nullptr, FALSE);
     }
-    EnableWindow(item(IDC_PICK), fx);
+    EnableWindow(item(IDC_PICK), fx || keys);
 
     std::wstring ver = L"ZXKB " ZXKB_W(ZXKB_VERSION_STR);
     if (!on) ver += L" - keyboard not connected";
@@ -307,13 +310,13 @@ void refresh_keys() {
     std::wstring t = !g_board ? L""
                    : !can ? L"Key colours need ZXKB firmware v19"
                    : n == 0 ? L"Click keys to colour them (Ctrl: more)"
-                   : std::to_wstring(n) + (n == 1 ? L" key selected" : L" keys selected");
+                   : std::to_wstring(n) + (n == 1 ? L" key: pick a colour below, Off or Follow effect"
+                                                    : L" keys: pick a colour below, Off or Follow effect");
     SetWindowTextW(item(IDC_KEYS_INFO), t.c_str());
     EnableWindow(item(IDC_KEYS_ALL), can);
     EnableWindow(item(IDC_KEYS_NONE), can && n > 0);
     EnableWindow(item(IDC_KEYS_EFFECT), can && n > 0);
     EnableWindow(item(IDC_KEYS_OFF), can && n > 0);
-    EnableWindow(item(IDC_KEYS_COLOUR), can && n > 0);
 }
 
 void pick_key_colour() {
@@ -348,7 +351,7 @@ void on_slider(int s) {
 
 void draw_swatch(const DRAWITEMSTRUCT *d) {
     int c = (int)d->CtlID - IDC_SWATCH;
-    bool chosen = IsWindowEnabled(d->hwndItem) && g_st.sat == colours[c].sat && (colours[c].sat == 0 || g_st.hue == colours[c].hue);
+    bool chosen = IsWindowEnabled(d->hwndItem) && !keys_mode() && g_st.sat == colours[c].sat && (colours[c].sat == 0 || g_st.hue == colours[c].hue);
     HBRUSH bg = GetSysColorBrush(COLOR_WINDOW);
     FillRect(d->hDC, &d->rcItem, bg);
     RECT r = d->rcItem;
@@ -415,12 +418,11 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
             if (id == IDC_LOOKUP) { look_up(); return 0; }
             if (id == IDC_KEYCAPS && HIWORD(wp) == CBN_SELCHANGE) { on_keycaps(); return 0; }
-            if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh_keys(); return 0; }
-            if (id == IDC_KEYS_ALL) { preview_select_all(); refresh_keys(); return 0; }
-            if (id == IDC_KEYS_NONE) { preview_select_none(); refresh_keys(); return 0; }
+            if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh(); return 0; }
+            if (id == IDC_KEYS_ALL) { preview_select_all(); refresh(); return 0; }
+            if (id == IDC_KEYS_NONE) { preview_select_none(); refresh(); return 0; }
             if (id == IDC_KEYS_EFFECT) { set_key_colours(preview_selected_leds(), false, 0, 0, 0); return 0; }
             if (id == IDC_KEYS_OFF) { set_key_colours(preview_selected_leds(), true, 0, 0, 0); return 0; }
-            if (id == IDC_KEYS_COLOUR) { pick_key_colour(); return 0; }
             if (g_updating) return 0;
             if (id == IDC_ON) {
                 set_effect(Button_GetCheck(item(IDC_ON)) == BST_CHECKED ? (g_st.mode ? g_st.mode : 1) : 0);
@@ -428,10 +430,13 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             } else if (id == IDC_FAV) {
                 set_favourite(current_name(), Button_GetCheck(item(IDC_FAV)) == BST_CHECKED);
             } else if (id == IDC_PICK) {
-                pick_colour();
+                if (keys_mode()) pick_key_colour();
+                else pick_colour();
                 refresh();
             } else if (id >= IDC_SWATCH && id < IDC_SWATCH + 7) {
-                set_colour(colours[id - IDC_SWATCH].hue, colours[id - IDC_SWATCH].sat);
+                const Colour &c = colours[id - IDC_SWATCH];
+                if (keys_mode()) set_key_colours(preview_selected_leds(), true, GetRValue(c.swatch), GetGValue(c.swatch), GetBValue(c.swatch));
+                else set_colour(c.hue, c.sat);
                 refresh();
             }
             return 0;
@@ -569,7 +574,6 @@ void window_show() {
     make(L"BUTTON", L"Clear", WS_TABSTOP, IDC_KEYS_NONE);
     make(L"BUTTON", L"Follow effect", WS_TABSTOP, IDC_KEYS_EFFECT);
     make(L"BUTTON", L"Off", WS_TABSTOP, IDC_KEYS_OFF);
-    make(L"BUTTON", L"Colour...", WS_TABSTOP, IDC_KEYS_COLOUR);
 
     set_font();
     layout();
