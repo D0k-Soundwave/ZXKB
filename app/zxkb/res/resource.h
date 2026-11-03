@@ -5,6 +5,14 @@
 #define IDI_OFF  102
 #define IDD_NAME 201
 #define IDC_NAME 202
+#define IDD_FIRMWARE     210
+#define IDC_FW_INFO      211
+#define IDC_FW_FOLDER    212
+#define IDC_FW_LIST      213
+#define IDC_FW_BROWSE    214
+#define IDC_FW_STATUS    215
+#define IDC_FW_PROGRESS  216
+#define IDC_FW_INSTALL   217
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 10 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.10" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 11 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.11" // raise for every build installed for D0k (docs/VERSIONS.md)

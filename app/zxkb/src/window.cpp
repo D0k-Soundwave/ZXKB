@@ -7,6 +7,7 @@
 #include "effects.h"
 #include "vumath.h"
 #include "preview.h"
+#include "flash.h"
 #include "../res/resource.h"
 #include <windowsx.h>
 #include <commctrl.h>
@@ -20,7 +21,7 @@
 namespace {
 
 enum : int {
-    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW,
+    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -54,7 +55,7 @@ void set_font() {
 }
 
 int preview_h() { return (int)((W - 2 * MARGIN) * preview_aspect()); }
-int content_height() { return MARGIN + 26 + preview_h() + 10 + LIST_H + 10 + 18 + MARGIN; }
+int content_height() { return MARGIN + 26 + preview_h() + 10 + LIST_H + 10 + 26 + MARGIN; }
 
 void layout() {
     int y = MARGIN, inner = W - 2 * MARGIN;
@@ -80,7 +81,8 @@ void layout() {
     y += 8;
     for (int c = 0; c < 7; c++) MoveWindow(item(IDC_SWATCH + c), px(x + c * (SWATCH + 6)), px(y), px(SWATCH), px(SWATCH), FALSE);
     MoveWindow(item(IDC_PICK), px(x + 7 * (SWATCH + 6) + 6), px(y), px(cw - 7 * (SWATCH + 6) - 6), px(SWATCH), FALSE);
-    MoveWindow(item(IDC_VERSION), px(MARGIN), px(top + LIST_H + 10), px(inner), px(18), FALSE);
+    MoveWindow(item(IDC_VERSION), px(MARGIN), px(top + LIST_H + 14), px(inner - 130), px(18), FALSE);
+    MoveWindow(item(IDC_FIRMWARE), px(W - MARGIN - 120), px(top + LIST_H + 10), px(120), px(26), FALSE);
     InvalidateRect(g_win, nullptr, TRUE);
 }
 
@@ -293,6 +295,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_COMMAND: {
             int id = LOWORD(wp);
             if (id == IDCANCEL) { window_close(); return 0; }
+            if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
             if (g_updating) return 0;
             if (id == IDC_ON) {
                 set_effect(Button_GetCheck(item(IDC_ON)) == BST_CHECKED ? (g_st.mode ? g_st.mode : 1) : 0);
@@ -385,6 +388,7 @@ void window_show() {
     for (int c = 0; c < 7; c++) make(L"BUTTON", colours[c].name, WS_TABSTOP | BS_OWNERDRAW, IDC_SWATCH + c);
     make(L"BUTTON", L"More colours...", WS_TABSTOP, IDC_PICK);
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP, IDC_VERSION);
+    make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);
 
     set_font();
     layout();
@@ -401,6 +405,7 @@ void window_show() {
 
 void window_refresh() {
     if (!g_win) return;
+    flash_refresh();
     if (g_listed != g_board) { // a keyboard connected or went away
         fill_list();
         layout(); // the preview's shape depends on the board
@@ -410,7 +415,7 @@ void window_refresh() {
 }
 
 void window_close() {
-    if (!g_win) return;
+    if (!g_win || flash_busy()) return; // never close while firmware is being written
     mirror_request(false); // the keyboard stops sending colours
     DestroyWindow(g_win); // destroys every control with it
     g_win = nullptr;

@@ -85,8 +85,8 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
 - [ ] SOCD (last opposing key wins): QMK community module (port of getreuer's SOCD Cleaner)
 - [ ] Debounce time adjustable from the app (QMK fixes it at 5 ms; firmware work)
 - [ ] NKRO toggle and Windows key repeat delay / rate in the app
-- [ ] Firmware updates from the app: keyboard enters its bootloader on command, flashed with dfu-util from the
-      kept versions (replaces QMK Toolbox and holding Esc)
+- [~] Firmware updates from the app: keyboard enters its bootloader on command, flashed with dfu-util from the
+      kept versions (replaces QMK Toolbox and holding Esc). Built in 0.11 + v17 (STM32 bootloader only so far)
 - [ ] Knob assignment (VIA encoder commands)
 - [ ] On-screen notice when the profile changes
 - Not doing: CPU temperature (driver), faster polling (already 1,000 Hz, the USB full-speed limit), OLED (Q3 has none)
@@ -130,4 +130,7 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
 - [ ] Private for now (decided 2026-11-02); make public at first release
 - [ ] Microsoft Defender flags new unsigned ZXKB builds that add themselves to startup (2026-11-02): decide on
       code signing and/or a false-positive report to Microsoft before release
+- [ ] dfu-util ships with ZXKB (GPL-2.0-or-later): include its licence and a link to its source in the release
+- [ ] WinUSB driver for the STM32 bootloader on a fresh PC: check what Windows does on its own, and how to install it
+      if needed (D0k's PC has it from QMK Toolbox)
 - [ ] README and user manual (existing Q3 keyboard manual doc to be updated for the custom firmware)

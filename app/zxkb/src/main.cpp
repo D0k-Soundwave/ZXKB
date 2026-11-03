@@ -105,6 +105,9 @@ std::string current_name() {
 
 void keyboard_mirror(uint8_t *rgb, int leds) { g_link.mirror(rgb, leds); }
 void send(std::initializer_list<uint8_t> bytes);
+void enter_bootloader() {
+    if (g_board) send({proto::BOOTLOADER, 'Z', 'X', 'B', 'L'});
+}
 void mirror_request(bool on) {
     if (g_board) send({proto::MIRROR, (uint8_t)on});
 }

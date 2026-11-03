@@ -32,9 +32,11 @@ static bool     direct_requested;  /* the app or SignalRGB wants direct colour *
 static uint32_t direct_last;
 static uint8_t  overlay    = ZXKB_OVERLAY_NONE;
 static uint8_t  mirror[RGB_MATRIX_LED_COUNT][3]; /* the colours last sent to the LEDs */
+static uint8_t  mirror_sent[RGB_MATRIX_LED_COUNT][3]; /* what the app last got */
 static bool     mirroring;
 static uint32_t mirror_until, mirror_last;
 static uint8_t  mirror_next;
+static uint8_t  mirror_full; /* packets still to send whether changed or not (after each request from the app) */
 
 void zxkb_mirror_set(int index, uint8_t r, uint8_t g, uint8_t b) {
     if (index < 0 || index >= RGB_MATRIX_LED_COUNT) return;
@@ -208,13 +210,21 @@ void housekeeping_task_zxkb(void) {
         if (timer_expired32(timer_read32(), mirror_until)) {
             mirroring = false;
         } else if (timer_elapsed32(mirror_last) >= ZXKB_MIRROR_PACKET_MS) {
-            uint8_t msg[ZXKB_REPORT_SIZE] = {ZXKB_CMD_MIRROR, mirror_next};
-            uint8_t count = RGB_MATRIX_LED_COUNT - mirror_next < 9 ? RGB_MATRIX_LED_COUNT - mirror_next : 9;
-            msg[2] = count;
-            memcpy(&msg[3], mirror[mirror_next], count * 3);
-            raw_hid_send(msg, sizeof(msg));
-            mirror_next = mirror_next + count >= RGB_MATRIX_LED_COUNT ? 0 : mirror_next + count;
-            mirror_last = timer_read32();
+            /* the next group of 9 LEDs that changed since it was last sent (all of them after a request), so a
+             * still keyboard sends nothing between the app's keep-alive requests */
+            for (uint8_t tries = 0; tries < (RGB_MATRIX_LED_COUNT + 8) / 9; tries++) {
+                uint8_t first = mirror_next;
+                uint8_t count = RGB_MATRIX_LED_COUNT - first < 9 ? RGB_MATRIX_LED_COUNT - first : 9;
+                mirror_next   = first + count >= RGB_MATRIX_LED_COUNT ? 0 : first + count;
+                if (!mirror_full && memcmp(mirror_sent[first], mirror[first], count * 3) == 0) continue;
+                if (mirror_full) mirror_full--;
+                uint8_t msg[ZXKB_REPORT_SIZE] = {ZXKB_CMD_MIRROR, first, count};
+                memcpy(&msg[3], mirror[first], count * 3);
+                memcpy(mirror_sent[first], mirror[first], count * 3);
+                raw_hid_send(msg, sizeof(msg));
+                mirror_last = timer_read32();
+                break;
+            }
         }
     }
 
@@ -345,7 +355,8 @@ static void info_leds(uint8_t *data, uint8_t length) {
 }
 
 /* [0xD9, 0x00] -> [0xD9, 0x00, protocol, LED count, effect count, mode, enabled, brightness, speed, hue, sat,
- *                  max brightness, overlay, VU allowed, VU requested, VU possible, firmware version]. Also sent unasked when
+ *                  max brightness, overlay, VU allowed, VU requested, VU possible, firmware version, bootloader].
+ *                  Also sent unasked when
  *                  lighting, effect, overlay or VU state changes. */
 static void info_status(uint8_t *data, uint8_t length) {
     memset(&data[2], 0, length - 2);
@@ -363,6 +374,11 @@ static void info_status(uint8_t *data, uint8_t length) {
     data[13] = vu_allowed;
     data[14] = vu_requested;
     data[15] = vu_possible();
+#ifdef BOOTLOADER_STM32_DFU
+    data[17] = ZXKB_BOOT_STM32_DFU;
+#else
+    data[17] = ZXKB_BOOT_NONE;
+#endif
     data[16] = ZXKB_FIRMWARE_VERSION;
 }
 
@@ -473,6 +489,16 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length) {
         case ZXKB_CMD_MIRROR:
             mirroring = data[1] != 0;
             mirror_until = timer_read32() + ZXKB_MIRROR_KEEPALIVE_MS;
+            mirror_full  = (RGB_MATRIX_LED_COUNT + 8) / 9; /* one whole frame, for an app that has just opened */
+            return true;
+        case ZXKB_CMD_BOOTLOADER:
+            if (data[1] == 'Z' && data[2] == 'X' && data[3] == 'B' && data[4] == 'L') {
+                memset(&data[1], 0, length - 1);
+                data[1] = 1;
+                raw_hid_send(data, length);
+                wait_ms(50); /* [A] let the reply leave before USB goes away */
+                reset_keyboard();
+            }
             return true;
     }
     if (signalrgb_command(data, length)) return true;

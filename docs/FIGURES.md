@@ -79,6 +79,12 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | 0.10 preview, same effect | 2.2% of one core (both copies) | M | tools/measure.py 30 s, 2026-11-03 17:30; caps drawn once, lights only per frame |
 | 0.10 preview, still keyboard (keys off) | 0.47% of one core: window copy 0.31%, tray 0.23% | M | measure.py 30 s + Get-Process 20 s, 2026-11-03; both copies receive the 300 mirror packets/s, nothing redrawn |
 | 0.10 tray after the window closed | 1.8 MB private working set / 3.1 MB private bytes / 0.000% | M | measure.py 30 s, 2026-11-03 17:32 |
+| Firmware v17 size | 60,688 bytes (+192 on v16) | M | build.sh, 2026-11-03 |
+| 0.11 ZXKB.exe size | 433,152 bytes | M | 2026-11-03 |
+| dfu-util.exe (QMK MSYS, 0.11-dev, static) | 365,056 bytes, imports only KERNEL32 and msvcrt | M | ls, objdump -p, 2026-11-03 |
+| Wait for the bootloader after the command / after unplug + Esc | 10 s / 120 s | A | not timed yet |
+| dfu-util time limit / wait for the keyboard to return | 120 s / 20 s | A | QMK Toolbox writes the Q3 in a few seconds (not timed) |
+| Largest firmware file accepted | 2 MB | P | largest STM32 flash among QMK-supported parts (STM32F4/H7 class); not re-checked |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

@@ -6,7 +6,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 3 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB) */
+#define ZXKB_PROTOCOL_VERSION 4 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+                                 * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -26,6 +27,11 @@
                                  * keyboard -> app: [0xDB, first LED, count (max 9), count x (r, g, b)], the colours
                                  * actually sent to the LEDs (after brightness and indicators). Needs the board to call
                                  * zxkb_mirror_set() from its LED driver; boards that do not just never send. */
+#define ZXKB_CMD_BOOTLOADER 0xDC /* [0xDC, 'Z', 'X', 'B', 'L'] -> [0xDC, 1], then the keyboard restarts into its
+                                  * bootloader so the app can install firmware. The four letters guard against
+                                  * stray reports. Settings are kept (no EEPROM clear). */
+#define ZXKB_BOOT_NONE      0 /* status byte 17: bootloader the app can flash */
+#define ZXKB_BOOT_STM32_DFU 1 /* STM32 ROM DFU, USB 0483:DF11 */
 #define ZXKB_TUNE_GET      0x00
 #define ZXKB_TUNE_SET      0x01
 #define ZXKB_TUNE_SAVE     0x02

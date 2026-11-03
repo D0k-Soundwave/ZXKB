@@ -30,6 +30,9 @@ if (Test-Path $keep) {
 Get-Process ZXKB -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep 1
 Copy-Item $build (Join-Path $dir 'ZXKB.exe') -Force
+# dfu-util writes keyboard firmware for ZXKB (GPL-2.0-or-later, from QMK MSYS); one static exe, no DLLs
+$dfu = 'C:\QMK_MSYS\opt\qmk\bin\dfu-util.exe'
+if ((Test-Path $dfu) -and -not (Test-Path (Join-Path $dir 'dfu-util.exe'))) { Copy-Item $dfu $dir; 'dfu-util.exe copied' }
 $link = Join-Path ([Environment]::GetFolderPath('Startup')) 'ZXKB.lnk'
 Start-Process explorer.exe -ArgumentList "`"$link`""
 "installed ZXKB $version"

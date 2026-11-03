@@ -102,7 +102,7 @@ static Status parse_status(const uint8_t *p) {
     Status s;
     s.mode = p[5]; s.enabled = p[6]; s.val = p[7]; s.speed = p[8]; s.hue = p[9]; s.sat = p[10];
     s.max_val = p[11]; s.overlay = p[12]; s.vu_allowed = p[13]; s.vu_requested = p[14]; s.vu_possible = p[15];
-    s.fw_version = p[16];
+    s.fw_version = p[16]; s.bootloader = p[17];
     return s;
 }
 
@@ -212,7 +212,8 @@ void HidLink::read_loop() {
         } else if (p[0] == proto::MIRROR) {
             int first = p[1], count = p[2];
             if (count <= 9 && first + count <= 256) std::memcpy(mirror_ + first * 3, p + 3, count * 3);
-            if (first + count >= led_count_ && InterlockedExchange(&mirror_posted_, 1) == 0) PostMessageW(hwnd_, WM_ZX_MIRROR, 0, 0);
+            // from v17 the keyboard sends only the LEDs that changed, so any packet can be the last of a frame
+            if (InterlockedExchange(&mirror_posted_, 1) == 0) PostMessageW(hwnd_, WM_ZX_MIRROR, 0, 0);
         } else if (p[0] == proto::TUNE) {
             Tune *t = new Tune;
             t->mode = p[2]; t->flags = p[3]; t->size = p[4]; t->intensity = p[5];

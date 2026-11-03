@@ -76,6 +76,8 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   `src/window` + `src/preview` (the ZXKB window and its live preview). The window is a second copy of ZXKB.exe
   (`ZXKB.exe --window`, started by the tray on double-click) with its own keyboard connection; the tray copy alone
   feeds the VU meter and answers Fn + number; each tells the other (message "ZXKB.settings") to reread settings.
+  `src/flash`: Firmware... dialog (bootloader command 0xDC, then `dfu-util -a 0 -d 0483:DF11 -s 0x08000000:leave -D`;
+  dfu-util.exe sits next to ZXKB.exe, copied from QMK MSYS by tools/install_app.ps1; log in %APPDATA%\ZXKB\firmware.log).
   Build from PowerShell with TMP set to a writable folder (g++ otherwise tries C:\WINDOWS for temp files).
 - Installed copy: `Documents\Keyboard Layouts\ZXKB\ZXKB.exe`, started with Windows by a shortcut in the Startup
   folder (`shell:startup\ZXKB.lnk`), switched from ZX VU on 2026-11-02. Copy a new build there after quitting ZXKB.
