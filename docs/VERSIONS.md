@@ -37,6 +37,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.14 | 2026-11-03 | 485,888 bytes | The effect list ignores typed letters (it used to jump to the effect starting with the letter, changing the keyboard's effect while trying typing effects). |
 | 0.13 | 2026-11-03 | 485,888 bytes | Plain VIA keyboards (standard firmware): recognised, lighting controlled through VIA, effect names and key layout from the keyboard's VIA definition, looked up online once by USB ID after asking. Firmware check by USB ID instead of USB name (so Keychron's own firmware for the same keyboard is accepted, other keyboards' refused); honest warning that non-ZXKB firmware may reset settings. |
 | 0.12 | 2026-11-03 | 433,664 bytes | Firmware install: clearer message when the keyboard does not restart by itself after writing (unplug and replug, firmware is already written); firmware.log records the time of each phase. |
 | 0.11 | 2026-11-03 | 433,152 bytes | Firmware... button in the window: lists the kept firmware files, checks a file is for this keyboard, restarts the keyboard into its bootloader (v17 on; older firmware: unplug and hold Esc) and writes it with dfu-util, with progress, then waits for the keyboard to come back. dfu-util.exe installed next to ZXKB.exe. |

@@ -382,6 +382,13 @@ void look_up() {
     if (HANDLE t = CreateThread(nullptr, 64 * 1024, lookup_thread, (void *)id, STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr)) CloseHandle(t);
 }
 
+// The effect list ignores typed letters: a list normally jumps to the item starting with the letter, which would
+// change the keyboard's effect while someone types to try a typing effect (D0k, 2026-11-03). Arrows still work.
+LRESULT CALLBACK no_type_ahead(HWND h, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR) {
+    if (msg == WM_CHAR) return 0;
+    return DefSubclassProc(h, msg, wp, lp);
+}
+
 HWND make(const wchar_t *cls, const wchar_t *text, DWORD style, int id) {
     return CreateWindowExW(0, cls, text, WS_CHILD | WS_VISIBLE | style, 0, 0, 0, 0, g_win, (HMENU)(INT_PTR)id, g_inst, nullptr);
 }
@@ -417,6 +424,7 @@ void window_show() {
     preview_create(g_win, IDC_PREVIEW);
     HWND list = make(WC_LISTVIEWW, L"", WS_TABSTOP | WS_BORDER | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOCOLUMNHEADER, IDC_LIST);
     ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+    SetWindowSubclass(list, no_type_ahead, 1, 0);
     LVCOLUMNW col = {};
     col.mask = LVCF_WIDTH;
     col.cx   = 100;

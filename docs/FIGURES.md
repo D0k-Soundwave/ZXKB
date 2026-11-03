@@ -87,6 +87,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | 0.13 ZXKB.exe size | 485,888 bytes (+52,224 on 0.12: VIA support, JSON, WinHTTP lookup, layouts) | M | 2026-11-03 |
 | USB IDs inside firmware files | ZXKB v17 and Keychron Q3 build: 3434:0123; Keychron Q3 HE download: 3434:0B31 | M | USB device descriptor search, 2026-11-03 |
 | Keychron Q3 firmware built from source | 61,176 bytes (61,192 with DFU suffix) | M | make keychron/q3/iso_encoder:keychron, 2026-11-03 |
+| Firmware install timings (0.13) | by command: bootloader 0.8 s, written in 5.3 s, keyboard back at 8.7 s; by hand (unplug + Esc): bootloader 6.0 s (the user), written in 5.5 s, back at 12.2 s; restarted by itself both times | M | firmware.log, 2026-11-03 (v17 -> Keychron's, Keychron's -> v17) |
 | Wait for the bootloader after the command / after unplug + Esc | 10 s / 120 s | A | not timed yet |
 | dfu-util time limit / wait for the keyboard to return | 120 s / 20 s | A | QMK Toolbox writes the Q3 in a few seconds (not timed) |
 | Largest firmware file accepted | 2 MB | P | largest STM32 flash among QMK-supported parts (STM32F4/H7 class); not re-checked |
