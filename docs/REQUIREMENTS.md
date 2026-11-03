@@ -59,6 +59,41 @@ Rule: do not build until D0k confirms the list is complete.
 - [ ] Keyboard-independent: VIA-based detection; supports boards with the ZXKB module, SignalRGB or OpenRGB firmware
 - [ ] Starts with Windows (tray), lightweight; report measured idle/busy RAM and CPU
 
+## Keyboard functions beyond lighting (added 2026-11-03, from the commercial-suite feature list)
+Mechanical switches only. Most use QMK's VIA support already in the firmware; firmware work is marked.
+- [ ] Remap any key: key, shortcut, mouse action, media, brightness, layer or profile switch; disable a key
+- [ ] Game-mode lock: Win key (exists) plus blocking Alt+Tab / Alt+F4 (firmware work)
+- [ ] App-only actions on any key: launch app or URL, paste text, timer (work only while ZXKB runs)
+- [ ] Macros: record in the app, edit keys and delays, stored on the keyboard (work without the app);
+      on-the-fly recording by a key; play once / repeat while held / toggle / sequence (firmware work);
+      library with import and export
+- [ ] Hold-a-key second layer (QMK layers; each extra layer uses 192 bytes of the keyboard's settings memory)
+- [ ] Profiles on the keyboard (work without the app): lighting profiles cheap; whole keymaps need the settings
+      memory enlarged (2,048 bytes now; flash is 77% free); profile-cycle key
+- [ ] Profile import, export and backup
+- [ ] Indicator colours: Num Lock, active layer or profile (Caps Lock done)
+- [ ] Lights-off after N minutes without a key press, set from the app
+- [ ] GPU temperature lighting via NVIDIA / AMD libraries (CPU temperature not done: needs a kernel driver that
+      Defender flags)
+- [ ] Game event reactions, per game, for games that publish their state (e.g. CS2, Dota 2): later
+- [ ] Sync with Hue and Nanoleaf (their local network APIs): later
+- [ ] SOCD (last opposing key wins): QMK community module (port of getreuer's SOCD Cleaner)
+- [ ] Debounce time adjustable from the app (QMK fixes it at 5 ms; firmware work)
+- [ ] NKRO toggle and Windows key repeat delay / rate in the app
+- [ ] Firmware updates from the app: keyboard enters its bootloader on command, flashed with dfu-util from the
+      kept versions (replaces QMK Toolbox and holding Esc)
+- [ ] Knob assignment (VIA encoder commands)
+- [ ] On-screen notice when the profile changes
+- Not doing: CPU temperature (driver), faster polling (already 1,000 Hz, the USB full-speed limit), OLED (Q3 has none)
+
+## Other keyboards (added 2026-11-03)
+- [ ] Find out what a keyboard can do when it is plugged in, and offer only that:
+      - ZXKB module boards: everything; the firmware reports its features and physical layout
+      - Vial boards: the keyboard hands over its own layout; keymap, macros, VIA lighting
+      - VIA boards: keymap, macros, knob, basic lighting; layout from VIA's public definitions or a file
+      - Boards with OpenRGB or SignalRGB QMK firmware: lighting only
+      - Other brands (Razer, Corsair, Logitech...): only through the OpenRGB app, later
+
 ## Process
 - [x] Number every firmware and app build handed to D0k and keep each for fallback (docs/VERSIONS.md), from
       firmware v15 / app 0.7 on (requested 2026-11-02; earlier builds not kept, by D0k's choice)
