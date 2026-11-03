@@ -6,9 +6,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 7 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+#define ZXKB_PROTOCOL_VERSION 8 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
                                  * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
-                                 * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD). 7: per-key effects (0xDD, 7 bytes a key) */
+                                 * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD). 7: per-key effects (0xDD, 7 bytes a key).
+                                 * 8: 8 bytes a key (speed 0-255); size down to 1, intensity down to 0 */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -35,10 +36,10 @@
 #define ZXKB_BOOT_NONE      0 /* status byte 17: bootloader the app can flash */
 #define ZXKB_BOOT_STM32_DFU 1 /* STM32 ROM DFU, USB 0483:DF11 */
 #define ZXKB_CMD_KEYS      0xDD /* per-key colours and effects, drawn over any effect (indicators such as Caps Lock still on
-                                 * top), scaled by the brightness. A key: fx (high 4 bits ZXKB_KEY_*, low 4 bits speed 0-15),
-                                 * first colour r, g, b, second colour r, g, b. Always replies [0xDD, sub, ...]:
-                                 * [0xDD, 0x00, first] get -> [0xDD, 0x00, first, n, n x 7 bytes] (n <= 4)
-                                 * [0xDD, 0x01, first, n, n x 7 bytes] change (live, not saved), n <= 4
+                                 * top), scaled by the brightness. A key: effect (ZXKB_KEY_*), speed 0-255, first colour
+                                 * r, g, b, second colour r, g, b. Always replies [0xDD, sub, ...]:
+                                 * [0xDD, 0x00, first] get -> [0xDD, 0x00, first, n, n x 8 bytes] (n <= 3)
+                                 * [0xDD, 0x01, first, n, n x 8 bytes] change (live, not saved), n <= 3
                                  * [0xDD, 0x02] save, [0xDD, 0x03] all keys back to the effect (live) */
 #define ZXKB_KEY_NONE    0 /* the key shows the keyboard's effect */
 #define ZXKB_KEY_STEADY  1 /* first colour */
@@ -46,7 +47,7 @@
 #define ZXKB_KEY_BREATHE 3 /* fades between second and first colour */
 #define ZXKB_KEY_CYCLE   4 /* through the rainbow, as bright as the first colour */
 #define ZXKB_KEY_TWINKLE 5 /* first colour sparkling over the second, each key at its own moment */
-#define ZXKB_KEY_BYTES   7
+#define ZXKB_KEY_BYTES   8
 #define ZXKB_KEYS_GET   0x00
 #define ZXKB_KEYS_SET   0x01
 #define ZXKB_KEYS_SAVE  0x02
@@ -58,10 +59,12 @@
 #define ZXKB_TUNE_INTENSITY 0x02
 
 /* Size and intensity: [C] 128 = QMK's own size (effects scale distance by 128 / size), 255 = full intensity.
- * [A] both kept within 16-255 so a setting can never make an effect vanish. */
+ * Full range at D0k's request (2026-11-03; v21 and earlier stopped both at 16, a guess): size 1-255 (effects divide
+ * by it), intensity 0-255 (0 = off). */
 #define ZXKB_TUNE_DEFAULT_SIZE      128
 #define ZXKB_TUNE_DEFAULT_INTENSITY 255
-#define ZXKB_TUNE_MIN               16
+#define ZXKB_SIZE_MIN               1
+#define ZXKB_INTENSITY_MIN          0
 #define ZXKB_TUNABLES               14 /* effects with their own size/intensity (see zxkb.c) */
 
 /* LED mirror for the app's live preview. [A] 2 s keep-alive; [C] one 9-LED packet every 3 ms = 30 full frames a

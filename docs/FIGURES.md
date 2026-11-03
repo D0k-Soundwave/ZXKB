@@ -42,7 +42,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | PC overlay timeout | 5 s | A | kept from v11's VU timeout; M: overlay off 6 s after data stopped |
 | Brightness / speed / size / intensity step | 16 | P | QMK rgb_matrix.h RGB_MATRIX_VAL_STEP / SPD_STEP, master f5db962; Q3 does not override |
 | Size / intensity defaults | 128 / 255 | C | effects scale distance by 128 / size, so 128 = QMK's own size; 255 = full |
-| Size / intensity minimum | 16 | A | keeps an effect from vanishing |
+| Size / intensity minimum | 1 / 0 (v22) | C | full range at D0k's request; size 1 because effects divide by it; was 16 / 16 (A) |
 | Module EEPROM block | 29 bytes | C | 1 + 2 x 14 tunable effects |
 | VU key span at row ends | +/- 7 units | C | half the Q3 key pitch of 13 units (LED map, number row) |
 | VU stale time | 150 ms | A | from v9; C: 6 missed updates at 40 per second |
@@ -101,8 +101,9 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Per-key colour, one key (0.18 + v19) | keyboard holds LED 51 = 255, 255, 0 and its LED mirror reports the same; 0 other keys changed | M | probe keys / probe mirror, 2026-11-03 |
 | Firmware v20 size / static RAM | 61,472 bytes / .bss 7,204 bytes | M | build.sh, 2026-11-03 |
 | Per-key effects in settings memory (Q3) | 616 bytes (module block 645) | C | 88 LEDs x 7 bytes; + 29 |
-| Per-key effect speeds (v21) | step 16 ms (speed 15) to 5 s (speed 0): 5000 3950 3150 2500 2000 1600 1260 1000 800 640 500 400 320 120 44 16; breath 5 steps, twinkle 6, colour cycle 10 | P / C / A | range by D0k 2026-11-03; 16 ms = QMK RGB_MATRIX_LED_FLUSH_LIMIT (P); 320 ms kept at 12 (C); the curve between is a choice (A) |
+| Per-key effect speeds (v22) | step 5000 x (16 / 5000) ^ (speed / 255) ms: 5 s (0) to 16 ms (255), about 2.3 % a step; 320 ms at 122; breath 5 steps, twinkle 6, colour cycle 10 | P / C | range by D0k 2026-11-03; 16 ms = QMK RGB_MATRIX_LED_FLUSH_LIMIT (P); tools/key_speed_table.py |
 | Macro space left on the keyboard with v20 | 574 bytes, 16 macros | M | probe macros (VIA 0x0C / 0x0D), 2026-11-03 |
+| Macro space with v22 | about 486 bytes | C | 574 - 88 (one more byte a key); measure once v22 is on |
 | 0.21 ZXKB.exe size | 510,464 bytes | M | 2026-11-03 |
 | Key-to-LED map read by 3 programs at once | old code 18 of 18 reads wrong; 0.22 code 0 of 18 | M | probe matrix x3 in parallel x6, compared with QMK's keyboard.json, 2026-11-03 |
 | Per-key flash at speed 3 | 1,031 ms between changes (firmware: 80 x 13 = 1,040 ms) | M | probe blink 54 5, 2026-11-03 |

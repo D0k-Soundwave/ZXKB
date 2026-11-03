@@ -26,7 +26,7 @@ extern int       g_vu_style; // VuStyle
 extern bool      g_window_mode; // this copy of ZXKB.exe is the ZXKB window, not the tray
 HWND             tray_window(); // the tray copy's hidden window (owns the tray icon), null if not running
 
-constexpr int TUNE_MIN = 16; // must match ZXKB_TUNE_MIN in the firmware (zxkb.h)
+constexpr int SIZE_MIN = 1, INTENSITY_MIN = 0; // as ZXKB_SIZE_MIN / ZXKB_INTENSITY_MIN in the firmware (zxkb.h)
 
 // names
 std::string  effect_name(int mode);
@@ -56,11 +56,11 @@ void enter_bootloader();                      // the keyboard restarts into its 
 void settings_changed();                      // tell the other ZXKB copy to read settings (and keyboard files) again
 void request_keymap();                        // read the keyboard's keymap (for key labels), if its matrix is known
 
-// Per-key colours and effects, kept on the keyboard (ZXKB firmware v20 on). A key: proto::KEY_* effect, speed 0-15,
+// Per-key colours and effects, kept on the keyboard (ZXKB firmware v22 on). A key: proto::KEY_* effect, speed 0-255,
 // first and second colour. Changes go to the keys given (LED numbers) and are saved with the other settings.
 bool per_key_possible();
-const uint8_t *key_state(int led);            // 7 bytes: effect << 4 | speed, first r g b, second r g b (or null)
+const uint8_t *key_state(int led);            // 8 bytes: effect, speed 0-255, first r g b, second r g b (or null)
 enum KeyEdit { KEY_FIRST, KEY_SECOND, KEY_EFFECT, KEY_SPEED, KEY_FOLLOW };
-// KEY_FIRST / KEY_SECOND: colour r, g, b; KEY_EFFECT: value = proto::KEY_*; KEY_SPEED: value 0-15; KEY_FOLLOW: back
+// KEY_FIRST / KEY_SECOND: colour r, g, b; KEY_EFFECT: value = proto::KEY_*; KEY_SPEED: value 0-255; KEY_FOLLOW: back
 // to the keyboard's effect. A key that follows the effect becomes Steady when it is given a colour.
 void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);

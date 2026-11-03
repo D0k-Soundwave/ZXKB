@@ -172,10 +172,10 @@ int main(int argc, char **argv) {
         int own = 0;
         for (int i = 0; i < board->led_count && (i + 1) * proto::KEY_BYTES <= (int)board->key.size(); i++) {
             const uint8_t *k = &board->key[i * proto::KEY_BYTES];
-            if (!(k[0] >> 4)) continue;
+            if (!k[0]) continue;
             own++;
-            std::printf("LED %2d: %-7s speed %2d  %3d %3d %3d / %3d %3d %3d\n", i, (k[0] >> 4) < 6 ? fx[k[0] >> 4] : "?", k[0] & 15,
-                        k[1], k[2], k[3], k[4], k[5], k[6]);
+            std::printf("LED %2d: %-7s speed %3d  %3d %3d %3d / %3d %3d %3d\n", i, k[0] < 6 ? fx[k[0]] : "?", k[1],
+                        k[2], k[3], k[4], k[5], k[6], k[7]);
         }
         std::printf("%d of %d keys have their own colour or effect\n", own, board->led_count);
     } else if (!std::strcmp(cmd, "bright") && argc > 2) { // probe bright N: brightness 0-255 (not saved)

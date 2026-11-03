@@ -112,12 +112,29 @@ void eeconfig_init_zxkb_datablock(void) { /* first start, or the saved layout ch
 }
 
 /* ---------- Per-key colours and effects ---------- */
-#define KEYS_PER_PACKET 4 /* [C] (32 - 4 header bytes) / 7 bytes a key */
+#define KEYS_PER_PACKET 3 /* [C] (32 - 4 header bytes) / 8 bytes a key */
 
-/* How long each step of a key's effect lasts (a flash's colour, a fifth of a breath), by speed 0-15. Range asked for
+/* How long each step of a key's effect lasts (a flash's colour, a fifth of a breath), by speed 0-255. Range asked for
  * by D0k 2026-11-03: 16 ms ([P] QMK's RGB_MATRIX_LED_FLUSH_LIMIT, the fastest the LEDs are redrawn) to 5 s.
- * [C] speed 12 stays 320 ms (Spectrum FLASH, as v20); 0-12 about x1.26 a step, 12-15 about x2.7. Same table in the app. */
-static const uint16_t key_step_ms[16] = {5000, 3950, 3150, 2500, 2000, 1600, 1260, 1000, 800, 640, 500, 400, 320, 120, 44, 16};
+ * [C] 5000 x (16 / 5000) ^ (speed / 255), rounded: about 2.3 % a step; speed 122 = 320 ms (Spectrum FLASH).
+ * Written by tools/key_speed_table.py; the app works out the same times. */
+static const uint16_t key_step_ms[256] = {
+    5000, 4889, 4780, 4673, 4569, 4467, 4368, 4271, 4175, 4082, 3991, 3903, 3816, 3731, 3648, 3566,
+    3487, 3409, 3333, 3259, 3186, 3115, 3046, 2978, 2912, 2847, 2784, 2722, 2661, 2602, 2544, 2487,
+    2432, 2377, 2324, 2273, 2222, 2173, 2124, 2077, 2031, 1985, 1941, 1898, 1856, 1814, 1774, 1734,
+    1696, 1658, 1621, 1585, 1550, 1515, 1481, 1448, 1416, 1385, 1354, 1324, 1294, 1265, 1237, 1209,
+    1183, 1156, 1130, 1105, 1081, 1057, 1033, 1010, 988, 966, 944, 923, 902, 882, 863, 843,
+    825, 806, 788, 771, 754, 737, 720, 704, 689, 673, 658, 644, 629, 615, 602, 588,
+    575, 562, 550, 538, 526, 514, 502, 491, 480, 470, 459, 449, 439, 429, 420, 410,
+    401, 392, 383, 375, 366, 358, 350, 343, 335, 327, 320, 313, 306, 299, 293, 286,
+    280, 273, 267, 261, 256, 250, 244, 239, 234, 228, 223, 218, 213, 209, 204, 199,
+    195, 191, 186, 182, 178, 174, 170, 167, 163, 159, 156, 152, 149, 146, 142, 139,
+    136, 133, 130, 127, 124, 122, 119, 116, 114, 111, 109, 106, 104, 101, 99, 97,
+    95, 93, 91, 89, 87, 85, 83, 81, 79, 77, 76, 74, 72, 71, 69, 68,
+    66, 65, 63, 62, 60, 59, 58, 56, 55, 54, 53, 52, 50, 49, 48, 47,
+    46, 45, 44, 43, 42, 41, 40, 39, 39, 38, 37, 36, 35, 34, 34, 33,
+    32, 31, 31, 30, 29, 29, 28, 27, 27, 26, 26, 25, 25, 24, 23, 23,
+    22, 22, 21, 21, 20, 20, 20, 19, 19, 18, 18, 18, 17, 17, 16, 16};
 
 static void keys_command(uint8_t *data, uint8_t length) {
     uint8_t sub = data[1];
@@ -141,7 +158,7 @@ static void keys_command(uint8_t *data, uint8_t length) {
         memset(&data[2], 0, length - 2);
         data[2] = 1;
     } else if (sub == ZXKB_KEYS_CLEAR) {
-        for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT; i++) cfg.key[i][0] = 0;
+        for (uint8_t i = 0; i < RGB_MATRIX_LED_COUNT; i++) cfg.key[i][0] = ZXKB_KEY_NONE;
         memset(&data[2], 0, length - 2);
         data[2] = 1;
     } else {
@@ -159,9 +176,9 @@ bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
     uint32_t now = timer_read32();
     for (uint8_t i = led_min; i < led_max && i < RGB_MATRIX_LED_COUNT; i++) {
         const uint8_t *k  = cfg.key[i];
-        uint8_t        fx = k[0] >> 4, speed = k[0] & 15;
+        uint8_t        fx = k[0], speed = k[1];
         if (fx == ZXKB_KEY_NONE) continue;
-        const uint8_t *a = &k[1], *b = &k[4];
+        const uint8_t *a = &k[2], *b = &k[5];
         uint8_t        c[3];
         uint8_t        mix = 255; /* 255 = first colour, 0 = second */
         uint32_t step = key_step_ms[speed];
@@ -225,8 +242,7 @@ void keyboard_post_init_zxkb(void) {
     keyboard_post_init_zxkb_kb();
     eeconfig_read_zxkb_datablock(&cfg, 0, sizeof(cfg));
     for (uint8_t i = 0; i < ZXKB_TUNABLES; i++) {
-        if (cfg.size[i] < ZXKB_TUNE_MIN) cfg.size[i] = ZXKB_TUNE_DEFAULT_SIZE;
-        if (cfg.intensity[i] < ZXKB_TUNE_MIN) cfg.intensity[i] = ZXKB_TUNE_DEFAULT_INTENSITY;
+        if (cfg.size[i] < ZXKB_SIZE_MIN) cfg.size[i] = ZXKB_TUNE_DEFAULT_SIZE;
     }
     if (is_overlay_mode(rgb_matrix_get_mode())) {
         uint8_t m = cfg.home_mode;
@@ -239,8 +255,8 @@ static void tune_command(uint8_t *data, uint8_t length) {
     uint8_t mode = own_mode();
     int8_t  t    = tunable_index(mode);
     if (t >= 0 && data[1] == ZXKB_TUNE_SET) {
-        cfg.size[t]      = data[2] < ZXKB_TUNE_MIN ? ZXKB_TUNE_MIN : data[2];
-        cfg.intensity[t] = data[3] < ZXKB_TUNE_MIN ? ZXKB_TUNE_MIN : data[3];
+        cfg.size[t]      = data[2] < ZXKB_SIZE_MIN ? ZXKB_SIZE_MIN : data[2];
+        cfg.intensity[t] = data[3];
     } else if (data[1] == ZXKB_TUNE_SAVE) {
         eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg)); /* only changed bytes are written */
     }

@@ -11,6 +11,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstring>
+#include <cmath>
 #include "../res/resource.h"
 #define ZXKB_WIDEN2(s) L##s
 #define ZXKB_WIDEN(s)  ZXKB_WIDEN2(s)
@@ -113,7 +114,14 @@ void send(std::initializer_list<uint8_t> bytes);
 void request_keymap() {
     if (g_board && g_board->via_protocol && g_board->rows && g_board->cols) g_link.request_keymap(g_board->rows, g_board->cols);
 }
-bool per_key_possible() { return zxkb_board() && g_board->protocol >= 7; }
+bool per_key_possible() { return zxkb_board() && g_board->protocol >= 8; }
+
+namespace proto {
+int key_step_ms(int speed) { // the firmware's table: 5000 x (16 / 5000) ^ (speed / 255)
+    speed = speed < 0 ? 0 : speed > 255 ? 255 : speed;
+    return (int)(5000.0 * std::pow(16.0 / 5000.0, speed / 255.0) + 0.5);
+}
+} // namespace proto
 void schedule_save();
 
 const uint8_t *key_state(int led) {
@@ -130,16 +138,17 @@ void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r,
     l.erase(std::unique(l.begin(), l.end()), l.end());
     for (int led : l) {
         uint8_t *k = &g_board->key[led * proto::KEY_BYTES];
-        uint8_t fx = k[0] >> 4, speed = k[0] & 15;
+        uint8_t fx = k[0], speed = k[1];
         if (fx == proto::KEY_NONE && what != KEY_FOLLOW) { fx = proto::KEY_STEADY; speed = proto::KEY_SPEED_DEFAULT; }
         switch (what) {
-            case KEY_FIRST: k[1] = r; k[2] = g; k[3] = b; break;
-            case KEY_SECOND: k[4] = r; k[5] = g; k[6] = b; break;
+            case KEY_FIRST: k[2] = r; k[3] = g; k[4] = b; break;
+            case KEY_SECOND: k[5] = r; k[6] = g; k[7] = b; break;
             case KEY_EFFECT: fx = (uint8_t)value; break;
-            case KEY_SPEED: speed = (uint8_t)(value < 0 ? 0 : value > 15 ? 15 : value); break;
+            case KEY_SPEED: speed = (uint8_t)(value < 0 ? 0 : value > 255 ? 255 : value); break;
             case KEY_FOLLOW: fx = proto::KEY_NONE; break;
         }
-        k[0] = (uint8_t)(fx << 4 | speed);
+        k[0] = fx;
+        k[1] = speed;
     }
     // runs of neighbouring LEDs, up to 4 per report
     for (size_t i = 0; i < l.size();) {
@@ -319,9 +328,9 @@ void set_speed(int speed) {
 // Size and intensity belong to the current effect; the keyboard keeps them per effect
 void set_tune(int size, int intensity) {
     if (!g_board || !g_tune.flags) return;
-    auto clamp = [](int v) { return v < TUNE_MIN ? TUNE_MIN : v > 255 ? 255 : v; };
-    g_tune.size      = (uint8_t)clamp(size);
-    g_tune.intensity = (uint8_t)clamp(intensity);
+    auto clamp = [](int v, int lo) { return v < lo ? lo : v > 255 ? 255 : v; };
+    g_tune.size      = (uint8_t)clamp(size, SIZE_MIN);
+    g_tune.intensity = (uint8_t)clamp(intensity, INTENSITY_MIN);
     send({proto::TUNE, proto::TUNE_SET, g_tune.size, g_tune.intensity});
     schedule_save();
 }
@@ -527,9 +536,9 @@ void show_menu() {
     add(set, ID_SLOWER, L"Slower", false, on);
     sep(set);
     add(set, ID_BIGGER, L"Bigger", false, has_size && g_tune.size < 255);
-    add(set, ID_SMALLER, L"Smaller", false, has_size && g_tune.size > TUNE_MIN);
+    add(set, ID_SMALLER, L"Smaller", false, has_size && g_tune.size > SIZE_MIN);
     add(set, ID_STRONGER, L"Stronger", false, has_int && g_tune.intensity < 255);
-    add(set, ID_SOFTER, L"Softer", false, has_int && g_tune.intensity > TUNE_MIN);
+    add(set, ID_SOFTER, L"Softer", false, has_int && g_tune.intensity > INTENSITY_MIN);
     sep(set);
     for (size_t i = 0; i < ARRAYSIZE(colours); i++) {
         bool now = on && g_st.sat == colours[i].sat && (colours[i].sat == 0 || g_st.hue == colours[i].hue);

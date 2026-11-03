@@ -4,8 +4,8 @@
 #pragma once
 
 /* EEPROM: the keyboard's own effect (kept while a PC overlay shows), size and intensity for each tunable effect,
- * then per key: effect and speed (one byte), first colour (r, g, b), second colour (r, g, b).
- * [C] 1 + 2 x ZXKB_TUNABLES (14) + 7 x LEDs; Q3 (88 LEDs): 29 + 616 = 645 bytes.
- * Version 2 added size and intensity, 3 per-key colours, 4 per-key effects. */
-#define EECONFIG_MODULE_ZXKB_DATA_SIZE    (1 + 2 * 14 + 7 * RGB_MATRIX_LED_COUNT)
-#define EECONFIG_MODULE_ZXKB_DATA_VERSION 4
+ * then per key: effect, speed (0-255), first colour (r, g, b), second colour (r, g, b).
+ * [C] 1 + 2 x ZXKB_TUNABLES (14) + 8 x LEDs; Q3 (88 LEDs): 29 + 704 = 733 bytes.
+ * Version 2 added size and intensity, 3 per-key colours, 4 per-key effects, 5 a whole byte for each key's speed. */
+#define EECONFIG_MODULE_ZXKB_DATA_SIZE    (1 + 2 * 14 + 8 * RGB_MATRIX_LED_COUNT)
+#define EECONFIG_MODULE_ZXKB_DATA_VERSION 5

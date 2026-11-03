@@ -154,7 +154,7 @@ bool HidLink::probe(HANDLE h, int in_len, int out_len, Board *board) {
             if (n == 0 || first >= total || first >= 256) break;
         }
     board->key.assign(board->led_count * proto::KEY_BYTES, 0);
-    if (board->protocol >= 7) // per-key colours and effects as the keyboard keeps them
+    if (board->protocol >= 8) // per-key colours and effects as the keyboard keeps them
         for (int first = 0; first < board->led_count;) {
             uint8_t q[proto::REPORT] = {proto::KEYS, proto::KEYS_GET, (uint8_t)first};
             if (!transact(h, q, in_len, out_len) || q[3] == 0) break;

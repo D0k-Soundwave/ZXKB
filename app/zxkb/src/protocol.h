@@ -24,12 +24,11 @@ constexpr uint8_t BOOT_NONE      = 0; // status byte 17 (protocol 4): bootloader
 constexpr uint8_t BOOT_STM32_DFU = 1; // STM32 ROM DFU, USB 0483:DF11
 constexpr uint8_t KEYS      = 0xDD; // per-key colours and effects (protocol 7): sub 0 get, 1 set, 2 save, 3 clear
 constexpr uint8_t KEYS_GET = 0x00, KEYS_SET = 0x01, KEYS_SAVE = 0x02, KEYS_CLEAR = 0x03;
-constexpr int     KEY_BYTES       = 7; // effect << 4 | speed, first r g b, second r g b
-constexpr int     KEYS_PER_PACKET = 4; // (32 - 4 header bytes) / 7
+constexpr int     KEY_BYTES       = 8; // effect, speed 0-255, first r g b, second r g b (protocol 8)
+constexpr int     KEYS_PER_PACKET = 3; // (32 - 4 header bytes) / 8
 constexpr uint8_t KEY_NONE = 0, KEY_STEADY = 1, KEY_FLASH = 2, KEY_BREATHE = 3, KEY_CYCLE = 4, KEY_TWINKLE = 5;
-constexpr int     KEY_SPEED_DEFAULT = 12; // 320 ms flash, the Spectrum FLASH rate (firmware zxkb.c)
-// ms per step of a key's effect by speed; firmware v21 on (v20: 80 x (16 - speed)). Same table as zxkb.c key_step_ms.
-constexpr uint16_t KEY_STEP_MS[16] = {5000, 3950, 3150, 2500, 2000, 1600, 1260, 1000, 800, 640, 500, 400, 320, 120, 44, 16};
+constexpr int     KEY_SPEED_DEFAULT = 122; // 320 ms a step, the Spectrum FLASH rate (firmware zxkb.c key_step_ms)
+int key_step_ms(int speed);              // 16 ms (255) to 5 s (0), as the firmware's table
 constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
 constexpr uint8_t TUNE_GET  = 0x00;
 constexpr uint8_t TUNE_SET  = 0x01; // [0xDA, 0x01, size, intensity]

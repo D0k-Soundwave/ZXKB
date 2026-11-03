@@ -170,6 +170,9 @@ void set_slider(int s, int lo, int hi, int pos, bool enabled, const std::wstring
         SendMessageW(tb, TBM_SETRANGEMIN, FALSE, lo);
         SendMessageW(tb, TBM_SETRANGEMAX, FALSE, hi);
         SendMessageW(tb, TBM_SETPOS, TRUE, pos);
+        // every value reachable: arrow keys move 1, a click on the bar 1/32 of the range (default 1/5)
+        SendMessageW(tb, TBM_SETLINESIZE, 0, 1);
+        SendMessageW(tb, TBM_SETPAGESIZE, 0, (hi - lo) / 32 > 1 ? (hi - lo) / 32 : 1);
     }
     EnableWindow(tb, enabled);
     EnableWindow(item(IDC_LABEL + s), enabled);
@@ -216,9 +219,9 @@ void refresh() {
     if (keys_mode()) {
         std::vector<int> sel = preview_selected_leds();
         const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
-        int ks = k && (k[0] >> 4) ? (k[0] & 15) : proto::KEY_SPEED_DEFAULT;
-        int ms = proto::KEY_STEP_MS[ks];
-        set_slider(SPEED, 0, 15, ks, true, ms >= 1000 ? std::to_wstring(ms / 1000) + L"." + std::to_wstring(ms % 1000 / 100) + L" s"
+        int ks = k && k[0] ? k[1] : proto::KEY_SPEED_DEFAULT;
+        int ms = proto::key_step_ms(ks);
+        set_slider(SPEED, 0, 255, ks, true, ms >= 1000 ? std::to_wstring(ms / 1000) + L"." + std::to_wstring(ms % 1000 / 100) + L" s"
                                                       : std::to_wstring(ms) + L" ms");
         SetWindowTextW(item(IDC_LABEL + SPEED), L"Key speed");
     } else {
@@ -226,8 +229,8 @@ void refresh() {
         SetWindowTextW(item(IDC_LABEL + SPEED), L"Speed");
     }
     // size: 128 = the effect's normal size, shown as 100%
-    set_slider(SIZE, TUNE_MIN, 255, g_tune.size, tuned && (g_tune.flags & 1), pct(g_tune.size, 128));
-    set_slider(INTENSITY, TUNE_MIN, 255, g_tune.intensity, tuned && (g_tune.flags & 2), pct(g_tune.intensity, 255));
+    set_slider(SIZE, SIZE_MIN, 255, g_tune.size, tuned && (g_tune.flags & 1), pct(g_tune.size, 128));
+    set_slider(INTENSITY, INTENSITY_MIN, 255, g_tune.intensity, tuned && (g_tune.flags & 2), pct(g_tune.intensity, 255));
 
     // with keys selected in the preview the colours below colour those keys; otherwise the effect (D0k, 2026-11-03)
     bool keys = keys_mode();
@@ -336,7 +339,7 @@ void refresh_keys() {
     bool can = per_key_possible();
     int  n   = preview_selected_count();
     std::wstring t = !g_board ? L""
-                   : !can ? L"Key colours need ZXKB firmware v20"
+                   : !can ? L"Key colours need ZXKB firmware v22"
                    : n == 0 ? L"Click keys to colour them (Ctrl: more; empty spot: none)"
                    : std::to_wstring(n) + (n == 1 ? L" key: colours and Key speed below apply to it"
                                                     : L" keys: colours and Key speed below apply to them");
@@ -349,7 +352,7 @@ void refresh_keys() {
     std::vector<int> sel = preview_selected_leds();
     const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
     bool on = can && n > 0;
-    int fx = k ? k[0] >> 4 : 0;
+    int fx = k ? k[0] : 0;
     g_updating = true;
     SendMessageW(item(IDC_KEY_FX), CB_SETCURSEL, fx >= proto::KEY_STEADY && fx <= proto::KEY_TWINKLE ? fx - 1 : 0, 0);
     g_updating = false;
@@ -368,7 +371,7 @@ void draw_key_colour(const DRAWITEMSTRUCT *d) {
     int which = d->CtlID == IDC_KEY_C2 ? 2 : 1;
     std::vector<int> sel = preview_selected_leds();
     const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
-    COLORREF c = k ? RGB(k[which == 2 ? 4 : 1], k[which == 2 ? 5 : 2], k[which == 2 ? 6 : 3]) : GetSysColor(COLOR_BTNFACE);
+    COLORREF c = k ? RGB(k[which == 2 ? 5 : 2], k[which == 2 ? 6 : 3], k[which == 2 ? 7 : 4]) : GetSysColor(COLOR_BTNFACE);
     bool enabled = IsWindowEnabled(d->hwndItem) != 0;
     FillRect(d->hDC, &d->rcItem, GetSysColorBrush(COLOR_WINDOW));
     RECT r = d->rcItem;
