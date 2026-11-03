@@ -116,6 +116,28 @@ int main(int argc, char **argv) {
             }
             std::printf("\n");
         }
+    } else if (!std::strcmp(cmd, "blink") && argc > 2) { // probe blink LED [s]: how often the LED's colour changes
+        int led = std::atoi(argv[2]), secs2 = argc > 3 ? std::atoi(argv[3]) : 4, changes = 0;
+        uint8_t q[2] = {proto::MIRROR, 1}, rgb[256 * 3], last[3] = {0, 0, 0};
+        link.send(q, 2);
+        DWORD start = GetTickCount(), keep = start, first = 0, prev = 0;
+        long sum = 0;
+        while (GetTickCount() - start < (DWORD)secs2 * 1000) {
+            pump(5, false);
+            if (GetTickCount() - keep > 1000) { link.send(q, 2); keep = GetTickCount(); }
+            link.mirror(rgb, board->led_count);
+            if (std::memcmp(last, &rgb[led * 3], 3)) {
+                DWORD now = GetTickCount();
+                if (changes) sum += now - prev; else first = now;
+                prev = now;
+                changes++;
+                std::memcpy(last, &rgb[led * 3], 3);
+            }
+        }
+        (void)first;
+        std::printf("LED %d changed %d times; average %ld ms between changes\n", led, changes, changes > 1 ? sum / (changes - 1) : 0);
+        q[1] = 0;
+        link.send(q, 2);
     } else if (!std::strcmp(cmd, "macros")) { // probe macros: VIA macro count and buffer size (settings memory for macros)
         link.raw_reports(true);
         for (uint8_t id : {(uint8_t)0x0C, (uint8_t)0x0D}) { // VIA id_dynamic_keymap_macro_get_count / _get_buffer_size

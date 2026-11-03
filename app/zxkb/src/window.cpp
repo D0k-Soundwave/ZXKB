@@ -96,9 +96,7 @@ void layout() {
         // second row: the selected keys' effect, its speed, and which of their two colours the colour boxes set
         int r2 = y + 34;
         MoveWindow(item(IDC_KEY_FX_LABEL), px(MARGIN), px(r2 + 4), px(70), px(20), FALSE);
-        MoveWindow(item(IDC_KEY_FX), px(MARGIN + 72), px(r2), px(130), px(200), FALSE);
-        MoveWindow(item(IDC_KEY_SPEED_LABEL), px(MARGIN + 216), px(r2 + 4), px(44), px(20), FALSE);
-        MoveWindow(item(IDC_KEY_SPEED), px(MARGIN + 260), px(r2), px(150), px(26), FALSE);
+        MoveWindow(item(IDC_KEY_FX), px(MARGIN + 72), px(r2), px(150), px(200), FALSE);
         MoveWindow(item(IDC_KEY_COLOURS_LABEL), px(W - MARGIN - 196), px(r2 + 4), px(110), px(20), FALSE);
         MoveWindow(item(IDC_KEY_C1), px(W - MARGIN - 82), px(r2), px(38), px(26), FALSE);
         MoveWindow(item(IDC_KEY_C2), px(W - MARGIN - 38), px(r2), px(38), px(26), FALSE);
@@ -214,7 +212,17 @@ void refresh() {
     bool fx = on && g_st.enabled && !vu_showing();
     bool tuned = fx && g_tune.mode == g_st.mode;
     set_slider(BRIGHTNESS, 0, g_st.max_val, g_st.val, on, pct(g_st.val, g_st.max_val));
-    set_slider(SPEED, 0, 255, g_st.speed, fx, pct(g_st.speed, 255));
+    // with keys selected, Speed is theirs (0-15, D0k 2026-11-03: the effect's speed did nothing visible for them)
+    if (keys_mode()) {
+        std::vector<int> sel = preview_selected_leds();
+        const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
+        int ks = k && (k[0] >> 4) ? (k[0] & 15) : proto::KEY_SPEED_DEFAULT;
+        set_slider(SPEED, 0, 15, ks, true, pct(ks, 15));
+        SetWindowTextW(item(IDC_LABEL + SPEED), L"Key speed");
+    } else {
+        set_slider(SPEED, 0, 255, g_st.speed, fx, pct(g_st.speed, 255));
+        SetWindowTextW(item(IDC_LABEL + SPEED), L"Speed");
+    }
     // size: 128 = the effect's normal size, shown as 100%
     set_slider(SIZE, TUNE_MIN, 255, g_tune.size, tuned && (g_tune.flags & 1), pct(g_tune.size, 128));
     set_slider(INTENSITY, TUNE_MIN, 255, g_tune.intensity, tuned && (g_tune.flags & 2), pct(g_tune.intensity, 255));
@@ -328,8 +336,8 @@ void refresh_keys() {
     std::wstring t = !g_board ? L""
                    : !can ? L"Key colours need ZXKB firmware v20"
                    : n == 0 ? L"Click keys to colour them (Ctrl: more; empty spot: none)"
-                   : std::to_wstring(n) + (n == 1 ? L" key: pick a colour below, Off or Follow effect"
-                                                    : L" keys: pick a colour below, Off or Follow effect");
+                   : std::to_wstring(n) + (n == 1 ? L" key: colours and Key speed below apply to it"
+                                                    : L" keys: colours and Key speed below apply to them");
     SetWindowTextW(item(IDC_KEYS_INFO), t.c_str());
     EnableWindow(item(IDC_KEYS_ALL), can);
     EnableWindow(item(IDC_KEYS_NONE), can);
@@ -342,9 +350,8 @@ void refresh_keys() {
     int fx = k ? k[0] >> 4 : 0;
     g_updating = true;
     SendMessageW(item(IDC_KEY_FX), CB_SETCURSEL, fx >= proto::KEY_STEADY && fx <= proto::KEY_TWINKLE ? fx - 1 : 0, 0);
-    SendMessageW(item(IDC_KEY_SPEED), TBM_SETPOS, TRUE, k && fx ? (k[0] & 15) : proto::KEY_SPEED_DEFAULT);
     g_updating = false;
-    for (int id : {IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2})
+    for (int id : {IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2})
         EnableWindow(item(id), on);
     // the second colour only matters for effects that use it
     bool two = on && (fx == proto::KEY_FLASH || fx == proto::KEY_BREATHE || fx == proto::KEY_TWINKLE);
@@ -400,7 +407,10 @@ void on_slider(int s) {
     int pos = (int)SendMessageW(item(IDC_SLIDER + s), TBM_GETPOS, 0, 0);
     switch (s) {
         case BRIGHTNESS: set_brightness(pos); break;
-        case SPEED: set_speed(pos); break;
+        case SPEED:
+            if (keys_mode()) edit_keys(preview_selected_leds(), KEY_SPEED, pos);
+            else set_speed(pos);
+            break;
         case SIZE: set_tune(pos, g_tune.intensity); break;
         case INTENSITY: set_tune(g_tune.size, pos); break;
     }
@@ -469,8 +479,6 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (!g_updating)
                 for (int s = 0; s < SLIDERS; s++)
                     if ((HWND)lp == item(IDC_SLIDER + s)) on_slider(s);
-            if (!g_updating && (HWND)lp == item(IDC_KEY_SPEED) && LOWORD(wp) != TB_ENDTRACK)
-                edit_keys(preview_selected_leds(), KEY_SPEED, (int)SendMessageW(item(IDC_KEY_SPEED), TBM_GETPOS, 0, 0));
             return 0;
         case WM_COMMAND: {
             int id = LOWORD(wp);
@@ -660,9 +668,6 @@ void window_show() {
     make(L"STATIC", L"Key effect", 0, IDC_KEY_FX_LABEL);
     HWND kfx = make(WC_COMBOBOXW, L"", WS_TABSTOP | CBS_DROPDOWNLIST, IDC_KEY_FX);
     for (const wchar_t *n : key_fx_names) SendMessageW(kfx, CB_ADDSTRING, 0, (LPARAM)n);
-    make(L"STATIC", L"Speed", 0, IDC_KEY_SPEED_LABEL);
-    HWND ksp = make(TRACKBAR_CLASSW, L"", WS_TABSTOP | TBS_HORZ | TBS_NOTICKS, IDC_KEY_SPEED);
-    SendMessageW(ksp, TBM_SETRANGE, TRUE, MAKELPARAM(0, 15));
     make(L"STATIC", L"Colour boxes set", SS_RIGHT, IDC_KEY_COLOURS_LABEL);
     make(L"BUTTON", L"1", WS_TABSTOP | BS_OWNERDRAW, IDC_KEY_C1);
     make(L"BUTTON", L"2", WS_TABSTOP | BS_OWNERDRAW, IDC_KEY_C2);

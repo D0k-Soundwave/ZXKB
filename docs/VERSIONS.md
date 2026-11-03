@@ -40,6 +40,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.23 | 2026-11-03 | 510,976 bytes | With keys selected, the Speed slider on the right becomes Key speed (0-15) for them; the separate key speed slider under the preview is gone (D0k moved the effect's Speed, which does nothing visible on Solid colour). |
 | 0.22 | 2026-11-03 | 510,464 bytes | Fix: the window copy could take the tray copy's replies while both read the keyboard (Windows gives every reply to both), so its key-to-LED map came out wrong and a selected key lit another key (D0k: G lit "-", and the up arrow in the preview). Every reply must now echo the effect, LED or map position asked for. |
 | 0.21 | 2026-11-03 | 510,464 bytes | Second row under the preview for the selected keys: Key effect, Speed, and buttons 1 / 2 choosing which of the keys' two colours the colour boxes set. Needs firmware v20. |
 | 0.20 | 2026-11-03 | 506,880 bytes | Black added to the colour boxes, for keys (turns the selected keys off); greyed out for the effect colour, which has no black. |
