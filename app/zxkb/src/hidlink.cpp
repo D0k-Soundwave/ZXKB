@@ -363,6 +363,10 @@ void HidLink::read_loop() {
             Tune *t = new Tune;
             t->mode = p[2]; t->flags = p[3]; t->size = p[4]; t->intensity = p[5];
             PostMessageW(hwnd_, WM_ZX_TUNE, 0, (LPARAM)t);
+        } else if (raw_) {
+            uint8_t *copy = new uint8_t[proto::REPORT];
+            std::memcpy(copy, p, proto::REPORT);
+            PostMessageW(hwnd_, WM_ZX_RAW, 0, (LPARAM)copy);
         }
     }
 }

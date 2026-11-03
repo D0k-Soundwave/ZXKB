@@ -15,6 +15,7 @@
 #define WM_ZX_SLOT         (WM_APP + 3) // wParam = slot 1-10
 #define WM_ZX_STATUS       (WM_APP + 4) // lParam = Status* (receiver deletes)
 #define WM_ZX_TUNE         (WM_APP + 5) // lParam = Tune* (receiver deletes)
+#define WM_ZX_RAW          (WM_APP + 8) // test tools only (raw_reports(true)): lParam new uint8_t[32], any other report
 #define WM_ZX_KEYMAP       (WM_APP + 7) // lParam: new std::vector<uint16_t>, layer 0 keycodes by row * cols + col
 #define WM_ZX_MIRROR       (WM_APP + 6) // a full set of LED colours arrived: read them with HidLink::mirror()
 
@@ -61,6 +62,7 @@ public:
     void mirror(uint8_t *rgb, int leds); // copy of the LED colours the keyboard last reported (r, g, b per LED)
     void request_via_status();           // VIA boards: ask for brightness, speed, effect and colour (posts WM_ZX_STATUS)
     void request_keymap(int rows, int cols); // layer 0 of the keymap through VIA (posts WM_ZX_KEYMAP)
+    void raw_reports(bool on) { raw_ = on; }  // test tools: pass reports ZXKB does not use on as WM_ZX_RAW
 
 private:
     static DWORD WINAPI thread_main(LPVOID self);
@@ -88,5 +90,6 @@ private:
     uint8_t          mirror_[256 * 3] = {};
     volatile LONG    mirror_posted_ = 0; // a WM_ZX_MIRROR is waiting to be handled (do not queue another)
     volatile bool    broken_ = false;
+    volatile bool    raw_ = false;
     CRITICAL_SECTION write_lock_;
 };

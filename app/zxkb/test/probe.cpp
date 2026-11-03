@@ -116,6 +116,28 @@ int main(int argc, char **argv) {
             }
             std::printf("\n");
         }
+    } else if (!std::strcmp(cmd, "macros")) { // probe macros: VIA macro count and buffer size (settings memory for macros)
+        link.raw_reports(true);
+        for (uint8_t id : {(uint8_t)0x0C, (uint8_t)0x0D}) { // VIA id_dynamic_keymap_macro_get_count / _get_buffer_size
+            link.send(&id, 1);
+            DWORD start = GetTickCount();
+            MSG m;
+            bool got = false;
+            while (!got && GetTickCount() - start < 500) {
+                if (PeekMessageW(&m, nullptr, WM_ZX_RAW, WM_ZX_RAW, PM_REMOVE)) {
+                    uint8_t *r = reinterpret_cast<uint8_t *>(m.lParam);
+                    if (r[0] == id) {
+                        if (id == 0x0C) std::printf("macros: %d\n", r[1]);
+                        else std::printf("macro buffer: %d bytes\n", r[1] << 8 | r[2]);
+                        got = true;
+                    }
+                    delete[] r;
+                } else {
+                    MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+                }
+            }
+            if (!got) std::printf("no reply to VIA command 0x%02X\n", id);
+        }
     } else if (!std::strcmp(cmd, "keyleds")) { // probe keyleds: each layout key's matrix position and LED, as the preview works them out
         for (size_t i = 0; i < board->keys.size(); i++) {
             const KeyRect &r = board->keys[i];
