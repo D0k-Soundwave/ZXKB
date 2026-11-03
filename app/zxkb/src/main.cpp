@@ -20,6 +20,7 @@
 #include "vu.h"
 #include "app.h"
 #include "window.h"
+#include "preview.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -93,6 +94,12 @@ bool vu_showing() { return g_board && g_st.enabled && g_st.mode && g_st.mode == 
 std::string current_name() {
     if (!g_board || !g_st.enabled) return "";
     return vu_showing() ? vu_name(g_vu_style) : effect_name(g_st.mode);
+}
+
+void keyboard_mirror(uint8_t *rgb, int leds) { g_link.mirror(rgb, leds); }
+void send(std::initializer_list<uint8_t> bytes);
+void mirror_request(bool on) {
+    if (g_board) send({proto::MIRROR, (uint8_t)on});
 }
 
 bool is_favourite(const std::string &n) {
@@ -561,6 +568,9 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             window_refresh();
             return 0;
         }
+        case WM_ZX_MIRROR:
+            preview_update();
+            return 0;
         case WM_TIMER:
             if (wp == TIMER_SAVE) save_now();
             return 0;

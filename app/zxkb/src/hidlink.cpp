@@ -166,6 +166,7 @@ bool HidLink::open_board(Board *board) {
             EnterCriticalSection(&write_lock_);
             dev_     = h;
             protocol_ = board->protocol;
+            led_count_ = board->led_count;
             in_len_  = caps.InputReportByteLength;
             out_len_ = caps.OutputReportByteLength;
             broken_  = false;
@@ -177,6 +178,12 @@ bool HidLink::open_board(Board *board) {
     }
     SetupDiDestroyDeviceInfoList(set);
     return found;
+}
+
+void HidLink::mirror(uint8_t *rgb, int leds) {
+    InterlockedExchange(&mirror_posted_, 0);
+    if (leds > 256) leds = 256;
+    std::memcpy(rgb, mirror_, leds * 3); // a frame may be half-updated: the next one follows within ~33 ms
 }
 
 bool HidLink::send(const uint8_t *payload, int length) {
@@ -202,6 +209,10 @@ void HidLink::read_loop() {
             Status *s = new Status(parse_status(p));
             if (protocol_ < 2) s->vu_possible = 1; // older firmware does not report it
             PostMessageW(hwnd_, WM_ZX_STATUS, 0, (LPARAM)s);
+        } else if (p[0] == proto::MIRROR) {
+            int first = p[1], count = p[2];
+            if (count <= 9 && first + count <= 256) std::memcpy(mirror_ + first * 3, p + 3, count * 3);
+            if (first + count >= led_count_ && InterlockedExchange(&mirror_posted_, 1) == 0) PostMessageW(hwnd_, WM_ZX_MIRROR, 0, 0);
         } else if (p[0] == proto::TUNE) {
             Tune *t = new Tune;
             t->mode = p[2]; t->flags = p[3]; t->size = p[4]; t->intensity = p[5];

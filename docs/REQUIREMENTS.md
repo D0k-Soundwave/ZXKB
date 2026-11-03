@@ -26,7 +26,8 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Double-click the tray icon to open the ZXKB window next to the tray (step 1 in 0.8: effects and settings), so settings can be adjusted without
       right-clicking every time (requested 2026-11-02); opened on demand and fully released on close.
       It is a full RGB keyboard tool, not a cut-down panel: everything the keyboard and ZXKB can do is in it
-      (clarified 2026-11-02)
+      (clarified 2026-11-02). It runs as its own small program, started on double-click, so closing it gives
+      every byte back; the tray core stays at ~2 MB (decided 2026-11-03: in-process, ~8 MB stayed after closing)
 - [ ] Layers: stack effects (e.g. rainbow base, typing reactions on top, fixed colours on chosen keys above)
       (2026-11-02; needs firmware work)
 - [ ] Per-app profiles: switch profile when a given program or game is in front, and back after (2026-11-02)

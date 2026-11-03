@@ -6,6 +6,7 @@
 #include "app.h"
 #include "effects.h"
 #include "vumath.h"
+#include "preview.h"
 #include "../res/resource.h"
 #include <windowsx.h>
 #include <commctrl.h>
@@ -19,7 +20,7 @@
 namespace {
 
 enum : int {
-    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK,
+    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -30,8 +31,11 @@ const wchar_t *slider_names[SLIDERS] = {L"Brightness", L"Speed", L"Size", L"Inte
 constexpr int VU_ITEM = 1000; // list item data: effect number, or VU_ITEM + VuStyle
 constexpr int VU_GROUP = 100; // list group for the VU styles
 
-// Layout in device-independent pixels (scaled for the screen's DPI). [A] sizes chosen to fit the controls.
-constexpr int W = 360, MARGIN = 12, ROW = 30, LIST_H = 270, SWATCH = 24;
+// Layout in device-independent pixels (scaled for the screen's DPI). [A] sizes chosen to fit the controls:
+// the preview across the top, the effect list on the left, the controls on the right.
+constexpr int W = 680, MARGIN = 12, ROW = 30, LIST_W = 300, LIST_H = 226, SWATCH = 24, GUTTER = 16;
+constexpr UINT TIMER_MIRROR = 1;
+constexpr UINT MIRROR_KEEPALIVE_MS = 1000; // [C] half the keyboard's 2 s keep-alive, so the colours never stop
 
 HWND  g_win = nullptr;
 HFONT g_font = nullptr;
@@ -49,30 +53,34 @@ void set_font() {
     for (HWND c = GetWindow(g_win, GW_CHILD); c; c = GetWindow(c, GW_HWNDNEXT)) SendMessageW(c, WM_SETFONT, (WPARAM)g_font, TRUE);
 }
 
-int content_height() { return MARGIN + 20 + 6 + LIST_H + 8 + 24 + 6 + SLIDERS * ROW + 6 + SWATCH + 12 + 18 + MARGIN; }
+int preview_h() { return (int)((W - 2 * MARGIN) * preview_aspect()); }
+int content_height() { return MARGIN + 26 + preview_h() + 10 + LIST_H + 10 + 18 + MARGIN; }
 
 void layout() {
     int y = MARGIN, inner = W - 2 * MARGIN;
     MoveWindow(item(IDC_NOW), px(MARGIN), px(y), px(inner), px(20), FALSE);
     y += 26;
+    MoveWindow(item(IDC_PREVIEW), px(MARGIN), px(y), px(inner), px(preview_h()), FALSE);
+    y += preview_h() + 10;
+    int top = y;
     HWND list = item(IDC_LIST);
-    MoveWindow(list, px(MARGIN), px(y), px(inner), px(LIST_H), FALSE);
-    ListView_SetColumnWidth(list, 0, px(inner) - GetSystemMetricsForDpi(SM_CXVSCROLL, g_dpi) - px(4));
-    y += LIST_H + 8;
-    MoveWindow(item(IDC_ON), px(MARGIN), px(y), px(140), px(24), FALSE);
-    MoveWindow(item(IDC_FAV), px(MARGIN + 160), px(y), px(inner - 160), px(24), FALSE);
-    y += 30;
+    MoveWindow(list, px(MARGIN), px(y), px(LIST_W), px(LIST_H), FALSE);
+    ListView_SetColumnWidth(list, 0, px(LIST_W) - GetSystemMetricsForDpi(SM_CXVSCROLL, g_dpi) - px(4));
+
+    int x = MARGIN + LIST_W + GUTTER, cw = W - MARGIN - x; // the controls column
+    MoveWindow(item(IDC_ON), px(x), px(y), px(140), px(24), FALSE);
+    MoveWindow(item(IDC_FAV), px(x + 150), px(y), px(cw - 150), px(24), FALSE);
+    y += 32;
     for (int s = 0; s < SLIDERS; s++) {
-        MoveWindow(item(IDC_LABEL + s), px(MARGIN), px(y + 5), px(80), px(20), FALSE);
-        MoveWindow(item(IDC_SLIDER + s), px(MARGIN + 80), px(y), px(inner - 80 - 48), px(26), FALSE);
+        MoveWindow(item(IDC_LABEL + s), px(x), px(y + 5), px(72), px(20), FALSE);
+        MoveWindow(item(IDC_SLIDER + s), px(x + 72), px(y), px(cw - 72 - 46), px(26), FALSE);
         MoveWindow(item(IDC_VALUE + s), px(W - MARGIN - 44), px(y + 5), px(44), px(20), FALSE);
         y += ROW;
     }
-    y += 6;
-    for (int c = 0; c < 7; c++) MoveWindow(item(IDC_SWATCH + c), px(MARGIN + c * (SWATCH + 6)), px(y), px(SWATCH), px(SWATCH), FALSE);
-    MoveWindow(item(IDC_PICK), px(MARGIN + 7 * (SWATCH + 6) + 6), px(y), px(inner - 7 * (SWATCH + 6) - 6), px(SWATCH), FALSE);
-    y += SWATCH + 12;
-    MoveWindow(item(IDC_VERSION), px(MARGIN), px(y), px(inner), px(18), FALSE);
+    y += 8;
+    for (int c = 0; c < 7; c++) MoveWindow(item(IDC_SWATCH + c), px(x + c * (SWATCH + 6)), px(y), px(SWATCH), px(SWATCH), FALSE);
+    MoveWindow(item(IDC_PICK), px(x + 7 * (SWATCH + 6) + 6), px(y), px(cw - 7 * (SWATCH + 6) - 6), px(SWATCH), FALSE);
+    MoveWindow(item(IDC_VERSION), px(MARGIN), px(top + LIST_H + 10), px(inner), px(18), FALSE);
     InvalidateRect(g_win, nullptr, TRUE);
 }
 
@@ -317,6 +325,9 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             SetWindowPos(hwnd, nullptr, r->left, r->top, wr.right - wr.left, wr.bottom - wr.top, SWP_NOZORDER | SWP_NOACTIVATE);
             return 0;
         }
+        case WM_TIMER:
+            if (wp == TIMER_MIRROR) mirror_request(true);
+            return 0;
         case WM_CLOSE:
             window_close();
             return 0;
@@ -356,6 +367,7 @@ void window_show() {
     g_dpi = (int)GetDpiForWindow(g_win);
 
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP | SS_ENDELLIPSIS, IDC_NOW);
+    preview_create(g_win, IDC_PREVIEW);
     HWND list = make(WC_LISTVIEWW, L"", WS_TABSTOP | WS_BORDER | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOCOLUMNHEADER, IDC_LIST);
     ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
     LVCOLUMNW col = {};
@@ -380,6 +392,8 @@ void window_show() {
     refresh_status(); // the keyboard may have changed from its own keys
     refresh();
     place_by_tray();
+    mirror_request(true); // the keyboard starts sending its colours for the preview
+    SetTimer(g_win, TIMER_MIRROR, MIRROR_KEEPALIVE_MS, nullptr);
     ShowWindow(g_win, SW_SHOW);
     SetForegroundWindow(g_win);
     SetFocus(list);
@@ -387,13 +401,21 @@ void window_show() {
 
 void window_refresh() {
     if (!g_win) return;
-    if (g_listed != g_board) fill_list(); // a keyboard connected or went away
+    if (g_listed != g_board) { // a keyboard connected or went away
+        fill_list();
+        layout(); // the preview's shape depends on the board
+        mirror_request(true);
+    }
     refresh();
 }
 
 void window_close() {
     if (!g_win) return;
+    mirror_request(false); // the keyboard stops sending colours
     DestroyWindow(g_win); // destroys every control with it
     g_win = nullptr;
     if (g_font) { DeleteObject(g_font); g_font = nullptr; }
+    // Give the memory the window used back to Windows (the heap otherwise keeps freed blocks for reuse)
+    HeapCompact(GetProcessHeap(), 0);
+    SetProcessWorkingSetSize(GetCurrentProcess(), (SIZE_T)-1, (SIZE_T)-1);
 }

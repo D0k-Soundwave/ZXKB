@@ -47,4 +47,6 @@ void set_tune(int size, int intensity);
 void set_colour(uint8_t hue, uint8_t sat);
 void refresh_status();     // ask the keyboard for its state and wait briefly for the reply
 bool is_favourite(const std::string &n);
+void keyboard_mirror(uint8_t *rgb, int leds); // the LED colours the keyboard last reported
+void mirror_request(bool on);                 // ask the keyboard to keep sending its LED colours (for 2 s)
 void set_favourite(const std::string &n, bool on);

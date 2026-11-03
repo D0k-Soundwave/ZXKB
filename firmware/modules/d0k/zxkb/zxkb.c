@@ -31,6 +31,17 @@ static bool     vu_requested;      /* the app wants the VU meter */
 static bool     direct_requested;  /* the app or SignalRGB wants direct colour */
 static uint32_t direct_last;
 static uint8_t  overlay    = ZXKB_OVERLAY_NONE;
+static uint8_t  mirror[RGB_MATRIX_LED_COUNT][3]; /* the colours last sent to the LEDs */
+static bool     mirroring;
+static uint32_t mirror_until, mirror_last;
+static uint8_t  mirror_next;
+
+void zxkb_mirror_set(int index, uint8_t r, uint8_t g, uint8_t b) {
+    if (index < 0 || index >= RGB_MATRIX_LED_COUNT) return;
+    mirror[index][0] = r;
+    mirror[index][1] = g;
+    mirror[index][2] = b;
+}
 static uint8_t  saved_mode = RGB_MATRIX_SOLID_COLOR;
 
 __attribute__((weak)) bool zxkb_overlay_allowed_user(uint8_t o) {
@@ -191,6 +202,21 @@ void housekeeping_task_zxkb(void) {
         direct_requested = false;
     }
     if (overlay != ZXKB_OVERLAY_NONE || vu_requested || direct_requested) overlay_update();
+
+    /* LED mirror for the preview: one packet at a time, so the keyboard never stalls for a whole frame */
+    if (mirroring) {
+        if (timer_expired32(timer_read32(), mirror_until)) {
+            mirroring = false;
+        } else if (timer_elapsed32(mirror_last) >= ZXKB_MIRROR_PACKET_MS) {
+            uint8_t msg[ZXKB_REPORT_SIZE] = {ZXKB_CMD_MIRROR, mirror_next};
+            uint8_t count = RGB_MATRIX_LED_COUNT - mirror_next < 9 ? RGB_MATRIX_LED_COUNT - mirror_next : 9;
+            msg[2] = count;
+            memcpy(&msg[3], mirror[mirror_next], count * 3);
+            raw_hid_send(msg, sizeof(msg));
+            mirror_next = mirror_next + count >= RGB_MATRIX_LED_COUNT ? 0 : mirror_next + count;
+            mirror_last = timer_read32();
+        }
+    }
 
     /* Tell the app at once when something it cares about changes (lighting on/off, effect, overlay, whether the
      * VU meter could show), so it can stop listening to audio while nothing would show it. */
@@ -443,6 +469,10 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length) {
             return true;
         case ZXKB_CMD_TUNE:
             tune_command(data, length);
+            return true;
+        case ZXKB_CMD_MIRROR:
+            mirroring = data[1] != 0;
+            mirror_until = timer_read32() + ZXKB_MIRROR_KEEPALIVE_MS;
             return true;
     }
     if (signalrgb_command(data, length)) return true;

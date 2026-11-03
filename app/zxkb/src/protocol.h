@@ -17,6 +17,7 @@ constexpr uint8_t INFO      = 0xD9; // [0xD9, sub, ...]
 constexpr uint8_t INFO_STATUS = 0x00;
 constexpr uint8_t INFO_NAME   = 0x01;
 constexpr uint8_t INFO_LEDS   = 0x02;
+constexpr uint8_t MIRROR    = 0xDB; // [0xDB, 1] send LED colours for 2 s, [0xDB, 0] stop; replies [0xDB, first, n, n x rgb]
 constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
 constexpr uint8_t TUNE_GET  = 0x00;
 constexpr uint8_t TUNE_SET  = 0x01; // [0xDA, 0x01, size, intensity]

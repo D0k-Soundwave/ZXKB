@@ -71,6 +71,12 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Thread stacks reserved | 64 KB link, 256 KB audio | A | reserved, not committed |
 | Max profiles listed per hotkey | 100 | A | menu id space |
 | ZXKB window size | 456 x 708 px at 125% scaling (360 x ~566 at 100%) | M / C | window_test, 2026-11-02 |
+| Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
+| LED mirror rate | 30 frames/s while the preview is open | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
+| Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |
+| Preview window, software drawing: own RAM / reserved | 9.2-10.0 MB / 15.7-16.2 MB while open | M | window_test, 2026-11-02 |
+| After closing the window (software drawing) | handles 280-281, GDI 28, USER 19 steady over 8 cycles; reserved 9.9 -> 12.3 MB | M | leak_test, 2026-11-02 |
+| Injected into ZXKB by other software on this PC | RivaTuner (RTSSHooks64.dll), Windhawk (+ mods) | M | process module list, 2026-11-02 |
 | Reproducible build | two clean builds identical | M | cmp, 2026-11-02, from 0.8 on (kept 0.7 contains its build time) |
 
 ## VU meter

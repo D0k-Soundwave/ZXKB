@@ -165,3 +165,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     }
     return false;   /* skip the board's default white Caps Lock light */
 }
+
+/* ---------- LED mirror for ZXKB's live preview ----------
+ * rules.mk wraps the SNLED27351 driver's set-colour calls, so every colour that reaches the LEDs (after effects,
+ * brightness and the Caps Lock light) is copied for the ZXKB module, which sends it to the app on request. */
+void __real_snled27351_set_color(int index, uint8_t red, uint8_t green, uint8_t blue);
+void __real_snled27351_set_color_all(uint8_t red, uint8_t green, uint8_t blue);
+void __wrap_snled27351_set_color(int index, uint8_t red, uint8_t green, uint8_t blue) {
+    zxkb_mirror_set(index, red, green, blue);
+    __real_snled27351_set_color(index, red, green, blue);
+}
+void __wrap_snled27351_set_color_all(uint8_t red, uint8_t green, uint8_t blue) {
+    for (int i = 0; i < RGB_MATRIX_LED_COUNT; i++) zxkb_mirror_set(i, red, green, blue);
+    __real_snled27351_set_color_all(red, green, blue);
+}

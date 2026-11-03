@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 2 /* 2: status has "VU possible" and is also sent unasked on changes */
+#define ZXKB_PROTOCOL_VERSION 3 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB) */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -22,6 +22,10 @@
 #define ZXKB_CMD_TUNE      0xDA /* size and intensity of the current effect, always replies:
                                  * [0xDA, 0x00] get, [0xDA, 0x01, size, intensity] set (live), [0xDA, 0x02] save
                                  * -> [0xDA, sub, mode, flags (1 = size, 2 = intensity apply), size, intensity] */
+#define ZXKB_CMD_MIRROR    0xDB /* [0xDB, 1] send the LED colours for the next 2 s (repeat to keep going), [0xDB, 0] stop.
+                                 * keyboard -> app: [0xDB, first LED, count (max 9), count x (r, g, b)], the colours
+                                 * actually sent to the LEDs (after brightness and indicators). Needs the board to call
+                                 * zxkb_mirror_set() from its LED driver; boards that do not just never send. */
 #define ZXKB_TUNE_GET      0x00
 #define ZXKB_TUNE_SET      0x01
 #define ZXKB_TUNE_SAVE     0x02
@@ -34,6 +38,16 @@
 #define ZXKB_TUNE_DEFAULT_INTENSITY 255
 #define ZXKB_TUNE_MIN               16
 #define ZXKB_TUNABLES               14 /* effects with their own size/intensity (see zxkb.c) */
+
+/* LED mirror for the app's live preview. [A] 2 s keep-alive; [C] one 9-LED packet every 3 ms = 30 full frames a
+ * second for 88 LEDs (10 packets), about film rate, while the preview is open. */
+#ifndef ZXKB_MIRROR_KEEPALIVE_MS
+#    define ZXKB_MIRROR_KEEPALIVE_MS 2000
+#endif
+#ifndef ZXKB_MIRROR_PACKET_MS
+#    define ZXKB_MIRROR_PACKET_MS 3
+#endif
+void zxkb_mirror_set(int index, uint8_t r, uint8_t g, uint8_t b); /* call from the board's LED driver wrapper */
 
 /* For effects: the current effect's size and intensity */
 uint8_t zxkb_size(void);

@@ -14,6 +14,7 @@
 #define WM_ZX_SLOT         (WM_APP + 3) // wParam = slot 1-10
 #define WM_ZX_STATUS       (WM_APP + 4) // lParam = Status* (receiver deletes)
 #define WM_ZX_TUNE         (WM_APP + 5) // lParam = Tune* (receiver deletes)
+#define WM_ZX_MIRROR       (WM_APP + 6) // a full set of LED colours arrived: read them with HidLink::mirror()
 
 struct Status {
     uint8_t mode = 0, enabled = 0, val = 0, speed = 0, hue = 0, sat = 0, max_val = 255;
@@ -43,6 +44,7 @@ public:
     void rescan();                                 // a device arrived: look again
     bool send(const uint8_t *payload, int length); // thread-safe; pads to one report
     bool connected() const { return dev_ != INVALID_HANDLE_VALUE && !broken_; }
+    void mirror(uint8_t *rgb, int leds); // copy of the LED colours the keyboard last reported (r, g, b per LED)
 
 private:
     static DWORD WINAPI thread_main(LPVOID self);
@@ -60,6 +62,9 @@ private:
     HANDLE           dev_    = INVALID_HANDLE_VALUE;
     int              in_len_ = 0, out_len_ = 0;
     uint8_t          protocol_ = 0; // ZXKB protocol version of the connected board
+    uint8_t          led_count_ = 0;
+    uint8_t          mirror_[256 * 3] = {};
+    volatile LONG    mirror_posted_ = 0; // a WM_ZX_MIRROR is waiting to be handled (do not queue another)
     volatile bool    broken_ = false;
     CRITICAL_SECTION write_lock_;
 };
