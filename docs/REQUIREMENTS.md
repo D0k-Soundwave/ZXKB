@@ -106,14 +106,17 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       stripes in Spectrum mode go with them
 - [ ] Find out what a keyboard can do when it is plugged in, and offer only that:
       - ZXKB module boards: everything; the firmware reports its features and physical layout
-      - Vial boards: the keyboard hands over its own layout; keymap, macros, VIA lighting
+      - Vial boards: the keyboard hands over its own layout; keymap, macros, VIA lighting. Vial supports the Q3 ISO knob
+        (vial-qmk keyboards/keychron/q3/iso_encoder/keymaps/vial, checked 2026-11-03), so it can be tested on D0k's Q3
       - VIA boards: keymap, macros, knob, basic lighting; layout from VIA's public definitions or a file
       - Boards with OpenRGB or SignalRGB QMK firmware: lighting only
       - Other brands (Razer, Corsair, Logitech...): only through the OpenRGB app, later
 - [ ] Layouts for keyboards ZXKB does not already know, looked up once by USB vendor/product ID (asking first,
       as it goes online) and kept, from:
       - QMK's keyboard database, keyboards.qmk.fm (key positions and sizes, matrix, RGB LED positions, USB IDs;
-        checked 2026-11-03 with the Q3's entry). Not yet checked: whether it can be searched by USB ID
+        checked 2026-11-03 with the Q3's entry). Searchable by USB ID: keyboards.qmk.fm/v1/usb.json (341 KB, 786
+        vendor IDs, 3,013 product IDs, M 2026-11-03); 259 product IDs belong to more than one keyboard, so the user
+        picks when an ID is shared
       - VIA's keyboard definitions, github.com/the-via/keyboards (GPL-3.0; JSON per keyboard in v3/) for
         VIA-only boards
 - [ ] Independent of keycaps: by default keys are labelled from what they do, in the user's chosen language
@@ -145,7 +148,12 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
 - [ ] Fn + number hotkeys without the ZXKB firmware: with the user's OK the app sets Fn+1..0 to F13-F22 through VIA
       (old keys saved first, undo in one click) and registers them as Windows hotkeys (no polling); Ctrl+Alt+Shift+
       number as the alternative for software that uses F13-F24. Only while ZXKB runs
-- [ ] Check whether Keychron's own firmware (for their Launcher app) has per-key lighting commands ZXKB could use
+- [ ] Keychron's own firmware per-key lighting (checked 2026-11-03 in github.com/Keychron/qmk_firmware, branch
+      2025q3): raw HID prefix 0xA8 has per-key colour get/set (HSV, 9 LEDs per packet, kept in RAM until an RGB save
+      command), plus per-key and mixed-region modes. Enabled (KEYCHRON_RGB_ENABLE) on 32 of 90 Keychron board
+      families, e.g. Q1 v2, Q5, Q6, V1-V7 Max, the HE boards; not on the original Q3. Not yet known: whether the
+      firmware shipped on those keyboards matches this source, and how fast it takes updates. Undocumented by
+      Keychron, so it may change. If it works, those boards get per-key colour and streamed effects without reflashing
 
 ## Process
 - [x] Number every firmware and app build handed to D0k and keep each for fallback (docs/VERSIONS.md), from
