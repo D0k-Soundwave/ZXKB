@@ -30,6 +30,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.10 | 2026-11-03 | 419,328 bytes | Live preview made light: keycaps and legends drawn once, each frame only paints the lights (36% -> 2.2% of one core while animating); frames with no colour change are skipped. Version number in the file properties fixed (0.9 said 0.8 there). |
 | 0.9 | 2026-11-03 | 417,792 bytes | The ZXKB window runs as its own copy of ZXKB.exe, started by the tray, so closing it gives all its memory back. Live preview of the keyboard with its keycaps, lit as the keyboard is (needs firmware v16). Favourites, hotkeys and VU style changed in one are picked up by the other. |
 | 0.8 | 2026-11-02 | 400,384 bytes | The ZXKB window (Stage 2, step 1): double-click the tray icon, or "Open ZXKB window" in the menu. Effect list in groups with the VU styles, lighting on/off, favourite, sliders for brightness, speed, size and intensity, Spectrum colours and a full colour picker. Opens next to the tray, follows the keyboard, freed on close. |
 | 0.7 | 2026-11-02 | 390,144 bytes | VU meter styles listed with the effects and chosen like one; audio captured only while the VU meter effect shows; left click on the tray icon does nothing; version shown in the menu. |

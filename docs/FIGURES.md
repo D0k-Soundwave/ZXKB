@@ -75,8 +75,12 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | 0.9 ZXKB.exe size | 417,792 bytes | M | 2026-11-03 |
 | 0.9 window copy while open | 15.4-17.3 MB private bytes (its own process) | M | Get-Process, 6 opens, 2026-11-03; preview unlit (v15 has no mirror) |
 | 0.9 after closing the window | window copy ended every time; tray 3.20-3.26 MB private, handles 198, threads 3-4 over 5 cycles | M | Get-Process, 2026-11-03 |
+| 0.9 preview, v16, Cycle left to right | 35.9% of one core (window copy), private bytes 18.9 MB | M | tools/measure.py 30 s, 2026-11-03 17:28; every frame drew all legends with software drawing |
+| 0.10 preview, same effect | 2.2% of one core (both copies) | M | tools/measure.py 30 s, 2026-11-03 17:30; caps drawn once, lights only per frame |
+| 0.10 preview, still keyboard (keys off) | 0.47% of one core: window copy 0.31%, tray 0.23% | M | measure.py 30 s + Get-Process 20 s, 2026-11-03; both copies receive the 300 mirror packets/s, nothing redrawn |
+| 0.10 tray after the window closed | 1.8 MB private working set / 3.1 MB private bytes / 0.000% | M | measure.py 30 s, 2026-11-03 17:32 |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
-| LED mirror rate | 30 frames/s while the preview is open | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
+| LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |
 | Preview window, software drawing: own RAM / reserved | 9.2-10.0 MB / 15.7-16.2 MB while open | M | window_test, 2026-11-02 |
 | After closing the window (software drawing) | handles 280-281, GDI 28, USER 19 steady over 8 cycles; reserved 9.9 -> 12.3 MB | M | leak_test, 2026-11-02 |

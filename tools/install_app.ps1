@@ -13,6 +13,10 @@ $dir     = Join-Path $env:USERPROFILE 'Documents\Keyboard Layouts\ZXKB'
 $keep    = Join-Path $dir "versions\ZXKB_v$version.exe"
 New-Item -ItemType Directory -Force (Split-Path $keep) | Out-Null
 
+# Refuse a stale build (e.g. the link failed because ZXKB.exe was running): the exe must carry this version
+$built = (Get-Item $build).VersionInfo.ProductVersion
+if ($built -ne $version) { throw "build\ZXKB.exe is version '$built', not ${version}: build it again (quit any ZXKB running from build\ first)" }
+
 if (Test-Path $keep) {
     if ((Get-FileHash $keep).Hash -ne (Get-FileHash $build).Hash) {
         throw "ZXKB $version is already kept with different contents: raise ZXKB_VERSION_STR in resource.h"

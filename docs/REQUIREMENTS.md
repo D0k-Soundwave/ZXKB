@@ -42,6 +42,8 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Fn+number hotkey slots, each assignable to an effect or profile
 - [ ] Live preview window with the Wraith legends
 - [ ] Per-key paint editor
+- [ ] LED mirror sends a frame only when a colour changed (firmware): a still keyboard then costs nothing while the
+      window is open (0.47% of one core measured 2026-11-03, from 300 unchanged packets/s reaching both copies)
 - [ ] Per-key colour on/off in the app on an ongoing basis: any key can be set to no colour (dark) or a colour,
       over any effect, while indicators such as Caps Lock keep their own behaviour (D0k, 2026-11-03). Until then,
       keys-off is solid colour at brightness 0 (Caps Lock ignores brightness), set 2026-11-03
