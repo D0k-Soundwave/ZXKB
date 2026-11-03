@@ -207,21 +207,27 @@ void refresh() {
 
 // QMK hue and saturation (0-255) from a picked RGB colour; brightness stays with the Brightness slider
 // Keycaps: labels from the keyboard language (default), a keycap set, or import one
-std::vector<std::wstring> g_sets;
+// Items: follow Windows, each installed layout, each keycap set, import. g_choices holds what each item stores.
+std::vector<std::wstring> g_choices;
 void fill_keycaps() {
     HWND cb = item(IDC_KEYCAPS);
     SendMessageW(cb, CB_RESETCONTENT, 0, 0);
-    wchar_t lang[LOCALE_NAME_MAX_LENGTH] = {0}, name[128] = L"Windows keyboard language";
-    if (LCIDToLocaleName(MAKELCID(LOWORD((UINT_PTR)labels::current_layout()), SORT_DEFAULT), lang, LOCALE_NAME_MAX_LENGTH, 0))
-        GetLocaleInfoEx(lang, LOCALE_SLOCALIZEDDISPLAYNAME, name, 128);
-    SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)(L"Key labels: " + std::wstring(name)).c_str());
-    g_sets = keycaps::list();
+    g_choices.clear();
     std::wstring now = keycaps::chosen(g_board->vid, g_board->pid);
-    int sel = 0;
-    for (size_t i = 0; i < g_sets.size(); i++) {
-        SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)(L"Keycaps: " + g_sets[i]).c_str());
-        if (g_sets[i] == now) sel = (int)i + 1;
+    auto add = [&](const std::wstring &text, const std::wstring &value) {
+        SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)text.c_str());
+        g_choices.push_back(value);
+    };
+    add(L"Key labels: as Windows types (" + labels::layout_name(labels::current_layout()) + L")", L"");
+    for (HKL h : labels::installed()) {
+        wchar_t v[32];
+        swprintf(v, 32, L"layout:%llX", (unsigned long long)(UINT_PTR)h);
+        add(L"Key labels: " + labels::layout_name(h), v);
     }
+    for (const std::wstring &set : keycaps::list()) add(L"Keycaps: " + set, set);
+    int sel = 0;
+    for (size_t i = 0; i < g_choices.size(); i++)
+        if (g_choices[i] == now) sel = (int)i;
     SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)L"Import a keycap set (KLE file)...");
     SendMessageW(cb, CB_SETCURSEL, sel, 0);
 }
@@ -230,8 +236,7 @@ void on_keycaps() {
     int sel = (int)SendMessageW(item(IDC_KEYCAPS), CB_GETCURSEL, 0, 0);
     if (sel < 0 || !g_board) return;
     std::wstring name;
-    if (sel == 0) name = L"";
-    else if (sel <= (int)g_sets.size()) name = g_sets[sel - 1];
+    if (sel < (int)g_choices.size()) name = g_choices[sel];
     else { // import
         wchar_t path[MAX_PATH] = {0};
         OPENFILENAMEW of = {sizeof(of)};

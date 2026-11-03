@@ -38,6 +38,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.16 | 2026-11-03 | 500,736 bytes | Key labels name the Windows keyboard layout itself, not the language (D0k's English (UK) uses his custom "US - Spectrum (GBP on AltGr+4)" layout); any installed layout can be chosen for the labels, or "as Windows types", which follows a layout switch. |
 | 0.15 | 2026-11-03 | 498,688 bytes | One preview for every keyboard: layout from the keyboard's VIA definition (looked up once after asking), lit through the firmware's key-to-LED map (v18), with labels from what each key does in the Windows keyboard language (keymap read through VIA) or a keycap set. Keycap sets are KLE files; D0k's KAM Wraith set is the first, no longer built in. Import a KLE file from the window. The built-in Q3 picture is gone. |
 | 0.14 | 2026-11-03 | 485,888 bytes | The effect list ignores typed letters (it used to jump to the effect starting with the letter, changing the keyboard's effect while trying typing effects). |
 | 0.13 | 2026-11-03 | 485,888 bytes | Plain VIA keyboards (standard firmware): recognised, lighting controlled through VIA, effect names and key layout from the keyboard's VIA definition, looked up online once by USB ID after asking. Firmware check by USB ID instead of USB name (so Keychron's own firmware for the same keyboard is accepted, other keyboards' refused); honest warning that non-ZXKB firmware may reset settings. |

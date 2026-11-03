@@ -1,6 +1,7 @@
 // Key labels from QMK key codes in the chosen Windows keyboard layout. Copyright 2026 D0k
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "labels.h"
+#include <cwchar>
 #include <cwctype>
 
 namespace labels {
@@ -101,6 +102,51 @@ Label basic(uint16_t usage, HKL layout) {
 } // namespace
 
 HKL current_layout() { return GetKeyboardLayout(0); }
+
+std::vector<HKL> installed() {
+    int n = GetKeyboardLayoutList(0, nullptr);
+    std::vector<HKL> list(n > 0 ? n : 0);
+    if (n > 0) GetKeyboardLayoutList(n, list.data());
+    return list;
+}
+
+// The layout's name is in the registry under its layout ID (KLID). An HKL's high word is the layout: the language
+// again for a language's standard layout ("00000809"), 0xFnnn for a variant or a custom layout, found by its
+// "Layout Id" nnn (M 2026-11-03: D0k's 0xF0C1 -> a0010809 "US - Spectrum (GBP on AltGr+4)").
+std::wstring layout_name(HKL layout) {
+    UINT_PTR v = (UINT_PTR)layout;
+    unsigned lang = (unsigned)(v & 0xFFFF), dev = (unsigned)(v >> 16 & 0xFFFF);
+    const wchar_t *root = L"SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts";
+    wchar_t klid[16] = {0};
+    if ((dev & 0xF000) == 0xF000) { // a variant or custom layout: look it up by its layout ID
+        HKEY k;
+        if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, root, 0, KEY_READ, &k) == ERROR_SUCCESS) {
+            wchar_t name[16];
+            for (DWORD i = 0;; i++) {
+                DWORD len = 16;
+                if (RegEnumKeyExW(k, i, name, &len, nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS) break;
+                wchar_t id[16] = {0};
+                DWORD   size = sizeof(id);
+                if (RegGetValueW(k, name, L"Layout Id", RRF_RT_REG_SZ, nullptr, id, &size) == ERROR_SUCCESS &&
+                    wcstoul(id, nullptr, 16) == (dev & 0x0FFF)) {
+                    wcscpy_s(klid, name);
+                    break;
+                }
+            }
+            RegCloseKey(k);
+        }
+    } else {
+        swprintf(klid, 16, L"%04X%04X", dev == lang ? 0 : dev, lang);
+    }
+    wchar_t text[128] = {0};
+    DWORD   size = sizeof(text);
+    if (*klid && RegGetValueW(HKEY_LOCAL_MACHINE, (std::wstring(root) + L"\\" + klid).c_str(), L"Layout Text", RRF_RT_REG_SZ,
+                              nullptr, text, &size) == ERROR_SUCCESS)
+        return text;
+    wchar_t loc[LOCALE_NAME_MAX_LENGTH] = {0}, disp[128] = L"Windows keyboard layout";
+    if (LCIDToLocaleName(MAKELCID(lang, SORT_DEFAULT), loc, LOCALE_NAME_MAX_LENGTH, 0)) GetLocaleInfoEx(loc, LOCALE_SLOCALIZEDDISPLAYNAME, disp, 128);
+    return disp;
+}
 
 Label for_keycode(uint16_t kc, HKL layout, const std::vector<std::wstring> &custom) {
     Label l;

@@ -175,13 +175,20 @@ std::vector<BoardKey> board_keys() { // the keys to draw for the connected keybo
         return keys;
     }
     // the chosen keycap set, if any
+    // the choice: "" labels in the layout Windows is using, "layout:<HKL hex>" labels in that layout, or a keycap set
     std::wstring want = keycaps::chosen(g_board->vid, g_board->pid);
+    HKL hkl = labels::current_layout();
+    if (want.rfind(L"layout:", 0) == 0) {
+        HKL h = (HKL)(UINT_PTR)wcstoull(want.c_str() + 7, nullptr, 16);
+        for (HKL i : labels::installed())
+            if (i == h) hkl = h; // only if still installed
+        want.clear();
+    }
     if (want != g_set_name) {
         g_set.clear();
         if (!want.empty()) keycaps::load(want, &g_set);
         g_set_name = want;
     }
-    HKL hkl = labels::current_layout();
     const std::vector<KeyRect> &bk = g_board->keys;
     g_text.assign(bk.size(), KeyText());
     for (size_t i = 0; i < bk.size(); i++) {
