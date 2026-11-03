@@ -104,6 +104,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Per-key effect speeds | flash step 80 ms (speed 15) to 1,280 ms (speed 0); breath 5 steps, twinkle 6, colour cycle 10 | A | chosen so speed 12 = 320 ms (Spectrum FLASH, M by eye 2026-11-02 for Caps Lock); judge by eye |
 | Macro space left on the keyboard after v20 | about 560 bytes | A | not measured: read VIA's macro buffer size once v20 is on |
 | 0.21 ZXKB.exe size | 510,464 bytes | M | 2026-11-03 |
+| Key-to-LED map read by 3 programs at once | old code 18 of 18 reads wrong; 0.22 code 0 of 18 | M | probe matrix x3 in parallel x6, compared with QMK's keyboard.json, 2026-11-03 |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

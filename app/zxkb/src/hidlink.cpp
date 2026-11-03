@@ -92,7 +92,16 @@ bool HidLink::transact(HANDLE h, uint8_t *buf, int in_len, int out_len) {
     while (GetTickCount() - start < REPLY_TIMEOUT_MS) {
         if (!read_report(h, in, in_len, REPLY_TIMEOUT_MS)) return false;
         if (in[1] == 0xFF && cmd != 0xFF) return false; // VIA: "unknown command", e.g. a ZXKB query to a plain VIA board
-        if (in[1] == cmd && ((cmd != proto::INFO && cmd != proto::KEYS) || in[2] == sub)) {
+        // The tray copy and the window copy of ZXKB both read the keyboard, and Windows gives every reply to both,
+        // so a reply must echo what was asked: the same sub-command, and the same effect, LED or map position.
+        // (M 2026-11-03: without this the window took the tray's map replies, and G lit the "-" key.)
+        bool same = in[1] == cmd;
+        if (same && (cmd == proto::INFO || cmd == proto::KEYS)) same = in[2] == sub;
+        if (same && cmd == proto::INFO && (sub == proto::INFO_NAME || sub == proto::INFO_LEDS)) same = in[3] == buf[2];
+        if (same && cmd == proto::INFO && sub == proto::INFO_MATRIX) same = in[5] == buf[2];
+        if (same && cmd == proto::KEYS && sub == proto::KEYS_GET) same = in[3] == buf[2];
+        if (same && cmd == proto::VIA_GET) same = in[2] == buf[1] && in[3] == buf[2];
+        if (same) {
             std::memcpy(buf, in + 1, proto::REPORT);
             return true;
         }

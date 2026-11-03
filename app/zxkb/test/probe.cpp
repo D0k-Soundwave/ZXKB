@@ -106,6 +106,23 @@ int main(int argc, char **argv) {
             if (want < 0 || i == want) std::printf("LED %2d: %3d %3d %3d\n", i, rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
         q[1] = 0;
         link.send(q, 2);
+    } else if (!std::strcmp(cmd, "matrix")) { // probe matrix: the LED under each key as the firmware reports it
+        std::printf("matrix %d x %d, %d entries\n", board->map_rows, board->map_cols, (int)board->led_map.size());
+        for (int r = 0; r < board->map_rows; r++) {
+            std::printf("row %d:", r);
+            for (int c = 0; c < board->map_cols; c++) {
+                size_t i = (size_t)(r * board->map_cols + c);
+                std::printf(" %3d", i < board->led_map.size() ? board->led_map[i] : -1);
+            }
+            std::printf("\n");
+        }
+    } else if (!std::strcmp(cmd, "keyleds")) { // probe keyleds: each layout key's matrix position and LED, as the preview works them out
+        for (size_t i = 0; i < board->keys.size(); i++) {
+            const KeyRect &r = board->keys[i];
+            size_t m = (size_t)(r.row * board->map_cols + r.col);
+            int led = r.row >= 0 && r.col >= 0 && m < board->led_map.size() ? board->led_map[m] : -1;
+            std::printf("key %2d at %4d,%3d matrix %d,%2d -> LED %d\n", (int)i, r.x, r.y, r.row, r.col, led);
+        }
     } else if (!std::strcmp(cmd, "keys")) { // probe keys: per-key colours and effects as the keyboard holds them
         static const char *fx[6] = {"effect", "steady", "flash", "breathe", "cycle", "twinkle"};
         int own = 0;
