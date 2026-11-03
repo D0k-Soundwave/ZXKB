@@ -121,6 +121,21 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       Where a board cannot do something itself (no ZXKB module, too little memory), the app does it from the PC
       instead (e.g. layers and zones streamed through direct mode) and says so
 
+- [ ] Standard QMK + VIA keyboards without reflashing (D0k, 2026-11-03). Through VIA: remap, macros, layers, knob,
+      the board's own effects, brightness, speed, colour. From the app: profiles, per-app profiles, playlists,
+      scheduler, and whole-keyboard PC effects (one colour or brightness for the whole board: music pulse, screen
+      colour, notification flash). Checked in QMK source (via.c, 2026-11-03): VIA's live lighting changes are not
+      written to the keyboard's settings memory, so streaming them does not wear its flash. Rate it accepts: not
+      measured. Per-key colour, the VU bars and ZXKB's own effects still need ZXKB, OpenRGB or SignalRGB firmware
+- [ ] Simulated preview for keyboards without the ZXKB firmware: the app recreates QMK's standard effects from the
+      effect, speed, colour and brightness (read through VIA) and the LED positions (VIA/QMK definitions); typing
+      effects from Windows key presses. Marked "simulated" in the window. Effects a maker added cannot be simulated
+      (shown as plain keys). Only while the window is open
+- [ ] Fn + number hotkeys without the ZXKB firmware: with the user's OK the app sets Fn+1..0 to F13-F22 through VIA
+      (old keys saved first, undo in one click) and registers them as Windows hotkeys (no polling); Ctrl+Alt+Shift+
+      number as the alternative for software that uses F13-F24. Only while ZXKB runs
+- [ ] Check whether Keychron's own firmware (for their Launcher app) has per-key lighting commands ZXKB could use
+
 ## Process
 - [x] Number every firmware and app build handed to D0k and keep each for fallback (docs/VERSIONS.md), from
       firmware v15 / app 0.7 on (requested 2026-11-02; earlier builds not kept, by D0k's choice)
