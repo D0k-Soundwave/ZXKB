@@ -109,6 +109,12 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       and keycap designs). No keycap legend database was found (searched 2026-11-03). D0k's KAM Wraith set
       (docs/keyboard/keycaps.json) becomes the first such set rather than built in
 
+- [ ] Works with any QMK keyboard, not just the Q3 (D0k, 2026-11-03). No design may rest on one board's limits:
+      effect count, free effect slots, settings memory and flash differ per board, and the module build can drop
+      QMK effects to make room. The module reports each board's limits and features; the app adapts to them.
+      Where a board cannot do something itself (no ZXKB module, too little memory), the app does it from the PC
+      instead (e.g. layers and zones streamed through direct mode) and says so
+
 ## Process
 - [x] Number every firmware and app build handed to D0k and keep each for fallback (docs/VERSIONS.md), from
       firmware v15 / app 0.7 on (requested 2026-11-02; earlier builds not kept, by D0k's choice)
