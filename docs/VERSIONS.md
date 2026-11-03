@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v16 | 2026-11-03 | 60,496 bytes | LED mirror: the keyboard sends the colours actually on its LEDs (after effects, brightness and Caps Lock) while the ZXKB window asks for them, for the live preview (protocol 3). |
 | v15 | 2026-11-02 | 60,184 bytes | VU meter is a normal effect (picked and saved like any other); Fn + V switches between it and the previous effect. Status sent to ZXKB unasked on changes and reports "VU possible" and the firmware version (protocol 2), so ZXKB listens to audio only while the VU meter shows. |
 | v14 | 2026-11-02 | 59,984 bytes | VU bar end key lights in proportion to how much the bar covers it. Not kept. |
 | v13 | 2026-11-02 | 59,704 bytes | Size and intensity for typing effects; ZXKB versions of QMK's typing effects. Not kept. |
@@ -29,6 +30,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.9 | 2026-11-03 | 417,792 bytes | The ZXKB window runs as its own copy of ZXKB.exe, started by the tray, so closing it gives all its memory back. Live preview of the keyboard with its keycaps, lit as the keyboard is (needs firmware v16). Favourites, hotkeys and VU style changed in one are picked up by the other. |
 | 0.8 | 2026-11-02 | 400,384 bytes | The ZXKB window (Stage 2, step 1): double-click the tray icon, or "Open ZXKB window" in the menu. Effect list in groups with the VU styles, lighting on/off, favourite, sliders for brightness, speed, size and intensity, Spectrum colours and a full colour picker. Opens next to the tray, follows the keyboard, freed on close. |
 | 0.7 | 2026-11-02 | 390,144 bytes | VU meter styles listed with the effects and chosen like one; audio captured only while the VU meter effect shows; left click on the tray icon does nothing; version shown in the menu. |
 | 0.1-0.6 | 2026-11-02 | | First builds (tray, effects, profiles, Fn slots, VU port, size/intensity, music style). Not kept. |

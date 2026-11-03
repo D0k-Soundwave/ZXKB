@@ -71,6 +71,10 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Thread stacks reserved | 64 KB link, 256 KB audio | A | reserved, not committed |
 | Max profiles listed per hotkey | 100 | A | menu id space |
 | ZXKB window size | 456 x 708 px at 125% scaling (360 x ~566 at 100%) | M / C | window_test, 2026-11-02 |
+| 0.9 tray idle, keyboard connected (v15) | 1.9 MB private working set / 3.3 MB private bytes / 0.000% of one core, 6 threads | M | tools/measure.py 60 s, 2026-11-03 17:22 |
+| 0.9 ZXKB.exe size | 417,792 bytes | M | 2026-11-03 |
+| 0.9 window copy while open | 15.4-17.3 MB private bytes (its own process) | M | Get-Process, 6 opens, 2026-11-03; preview unlit (v15 has no mirror) |
+| 0.9 after closing the window | window copy ended every time; tray 3.20-3.26 MB private, handles 198, threads 3-4 over 5 cycles | M | Get-Process, 2026-11-03 |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

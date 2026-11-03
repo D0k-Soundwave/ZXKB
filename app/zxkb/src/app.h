@@ -23,6 +23,8 @@ extern Board    *g_board;    // null while no keyboard is connected
 extern Status    g_st;       // last known keyboard state
 extern Tune      g_tune;     // size and intensity of the current effect
 extern int       g_vu_style; // VuStyle
+extern bool      g_window_mode; // this copy of ZXKB.exe is the ZXKB window, not the tray
+HWND             tray_window(); // the tray copy's hidden window (owns the tray icon), null if not running
 
 constexpr int TUNE_MIN = 16; // must match ZXKB_TUNE_MIN in the firmware (zxkb.h)
 

@@ -252,7 +252,7 @@ void place_by_tray() {
     AdjustWindowRectExForDpi(&wr, GetWindowLongW(g_win, GWL_STYLE), FALSE, GetWindowLongW(g_win, GWL_EXSTYLE), g_dpi);
     int w = wr.right - wr.left, h = wr.bottom - wr.top;
     NOTIFYICONIDENTIFIER id = {sizeof(id)};
-    id.hWnd = g_hwnd;
+    id.hWnd = tray_window();
     id.uID  = 1;
     RECT icon;
     POINT at;
@@ -418,4 +418,5 @@ void window_close() {
     // Give the memory the window used back to Windows (the heap otherwise keeps freed blocks for reuse)
     HeapCompact(GetProcessHeap(), 0);
     SetProcessWorkingSetSize(GetCurrentProcess(), (SIZE_T)-1, (SIZE_T)-1);
+    if (g_window_mode) PostMessageW(g_hwnd, WM_CLOSE, 0, 0); // the window copy ends with its window
 }

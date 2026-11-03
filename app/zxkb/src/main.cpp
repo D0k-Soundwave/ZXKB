@@ -65,6 +65,13 @@ Tune           g_tune;             // size and intensity of the current effect
 int            g_vu_style = VU_BANDS;  // how the VU meter effect is fed (the keyboard just draws the bars)
 std::vector<std::string>  g_favs;  // effect names
 std::wstring   g_slots[10];        // "effect:NAME" or "profile:NAME"
+// The ZXKB window runs as a second copy of ZXKB.exe ("ZXKB.exe --window"), so closing it gives all its memory
+// back to Windows. That copy talks to the keyboard itself (Windows hands every keyboard reply to both); the tray
+// copy alone feeds the VU meter and answers Fn + number. Each tells the other when it changes shared settings.
+bool           g_window_mode = false;
+UINT           g_settings_msg;     // "settings changed, read them again"
+const wchar_t  TRAY_CLASS[]   = L"ZXKB";      // the tray copy's hidden window
+const wchar_t  WINDOW_CLASS[] = L"ZXKB.link"; // the window copy's hidden window
 
 // ---------- helpers ----------
 std::string effect_name(int mode) {
@@ -126,6 +133,7 @@ std::wstring current_effect_text() {
 }
 
 void update_tray() {
+    if (g_window_mode) return;
     std::wstring tip = L"ZXKB - " + current_effect_text();
     lstrcpynW(g_nid.szTip, tip.c_str(), ARRAYSIZE(g_nid.szTip));
     if (g_nid.hIcon) DestroyIcon(g_nid.hIcon);
@@ -156,17 +164,60 @@ void save_now() {
     g_save_pending = false;
 }
 
+// Tell the other copy (tray or window) to read the settings again
+void settings_changed() {
+    if (HWND other = FindWindowW(g_window_mode ? TRAY_CLASS : WINDOW_CLASS, nullptr)) PostMessageW(other, g_settings_msg, 0, 0);
+}
+
 void save_lists() {
     std::string favs;
     for (const std::string &f : g_favs) favs += (favs.empty() ? "" : ",") + f;
     settings::set(L"favourites", L"effects", settings::widen(favs));
     for (int i = 0; i < 10; i++) settings::set(L"slots", std::to_wstring(i + 1).c_str(), g_slots[i]);
+    settings_changed();
 }
+
+void load_settings() {
+    g_vu_style = settings::vu_style_from(settings::get(L"vu", L"style", L"bands"));
+    g_vu.set_style(g_vu_style);
+    g_favs.clear();
+    std::string favs = settings::narrow(settings::get(L"favourites", L"effects"));
+    for (size_t p = 0; !favs.empty() && p != std::string::npos;) {
+        size_t c = favs.find(',', p);
+        std::string f = favs.substr(p, c == std::string::npos ? std::string::npos : c - p);
+        if (!f.empty()) g_favs.push_back(f);
+        p = c == std::string::npos ? c : c + 1;
+    }
+    for (int i = 0; i < 10; i++) g_slots[i] = settings::get(L"slots", std::to_wstring(i + 1).c_str());
+}
+
+// Tray: open the ZXKB window (start the window copy), or bring it to the front if it is open
+void open_window() {
+    if (HWND w = FindWindowW(L"ZXKBWindow", nullptr)) {
+        ShowWindow(w, SW_RESTORE);
+        SetForegroundWindow(w);
+        return;
+    }
+    wchar_t exe[MAX_PATH];
+    if (!GetModuleFileNameW(nullptr, exe, MAX_PATH)) return;
+    std::wstring cmd = L"\"" + std::wstring(exe) + L"\" --window";
+    STARTUPINFOW si = {};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi;
+    if (CreateProcessW(exe, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+        AllowSetForegroundWindow(pi.dwProcessId); // the tray was just clicked, so it may let the window come to the front
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+    }
+}
+
+HWND tray_window() { return g_window_mode ? FindWindowW(TRAY_CLASS, nullptr) : g_hwnd; }
 
 // ---------- actions ----------
 // Listen to audio only while the keyboard shows the VU meter effect and could be seen (lighting on, not in
 // Spectrum mode). Anything else costs nothing.
 void update_capture() {
+    if (g_window_mode) return; // only the tray copy listens to audio
     if (vu_showing() && g_st.vu_possible) g_vu.start();
     else g_vu.stop();
 }
@@ -175,6 +226,7 @@ void set_vu_style(int style) {
     g_vu_style = style;
     g_vu.set_style(style);
     settings::set(L"vu", L"style", settings::vu_style_name(style));
+    settings_changed();
     update_tray();
 }
 
@@ -466,7 +518,7 @@ void show_menu() {
     PostMessageW(g_hwnd, WM_NULL, 0, 0);
     if (!cmd) return;
 
-    if (cmd == ID_WINDOW) window_show();
+    if (cmd == ID_WINDOW) open_window();
     else if (cmd >= ID_STYLE_BANDS && cmd <= ID_STYLE_MUSIC) select_vu((int)(cmd - ID_STYLE_BANDS));
     else if (cmd == ID_OFF) set_effect(0);
     else if (cmd == ID_BRIGHTER) set_brightness(g_st.val + STEP);
@@ -525,7 +577,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_TRAY:
             switch (LOWORD(lp)) {
                 case WM_CONTEXTMENU: show_menu(); window_refresh(); break; // right click (single left click does nothing)
-                case WM_LBUTTONDBLCLK: window_show(); break;              // double click opens the ZXKB window
+                case WM_LBUTTONDBLCLK: open_window(); break;              // double click opens the ZXKB window
             }
             return 0;
         case WM_ZX_CONNECTED:
@@ -547,7 +599,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             window_refresh();
             return 0;
         case WM_ZX_SLOT:
-            apply_slot((int)wp);
+            if (!g_window_mode) apply_slot((int)wp); // the tray copy answers Fn + number
             window_refresh();
             return 0;
         case WM_ZX_STATUS: { // a reply, or the keyboard telling us its state changed
@@ -578,51 +630,57 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (wp == DBT_DEVICEARRIVAL && !g_board) g_link.rescan();
             return TRUE;
         case WM_DESTROY:
+            if (!g_window_mode)
+                if (HWND w = FindWindowW(L"ZXKBWindow", nullptr)) PostMessageW(w, WM_CLOSE, 0, 0); // Quit closes the window too
             window_close();
             if (g_board) {
                 save_now();
             }
             g_vu.stop();
             g_link.stop();
-            Shell_NotifyIconW(NIM_DELETE, &g_nid);
+            if (!g_window_mode) Shell_NotifyIconW(NIM_DELETE, &g_nid);
             PostQuitMessage(0);
             return 0;
     }
-    if (msg == g_taskbar_created && msg) { add_tray_icon(); return 0; } // Explorer restarted
+    if (msg == g_settings_msg && msg) { // the other copy changed favourites, hotkeys or the VU style
+        load_settings();
+        update_tray();
+        window_refresh();
+        return 0;
+    }
+    if (msg == g_taskbar_created && msg && !g_window_mode) { add_tray_icon(); return 0; } // Explorer restarted
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
-int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR, int) {
-    HANDLE single = CreateMutexW(nullptr, TRUE, L"Local\\ZXKB.single");
-    if (GetLastError() == ERROR_ALREADY_EXISTS) return 0; // already running
+int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdline, int) {
+    g_window_mode = cmdline && wcsstr(cmdline, L"--window");
+    HANDLE single = CreateMutexW(nullptr, TRUE, g_window_mode ? L"Local\\ZXKB.window" : L"Local\\ZXKB.single");
+    if (GetLastError() == ERROR_ALREADY_EXISTS) { // already running
+        if (HWND w = g_window_mode ? FindWindowW(L"ZXKBWindow", nullptr) : nullptr) SetForegroundWindow(w);
+        return 0;
+    }
     g_inst = inst;
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); // for the Startup-folder shortcut
 
-    settings::import_zx_vu();
-    g_vu_style = settings::vu_style_from(settings::get(L"vu", L"style", L"bands"));
-    g_vu.set_style(g_vu_style);
-    std::string favs = settings::narrow(settings::get(L"favourites", L"effects"));
-    for (size_t p = 0; !favs.empty() && p != std::string::npos;) {
-        size_t c = favs.find(',', p);
-        std::string f = favs.substr(p, c == std::string::npos ? std::string::npos : c - p);
-        if (!f.empty()) g_favs.push_back(f);
-        p = c == std::string::npos ? c : c + 1;
-    }
-    for (int i = 0; i < 10; i++) g_slots[i] = settings::get(L"slots", std::to_wstring(i + 1).c_str());
+    if (!g_window_mode) settings::import_zx_vu();
+    load_settings();
+    g_settings_msg = RegisterWindowMessageW(L"ZXKB.settings");
 
+    const wchar_t *cls = g_window_mode ? WINDOW_CLASS : TRAY_CLASS;
     WNDCLASSW wc = {};
     wc.lpfnWndProc   = wndproc;
     wc.hInstance     = inst;
-    wc.lpszClassName = L"ZXKB";
+    wc.lpszClassName = cls;
     RegisterClassW(&wc);
-    g_hwnd = CreateWindowExW(0, L"ZXKB", L"ZXKB", 0, 0, 0, 0, 0, nullptr, nullptr, inst, nullptr);
+    g_hwnd = CreateWindowExW(0, cls, L"ZXKB", 0, 0, 0, 0, 0, nullptr, nullptr, inst, nullptr);
     g_taskbar_created = RegisterWindowMessageW(L"TaskbarCreated");
 
     DEV_BROADCAST_DEVICEINTERFACE_W filter = {sizeof(filter), DBT_DEVTYP_DEVICEINTERFACE};
     filter.dbcc_classguid = {0x4D1E55B2, 0xF16F, 0x11CF, {0x88, 0xCB, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30}}; // HID
     HDEVNOTIFY notify = RegisterDeviceNotificationW(g_hwnd, &filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
-    add_tray_icon();
+    if (g_window_mode) window_show(); // fills in when the keyboard answers
+    else add_tray_icon();
     g_link.start(g_hwnd);
 
     MSG msg;

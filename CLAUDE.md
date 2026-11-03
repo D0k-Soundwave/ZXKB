@@ -72,7 +72,11 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   `src/hidlink` (find ZXKB boards by raw HID + 0xD9 probe, effect names, LED positions, reconnect),
   `src/vumath` (VU maths ported from zx_vu.py; `test/run_vu_test.sh` compares it with the real legacy code:
   worst difference 0), `src/vu` (WASAPI loopback, only while the VU is on), `src/settings` (`%APPDATA%\ZXKB\zxkb.ini`,
-  `profiles\*.ini`, HKCU Run "ZXKB"), `src/effects` (menu names and groups), `src/main` (tray and menus).
+  `profiles\*.ini`, Startup-folder shortcut), `src/effects` (menu names and groups), `src/main` (tray and menus),
+  `src/window` + `src/preview` (the ZXKB window and its live preview). The window is a second copy of ZXKB.exe
+  (`ZXKB.exe --window`, started by the tray on double-click) with its own keyboard connection; the tray copy alone
+  feeds the VU meter and answers Fn + number; each tells the other (message "ZXKB.settings") to reread settings.
+  Build from PowerShell with TMP set to a writable folder (g++ otherwise tries C:\WINDOWS for temp files).
 - Installed copy: `Documents\Keyboard Layouts\ZXKB\ZXKB.exe`, started with Windows by a shortcut in the Startup
   folder (`shell:startup\ZXKB.lnk`), switched from ZX VU on 2026-11-02. Copy a new build there after quitting ZXKB.
 - Do not use the HKCU Run key: on 2026-11-02 Microsoft Defender quarantined ZXKB.exe as
