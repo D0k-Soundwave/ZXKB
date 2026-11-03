@@ -6,4 +6,5 @@
 
 HWND preview_create(HWND parent, int id); // child control; its drawing resources go when it is destroyed
 void preview_update();                    // new LED colours arrived: redraw
-double preview_aspect();                  // height / width of the drawing for the connected keyboard
+double preview_aspect();
+void preview_relabel(); // the keymap or the keyboard language changed: redraw the key labels                  // height / width of the drawing for the connected keyboard

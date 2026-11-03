@@ -2,7 +2,7 @@
 # Output: ../../build/ZXKB.exe  - one file, no runtime or DLLs needed.
 OUT      = ../../build/ZXKB.exe
 OBJDIR   = ../../build/obj
-SRC      = src/main.cpp src/hidlink.cpp src/vu.cpp src/vumath.cpp src/settings.cpp src/effects.cpp src/window.cpp src/preview.cpp src/flash.cpp src/json.cpp src/boards.cpp src/layout.cpp
+SRC      = src/main.cpp src/hidlink.cpp src/vu.cpp src/vumath.cpp src/settings.cpp src/effects.cpp src/window.cpp src/preview.cpp src/flash.cpp src/json.cpp src/boards.cpp src/layout.cpp src/labels.cpp
 OBJ      = $(SRC:src/%.cpp=$(OBJDIR)/%.o) $(OBJDIR)/zxkb.res.o
 CXX      = g++
 WINDRES  = windres

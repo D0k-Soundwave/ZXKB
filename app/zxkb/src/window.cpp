@@ -340,12 +340,16 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_TIMER:
             if (wp == TIMER_MIRROR) mirror_request(true);
             return 0;
+        case WM_INPUTLANGCHANGE: // the keyboard language changed: the labels follow it
+            preview_relabel();
+            break;
         case WM_LOOKED_UP:
             EnableWindow(item(IDC_LOOKUP), TRUE);
             SetWindowTextW(item(IDC_LOOKUP), L"Look up this keyboard online...");
             if (wp && g_board) {
                 boards::apply_definition(g_board);
                 settings_changed(); // the tray copy reads it too
+                request_keymap();   // labels for the preview
                 fill_list();
                 layout();
                 refresh();

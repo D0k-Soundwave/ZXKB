@@ -164,6 +164,23 @@ bool HidLink::probe_via(HANDLE h, int in_len, int out_len, Board *board) {
     return true;
 }
 
+// [P] VIA reads the keymap in pieces of up to 28 bytes (32-byte report minus a 4-byte header): QMK quantum/via.c
+constexpr int KEYMAP_CHUNK = 28;
+
+void HidLink::request_keymap(int rows, int cols) {
+    int bytes = rows * cols * 2;
+    if (bytes <= 0 || bytes > 4096) return;
+    EnterCriticalSection(&write_lock_);
+    keymap_buf_.assign(bytes, 0);
+    keymap_got_.assign((bytes + KEYMAP_CHUNK - 1) / KEYMAP_CHUNK, false);
+    LeaveCriticalSection(&write_lock_);
+    for (int off = 0; off < bytes; off += KEYMAP_CHUNK) {
+        uint8_t n = (uint8_t)(bytes - off < KEYMAP_CHUNK ? bytes - off : KEYMAP_CHUNK);
+        uint8_t q[4] = {proto::VIA_KEYMAP_BUFFER, (uint8_t)(off >> 8), (uint8_t)off, n};
+        send(q, 4);
+    }
+}
+
 void HidLink::request_via_status() {
     if (kind_ != Board::VIA || !via_channel_) return;
     const uint8_t ids[4] = {proto::VIA_BRIGHTNESS, proto::VIA_SPEED, proto::VIA_EFFECT, proto::VIA_COLOUR}; // colour last: it posts
@@ -290,6 +307,23 @@ void HidLink::read_loop() {
                 s.hue = p[3]; s.sat = p[4];
                 PostMessageW(hwnd_, WM_ZX_STATUS, 0, (LPARAM) new Status(s)); // the last of request_via_status()
             }
+        } else if (p[0] == proto::VIA_KEYMAP_BUFFER) {
+            int off = p[1] << 8 | p[2], n = p[3];
+            EnterCriticalSection(&write_lock_);
+            bool done = false;
+            if (n <= KEYMAP_CHUNK && off % KEYMAP_CHUNK == 0 && off + n <= (int)keymap_buf_.size()) {
+                std::memcpy(&keymap_buf_[off], p + 4, n);
+                keymap_got_[off / KEYMAP_CHUNK] = true;
+                done = true;
+                for (bool g : keymap_got_) done &= g;
+            }
+            if (done) {
+                auto *km = new std::vector<uint16_t>(keymap_buf_.size() / 2);
+                for (size_t i = 0; i < km->size(); i++) (*km)[i] = (uint16_t)(keymap_buf_[i * 2] << 8 | keymap_buf_[i * 2 + 1]);
+                keymap_got_.assign(keymap_got_.size(), false);
+                PostMessageW(hwnd_, WM_ZX_KEYMAP, 0, (LPARAM)km);
+            }
+            LeaveCriticalSection(&write_lock_);
         } else if (p[0] == proto::TUNE) {
             Tune *t = new Tune;
             t->mode = p[2]; t->flags = p[3]; t->size = p[4]; t->intensity = p[5];

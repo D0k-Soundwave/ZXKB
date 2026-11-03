@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "preview.h"
 #include "app.h"
+#include "labels.h"
 #include <d2d1.h>
 #include <dwrite.h>
 #include <algorithm>
@@ -43,6 +44,8 @@ ID2D1SolidColorBrush  *g_brush = nullptr;  // one brush, recoloured for each sha
 ID2D1BitmapRenderTarget *g_caps_rt = nullptr;
 ID2D1Bitmap           *g_caps = nullptr;
 const Board           *g_caps_board = nullptr; // the keyboard and size the picture was made for
+int                    g_labels_stamp = 0, g_caps_stamp = -1; // labels changed since the picture was made
+std::vector<labels::Label> g_labels;          // key labels for keyboards drawn from their definition
 D2D1_SIZE_U            g_caps_size = {};
 IDWriteTextFormat     *g_fmt[5] = {};     // big char, word, sub, keyword, small
 float                  g_fmt_unit = 0;    // the key size the formats were made for
@@ -167,16 +170,28 @@ std::vector<BoardKey> board_keys(bool *q3) { // the keys to draw for the connect
     std::vector<BoardKey> keys;
     *q3 = is_q3();
     if (*q3) keys.assign(q3_keys, q3_keys + sizeof(q3_keys) / sizeof(q3_keys[0]));
-    else if (!g_board->keys.empty()) // the layout from the keyboard's definition (no LEDs known: drawn unlit)
-        for (const KeyRect &r : g_board->keys) {
-            BoardKey k = {r.x, r.y, r.w, r.h, -1, r.knob ? 2 : 0, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xFF5A4A, L"", L"", L""};
+    else if (!g_board->keys.empty()) { // the layout from the keyboard's definition (no LEDs known: drawn unlit)
+        // labels from what each key does, in the keyboard language in use (no keycap set needed)
+        HKL hkl = labels::current_layout();
+        g_labels.assign(g_board->keys.size(), labels::Label());
+        for (size_t i = 0; i < g_board->keys.size(); i++) {
+            const KeyRect &r = g_board->keys[i];
+            size_t at = (size_t)(r.row * g_board->cols + r.col);
+            if (r.row >= 0 && r.col >= 0 && at < g_board->keymap.size())
+                g_labels[i] = labels::for_keycode(g_board->keymap[at], hkl, g_board->custom_names);
+        }
+        for (size_t i = 0; i < g_board->keys.size(); i++) {
+            const KeyRect &r = g_board->keys[i];
+            const wchar_t *m = g_labels[i].main.c_str(), *sub = g_labels[i].sub.c_str();
+            BoardKey k = {r.x, r.y, r.w, r.h, -1, r.knob ? 2 : 0, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xC8D0D8, m, sub, L""};
             if (r.w2) { // ISO Enter: drawn as the usual two-part shape over both rectangles
                 int x0 = std::min(r.x, r.x2), x1 = std::max(r.x + r.w, r.x2 + r.w2);
                 int y0 = std::min(r.y, r.y2), y1 = std::max(r.y + r.h, r.y2 + r.h2);
-                k = {x0, y0, x1 - x0, y1 - y0, -1, 1, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xFF5A4A, L"", L"", L""};
+                k = {x0, y0, x1 - x0, y1 - y0, -1, 1, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xC8D0D8, m, sub, L""};
             }
             keys.push_back(k);
         }
+    }
     else // keys at the LED positions the keyboard reported
         for (int i = 0; i < g_board->led_count && i * 3 + 1 < (int)g_board->leds.size(); i++)
             keys.push_back({(int)(g_board->leds[i * 3] / 224.f * 1400), (int)(g_board->leds[i * 3 + 1] / 64.f * 400), 100, 100, i, 0,
@@ -215,7 +230,7 @@ void render() {
         unit = std::fmin((W - 8) / bw, (H - 8) / bh);
         ox = (W - bw * unit) / 2;
         oy = (H - bh * unit) / 2;
-        if (g_caps_board != g_board || g_caps_size.width != size.width || g_caps_size.height != size.height) {
+        if (g_caps_board != g_board || g_caps_size.width != size.width || g_caps_size.height != size.height || g_caps_stamp != g_labels_stamp) {
             drop_caps();
             if (!g_fmt[0] || std::fabs(unit - g_fmt_unit) > 0.5f) make_formats(unit);
             if (SUCCEEDED(g_rt->CreateCompatibleRenderTarget(D2D1::SizeF(W, H), &g_caps_rt))) {
@@ -227,6 +242,7 @@ void render() {
                 g_caps_rt->GetBitmap(&g_caps);
                 g_caps_board = g_board;
                 g_caps_size  = size;
+                g_caps_stamp = g_labels_stamp;
                 for (auto &f : g_fmt) release(f); // the text is in the picture now
             }
         }
@@ -312,6 +328,11 @@ void preview_update() {
     if (std::memcmp(now, g_rgb, n * 3) == 0) return;
     std::memcpy(g_rgb, now, n * 3);
     InvalidateRect(g_hwnd_preview, nullptr, FALSE);
+}
+
+void preview_relabel() {
+    g_labels_stamp++;
+    if (g_hwnd_preview) InvalidateRect(g_hwnd_preview, nullptr, FALSE);
 }
 
 double preview_aspect() {

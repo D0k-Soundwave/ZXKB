@@ -108,6 +108,9 @@ std::string current_name() {
 
 void keyboard_mirror(uint8_t *rgb, int leds) { g_link.mirror(rgb, leds); }
 void send(std::initializer_list<uint8_t> bytes);
+void request_keymap() {
+    if (g_board && g_board->via_protocol && g_board->rows && g_board->cols) g_link.request_keymap(g_board->rows, g_board->cols);
+}
 void enter_bootloader() {
     if (zxkb_board()) send({proto::BOOTLOADER, 'Z', 'X', 'B', 'L'});
 }
@@ -599,6 +602,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_tune  = Tune();
             g_tune.flags = 0;
             if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
+            if (g_window_mode) request_keymap(); // labels for the preview (only the window shows them)
             update_capture();
             update_tray();
             window_refresh();
@@ -632,6 +636,13 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (g_board) g_tune = *t;
             delete t;
             window_refresh();
+            return 0;
+        }
+        case WM_ZX_KEYMAP: {
+            auto *km = reinterpret_cast<std::vector<uint16_t> *>(lp);
+            if (g_board) g_board->keymap = *km;
+            delete km;
+            preview_relabel();
             return 0;
         }
         case WM_ZX_MIRROR:

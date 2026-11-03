@@ -15,6 +15,7 @@
 #define WM_ZX_SLOT         (WM_APP + 3) // wParam = slot 1-10
 #define WM_ZX_STATUS       (WM_APP + 4) // lParam = Status* (receiver deletes)
 #define WM_ZX_TUNE         (WM_APP + 5) // lParam = Tune* (receiver deletes)
+#define WM_ZX_KEYMAP       (WM_APP + 7) // lParam: new std::vector<uint16_t>, layer 0 keycodes by row * cols + col
 #define WM_ZX_MIRROR       (WM_APP + 6) // a full set of LED colours arrived: read them with HidLink::mirror()
 
 struct Status {
@@ -36,6 +37,9 @@ struct Board {
     uint8_t                  via_channel  = 3;  // VIA lighting channel: 3 RGB matrix, 2 RGB light, 0 none
     std::wstring             def_name;          // keyboard name from its VIA definition
     std::vector<KeyRect>     keys;              // physical layout (VIA definition), empty if not known
+    int                      rows = 0, cols = 0;  // keyboard matrix (VIA definition)
+    std::vector<std::wstring> custom_names;     // the keyboard's own key codes (QK_KB + i), from its VIA definition
+    std::vector<uint16_t>    keymap;            // layer 0 as the keyboard has it now (read through VIA), row * cols + col
     std::vector<std::string> names; // names[m - 1] = effect number m
     std::vector<uint8_t>     kinds; // 0 QMK, 1 module, 2 board/keymap
     std::vector<uint8_t>     leds;  // x, y, flags per LED
@@ -53,6 +57,7 @@ public:
     bool connected() const { return dev_ != INVALID_HANDLE_VALUE && !broken_; }
     void mirror(uint8_t *rgb, int leds); // copy of the LED colours the keyboard last reported (r, g, b per LED)
     void request_via_status();           // VIA boards: ask for brightness, speed, effect and colour (posts WM_ZX_STATUS)
+    void request_keymap(int rows, int cols); // layer 0 of the keymap through VIA (posts WM_ZX_KEYMAP)
 
 private:
     static DWORD WINAPI thread_main(LPVOID self);
@@ -75,6 +80,8 @@ private:
     uint8_t          led_count_ = 0;
     uint8_t          kind_ = 0, via_channel_ = 3;
     Status           via_status_;                  // VIA boards: built up from the replies to request_via_status()
+    std::vector<uint8_t> keymap_buf_;              // keymap bytes being read
+    std::vector<bool>    keymap_got_;
     uint8_t          mirror_[256 * 3] = {};
     volatile LONG    mirror_posted_ = 0; // a WM_ZX_MIRROR is waiting to be handled (do not queue another)
     volatile bool    broken_ = false;

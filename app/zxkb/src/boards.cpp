@@ -114,6 +114,14 @@ bool apply_definition(Board *b) {
     if (!def.is(Json::OBJ)) return false;
     b->def_name = settings::widen(def["name"].to_str());
     b->keys     = kle::from_via(def["layouts"]);
+    b->rows     = def["matrix"]["rows"].to_int(0);
+    b->cols     = def["matrix"]["cols"].to_int(0);
+    b->custom_names.clear();
+    for (const Json &c : def["customKeycodes"].items) {
+        std::string n = c["shortName"].to_str();
+        if (n.empty()) n = c["name"].to_str();
+        b->custom_names.push_back(settings::widen(n));
+    }
     // lighting: RGB matrix (VIA channel 3) or RGB light (channel 2)
     const Json *fx = find_control(def["menus"], "id_qmk_rgb_matrix_effect");
     if (!fx) fx = find_control(def["menus"], "id_qmk_rgblight_effect");
