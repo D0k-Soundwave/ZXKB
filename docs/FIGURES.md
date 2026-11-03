@@ -91,6 +91,10 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Wait for the bootloader after the command / after unplug + Esc | 10 s / 120 s | A | not timed yet |
 | dfu-util time limit / wait for the keyboard to return | 120 s / 20 s | A | QMK Toolbox writes the Q3 in a few seconds (not timed) |
 | Largest firmware file accepted | 2 MB | P | largest STM32 flash among QMK-supported parts (STM32F4/H7 class); not re-checked |
+| Firmware v18 size | 60,760 bytes (+72 on v17) | M | build.sh, 2026-11-03 |
+| 0.15 ZXKB.exe size | 498,688 bytes | M | 2026-11-03 (built-in Q3 picture removed, keycap sets and labels added) |
+| Wraith keycap set matched to VIA's Q3 layout | 89 of 89 keys by matrix position | M | gen_wraith_kle.py + check against usevia definition, 2026-11-03 |
+| Keycap match distance without matrix positions | 0.6 keys from a key's centre | A | not tested on a real imported set yet |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

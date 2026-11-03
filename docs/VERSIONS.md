@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v18 | 2026-11-03 | 60,760 bytes | Reports which LED sits under each key (0xD9 0x03, protocol 5), so ZXKB can light any keyboard drawn from its published layout. |
 | v17 | 2026-11-03 | 60,688 bytes | Restarts into its bootloader when ZXKB asks (0xDC, settings kept), so ZXKB can install firmware without QMK Toolbox or holding Esc. Reports its bootloader type. LED mirror sends only LEDs that changed (protocol 4). |
 | v16 | 2026-11-03 | 60,496 bytes | LED mirror: the keyboard sends the colours actually on its LEDs (after effects, brightness and Caps Lock) while the ZXKB window asks for them, for the live preview (protocol 3). |
 | v15 | 2026-11-02 | 60,184 bytes | VU meter is a normal effect (picked and saved like any other); Fn + V switches between it and the previous effect. Status sent to ZXKB unasked on changes and reports "VU possible" and the firmware version (protocol 2), so ZXKB listens to audio only while the VU meter shows. |
@@ -37,6 +38,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.15 | 2026-11-03 | 498,688 bytes | One preview for every keyboard: layout from the keyboard's VIA definition (looked up once after asking), lit through the firmware's key-to-LED map (v18), with labels from what each key does in the Windows keyboard language (keymap read through VIA) or a keycap set. Keycap sets are KLE files; D0k's KAM Wraith set is the first, no longer built in. Import a KLE file from the window. The built-in Q3 picture is gone. |
 | 0.14 | 2026-11-03 | 485,888 bytes | The effect list ignores typed letters (it used to jump to the effect starting with the letter, changing the keyboard's effect while trying typing effects). |
 | 0.13 | 2026-11-03 | 485,888 bytes | Plain VIA keyboards (standard firmware): recognised, lighting controlled through VIA, effect names and key layout from the keyboard's VIA definition, looked up online once by USB ID after asking. Firmware check by USB ID instead of USB name (so Keychron's own firmware for the same keyboard is accepted, other keyboards' refused); honest warning that non-ZXKB firmware may reset settings. |
 | 0.12 | 2026-11-03 | 433,664 bytes | Firmware install: clearer message when the keyboard does not restart by itself after writing (unplug and replug, firmware is already written); firmware.log records the time of each phase. |

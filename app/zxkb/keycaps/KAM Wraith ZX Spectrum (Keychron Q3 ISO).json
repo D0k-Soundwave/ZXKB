@@ -1,0 +1,670 @@
+[
+ {
+  "name": "KAM Wraith ZX Spectrum (Keychron Q3 ISO)",
+  "author": "D0k"
+ },
+ [
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#ff5a4a",
+   "zm": "0,0"
+  },
+  "\n\n\n\nESC\n\n\nEJECT",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,1",
+   "x": 1
+  },
+  "\n\n\n\nF1",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,2"
+  },
+  "\n\n\n\nF2",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,3"
+  },
+  "\n\n\n\nF3",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,4"
+  },
+  "\n\n\n\nF4",
+  {
+   "c": "#7d97b4",
+   "zs": "#647d99",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,5",
+   "x": 0.5
+  },
+  "\n\n\n\nF5",
+  {
+   "c": "#7d97b4",
+   "zs": "#647d99",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,6"
+  },
+  "\n\n\n\nF6",
+  {
+   "c": "#7d97b4",
+   "zs": "#647d99",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,7"
+  },
+  "\n\n\n\nF7",
+  {
+   "c": "#7d97b4",
+   "zs": "#647d99",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,8"
+  },
+  "\n\n\n\nF8",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,9",
+   "x": 0.5
+  },
+  "\n\n\n\nF9",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,10"
+  },
+  "\n\n\n\nF10",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,11"
+  },
+  "\n\n\n\nF11",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,12"
+  },
+  "\n\n\n\nF12",
+  {
+   "c": "#3a4048",
+   "zs": "#2a2e34",
+   "t": "\n\n\n\n#9aa3ad\n\n\n#f2f5f8",
+   "zm": "0,13",
+   "x": 0.12
+  },
+  "\n\n\n\nKNOB\n\n\n\n\ne0",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,14",
+   "x": 0.13
+  },
+  "\n\n\n\nPRINT",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "0,15"
+  },
+  "\n\n\n\nLOCK",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "3,14"
+  },
+  "\n\n\n\nPAUSE"
+ ],
+ [
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,0",
+   "y": 0.25
+  },
+  "`\n\n~",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,1"
+  },
+  "1\n\n!",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,2"
+  },
+  "2\n\n@",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,3"
+  },
+  "3\n\n#",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,4"
+  },
+  "4\n\n$",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,5"
+  },
+  "5\n\n%",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,6"
+  },
+  "6\n\n^",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,7"
+  },
+  "7\n\n&",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,8"
+  },
+  "8\n\n*",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,9"
+  },
+  "9\n\n(",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,10"
+  },
+  "0\n\n)",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,11"
+  },
+  "-\n\n_",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "1,12"
+  },
+  "=\n\n+",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#ff5a4a",
+   "zm": "1,13",
+   "w": 2
+  },
+  "\n\n\n\nDELETE\n\n\nFORMAT",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "\n\n\n\n#59a8ff\n\n\n#f2f5f8",
+   "zm": "1,14",
+   "x": 1.25
+  },
+  "\n\n\n\nBLUE\n\n\nEDIT",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "\n\n\n\n#ff5a4a\n\n\n#f2f5f8",
+   "zm": "1,15"
+  },
+  "\n\n\n\nRED\n\n\nLOCK",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "\n\n\n\n#ff6fd8\n\n\n#f2f5f8",
+   "zm": "3,15"
+  },
+  "\n\n\n\nMAG\n\n\nTR.VID"
+ ],
+ [
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#f2f5f8",
+   "zm": "2,0",
+   "w": 1.5
+  },
+  "\n\n\n\nTAB",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,1"
+  },
+  "Q\n\n\n\n\n\n\nPLOT",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,2"
+  },
+  "W\n\n\n\n\n\n\nDRAW",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,3"
+  },
+  "E\n\n\n\n\n\n\nREM",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,4"
+  },
+  "R\n\n\n\n\n\n\nRUN",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,5"
+  },
+  "T\n\n\n\n\n\n\nRAND",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,6"
+  },
+  "Y\n\n\n\n\n\n\nRETURN",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,7"
+  },
+  "U\n\n\n\n\n\n\nIF",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,8"
+  },
+  "I\n\n\n\n\n\n\nINPUT",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,9"
+  },
+  "O\n\n\n\n\n\n\nPOKE",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,10"
+  },
+  "P\n\n\n\n\n\n\nPRINT",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,11"
+  },
+  "[\n\n{",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "2,12"
+  },
+  "]\n\n}",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "2,13",
+   "w": 1.25,
+   "h": 2,
+   "x": 0.25,
+   "x2": -0.25,
+   "w2": 1.5,
+   "h2": 1
+  },
+  "\n\n\n\nENTER",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "\n\n\n\n#7be07f\n\n\n#f2f5f8",
+   "zm": "2,14",
+   "x": 1.25
+  },
+  "\n\n\n\nGREEN\n\n\nINV.VID",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#ff5a4a",
+   "zm": "2,15"
+  },
+  "\n\n\n\nGRAPH\n\n\nCAT",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "3,12"
+  },
+  "\n\n\n\nBLACK\n\n\nDELETE"
+ ],
+ [
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#ff5a4a",
+   "zm": "3,0",
+   "w": 1.75
+  },
+  "\n\n\n\nCAPS LOCK\n\n\nFN",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,1"
+  },
+  "A\n\n\n\n\n\n\nNEW",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,2"
+  },
+  "S\n\n\n\n\n\n\nSAVE",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,3"
+  },
+  "D\n\n\n\n\n\n\nDIM",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,4"
+  },
+  "F\n\n\n\n\n\n\nFOR",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,5"
+  },
+  "G\n\n\n\n\n\n\nGOTO",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,6"
+  },
+  "H\n\n\n\n\n\n\nGOSUB",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,7"
+  },
+  "J\n\n\n\n\n\n\nLOAD",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,8"
+  },
+  "K\n\n\n\n\n\n\nLIST",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,9"
+  },
+  "L\n\n\n\n\n\n\nLET",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,10"
+  },
+  ";\n\n:",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,11"
+  },
+  "'\n\n\"",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "3,13"
+  },
+  "\\\n\n|"
+ ],
+ [
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "4,0",
+   "w": 1.25
+  },
+  "\n\n\n\nCAPS\n\n\nSHIFT",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,1"
+  },
+  "\\\n\n|",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,2"
+  },
+  "Z\n\n\n\n\n\n\nCOPY",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,3"
+  },
+  "X\n\n\n\n\n\n\nCLEAR",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,4"
+  },
+  "C\n\n\n\n\n\n\nCOUNT",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,5"
+  },
+  "V\n\n\n\n\n\n\nCLS",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,6"
+  },
+  "B\n\n\n\n\n\n\nBORDER",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,7"
+  },
+  "N\n\n\n\n\n\n\nNEXT",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,8"
+  },
+  "M\n\n\n\n\n\n\nPAUSE",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,9"
+  },
+  ",\n\n<",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,10"
+  },
+  ".\n\n>",
+  {
+   "c": "#2b2f35",
+   "zs": "#1b1e22",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,11"
+  },
+  "/\n\n?",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "4,13",
+   "w": 2.75
+  },
+  "",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,15",
+   "x": 2.25
+  },
+  "\u21e7"
+ ],
+ [
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#ff5a4a",
+   "zm": "5,0",
+   "w": 1.25
+  },
+  "\n\n\n\nPEEK\n\n\nOUT",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#ff5a4a",
+   "zm": "5,1",
+   "w": 1.25
+  },
+  "\n\n\n\nCODE\n\n\nIN",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#ff5a4a",
+   "zm": "5,2",
+   "w": 1.25
+  },
+  "\n\n\n\nRND\n\n\nMERGE",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#f2f5f8\n\n\n#f2f5f8",
+   "zm": "5,6",
+   "w": 6.25
+  },
+  "",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#ff5a4a",
+   "zm": "5,10",
+   "w": 1.25
+  },
+  "\n\n\n\nRND\n\n\nMERGE",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#ff5a4a",
+   "zm": "5,11",
+   "w": 1.25
+  },
+  "\n\n\n\nCODE\n\n\nIN",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#ff5a4a",
+   "zm": "5,12",
+   "w": 1.25
+  },
+  "\n\n\n\nEDIT\n\n\nDEF FN",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "\n\n\n\n#7be07f\n\n\n#ff5a4a",
+   "zm": "5,13",
+   "w": 1.25
+  },
+  "\n\n\n\nPEEK\n\n\nOUT",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "5,14",
+   "x": 1.25
+  },
+  "\u21e6",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "5,15"
+  },
+  "\u21e9",
+  {
+   "c": "#5f7690",
+   "zs": "#4a5e75",
+   "t": "#f2f5f8\n\n#ff5a4a\n\n\n\n\n#f2f5f8",
+   "zm": "4,14"
+  },
+  "\u21e8"
+ ]
+]

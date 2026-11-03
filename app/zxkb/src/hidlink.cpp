@@ -132,6 +132,23 @@ bool HidLink::probe(HANDLE h, int in_len, int out_len, Board *board) {
         board->leds.insert(board->leds.end(), q + 4, q + 4 + q[3] * 3);
         first += q[3];
     }
+    board->led_map.clear();
+    if (board->protocol >= 5) // which LED sits under each key
+        for (int first = 0;;) {
+            uint8_t q[proto::REPORT] = {proto::INFO, proto::INFO_MATRIX, (uint8_t)first};
+            if (!transact(h, q, in_len, out_len)) return false;
+            board->map_rows = q[2];
+            board->map_cols = q[3];
+            int total = q[2] * q[3], n = q[5];
+            board->led_map.insert(board->led_map.end(), q + 6, q + 6 + n);
+            first += n;
+            if (n == 0 || first >= total || first >= 256) break;
+        }
+    { // most ZXKB keyboards have VIA too: needed to read their keymap for the key labels
+        uint8_t q[proto::REPORT] = {proto::VIA_PROTOCOL};
+        if (transact(h, q, in_len, out_len)) board->via_protocol = (uint16_t)(q[1] << 8 | q[2]);
+    }
+    boards::apply_definition(board); // the layout, if the keyboard's definition is kept
     return true;
 }
 

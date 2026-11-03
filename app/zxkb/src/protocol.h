@@ -17,6 +17,7 @@ constexpr uint8_t INFO      = 0xD9; // [0xD9, sub, ...]
 constexpr uint8_t INFO_STATUS = 0x00;
 constexpr uint8_t INFO_NAME   = 0x01;
 constexpr uint8_t INFO_LEDS   = 0x02;
+constexpr uint8_t INFO_MATRIX = 0x03; // [0xD9, 0x03, first] -> [.., rows, cols, first, n, n x LED (255 none)] (protocol 5)
 constexpr uint8_t MIRROR    = 0xDB; // [0xDB, 1] send LED colours for 2 s, [0xDB, 0] stop; replies [0xDB, first, n, n x rgb]
 constexpr uint8_t BOOTLOADER = 0xDC; // [0xDC, 'Z', 'X', 'B', 'L'] -> [0xDC, 1], then the keyboard restarts into its bootloader
 constexpr uint8_t BOOT_NONE      = 0; // status byte 17 (protocol 4): bootloader ZXKB can write firmware with

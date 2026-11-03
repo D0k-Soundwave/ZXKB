@@ -11,13 +11,25 @@ namespace kle {
 
 static int h100(double v) { return (int)std::lround(v * 100); }
 
+int colour(const std::string &hex) {
+    if (hex.size() < 4 || hex[0] != '#') return -1;
+    for (size_t i = 1; i < hex.size(); i++)
+        if (!isxdigit((unsigned char)hex[i])) return -1;
+    long v = strtol(hex.c_str() + 1, nullptr, 16);
+    if (hex.size() == 4) return (int)(((v >> 8 & 15) * 17) << 16 | ((v >> 4 & 15) * 17) << 8 | (v & 15) * 17);
+    return hex.size() == 7 ? (int)v : -1;
+}
+
 std::vector<KeyRect> from_kle(const Json &rows) {
     std::vector<KeyRect> keys;
     double y = 0;
+    int cap = -1, side = -1;        // KLE colours carry on to the following keys until changed
+    std::string text;
     for (const Json &row : rows.items) {
         if (!row.is(Json::ARR)) continue; // the optional first object holds board metadata
         double x = 0, w = 1, h = 1, x2 = 0, y2 = 0, w2 = 0, h2 = 0;
         bool   decal = false;
+        std::string matrix; // "zm": this key's matrix position "row,col" (ZXKB keycap sets)
         for (const Json &item : row.items) {
             if (item.is(Json::OBJ)) { // properties for the next key
                 const Json &v = item["x"]; if (v.is(Json::NUM)) x += v.num;
@@ -29,6 +41,10 @@ std::vector<KeyRect> from_kle(const Json &rows) {
                 if (item["w2"].is(Json::NUM)) w2 = item["w2"].num;
                 if (item["h2"].is(Json::NUM)) h2 = item["h2"].num;
                 if (item["d"].is(Json::BOOL)) decal = item["d"].num != 0;
+                if (item["c"].is(Json::STR)) { cap = colour(item["c"].str); side = -1; }
+                if (item["zs"].is(Json::STR)) side = colour(item["zs"].str);
+                if (item["t"].is(Json::STR)) text = item["t"].str;
+                if (item["zm"].is(Json::STR)) matrix = item["zm"].str;
                 continue;
             }
             if (!item.is(Json::STR)) continue;
@@ -51,6 +67,22 @@ std::vector<KeyRect> from_kle(const Json &rows) {
                 k.col = atoi(rc.c_str() + comma + 1);
             }
             k.knob = !k.labels[9].empty() && k.labels[9][0] == 'e';
+            if (!matrix.empty()) {
+                size_t mc = matrix.find(',');
+                if (mc != std::string::npos) { k.row = atoi(matrix.c_str()); k.col = atoi(matrix.c_str() + mc + 1); }
+            }
+            k.cap_rgb = cap;
+            k.side_rgb = side;
+            { // legend colours: one per label, or one for all
+                std::vector<std::string> tc;
+                for (size_t p = 0;;) {
+                    size_t n = text.find('\n', p);
+                    tc.push_back(text.substr(p, n == std::string::npos ? std::string::npos : n - p));
+                    if (n == std::string::npos) break;
+                    p = n + 1;
+                }
+                for (int i = 0; i < 12; i++) k.text_rgb[i] = colour(tc.size() == 1 ? tc[0] : i < (int)tc.size() ? tc[i] : std::string());
+            }
             bool option_ok = true;
             const std::string &opt = k.labels[3];
             size_t oc = opt.find(',');
@@ -60,6 +92,7 @@ std::vector<KeyRect> from_kle(const Json &rows) {
             w = h = 1;
             x2 = y2 = w2 = h2 = 0;
             decal = false;
+            matrix.clear();
         }
         y += 1;
     }

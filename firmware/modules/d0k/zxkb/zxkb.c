@@ -341,6 +341,24 @@ static void info_name(uint8_t *data, uint8_t length) {
 }
 
 /* [0xD9, 0x02, first] -> [0xD9, 0x02, first, count, then count x (x, y, flags)], up to 9 LEDs */
+/* Which LED sits under each key, so the app can light a keyboard drawn from its published layout. Positions are
+ * row * cols + col; up to 26 per reply (32 bytes - 6 of header). */
+static void info_matrix(uint8_t *data, uint8_t length) {
+    uint16_t first = data[2];
+    uint16_t total = MATRIX_ROWS * MATRIX_COLS;
+    memset(&data[2], 0, length - 2);
+    data[2] = MATRIX_ROWS;
+    data[3] = MATRIX_COLS;
+    data[4] = (uint8_t)first;
+    uint8_t n = 0;
+    while (n < length - 6 && first + n < total && first + n < 256) {
+        uint16_t i = first + n;
+        data[6 + n] = g_led_config.matrix_co[i / MATRIX_COLS][i % MATRIX_COLS];
+        n++;
+    }
+    data[5] = n;
+}
+
 static void info_leds(uint8_t *data, uint8_t length) {
     uint8_t first = data[2], count = 0;
     memset(&data[3], 0, length - 3);
@@ -480,6 +498,7 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length) {
             if (data[1] == ZXKB_INFO_STATUS) info_status(data, length);
             else if (data[1] == ZXKB_INFO_NAME) info_name(data, length);
             else if (data[1] == ZXKB_INFO_LEDS) info_leds(data, length);
+            else if (data[1] == ZXKB_INFO_MATRIX) info_matrix(data, length);
             else memset(&data[2], 0xFF, length - 2);
             raw_hid_send(data, length);
             return true;

@@ -122,6 +122,7 @@ bool apply_definition(Board *b) {
         if (n.empty()) n = c["name"].to_str();
         b->custom_names.push_back(settings::widen(n));
     }
+    if (b->kind != Board::VIA) return true; // ZXKB keyboards name their own effects
     // lighting: RGB matrix (VIA channel 3) or RGB light (channel 2)
     const Json *fx = find_control(def["menus"], "id_qmk_rgb_matrix_effect");
     if (!fx) fx = find_control(def["menus"], "id_qmk_rgblight_effect");

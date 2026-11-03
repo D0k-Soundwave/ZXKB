@@ -6,8 +6,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 4 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
-                                 * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only */
+#define ZXKB_PROTOCOL_VERSION 5 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+                                 * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
+                                 * 5: key matrix -> LED map (0xD9 0x03) */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -20,6 +21,7 @@
 #define ZXKB_INFO_STATUS   0x00
 #define ZXKB_INFO_NAME     0x01
 #define ZXKB_INFO_LEDS     0x02
+#define ZXKB_INFO_MATRIX   0x03 /* [0xD9, 0x03, first] -> [0xD9, 0x03, rows, cols, first, n, n x LED (255 = none)], row by row */
 #define ZXKB_CMD_TUNE      0xDA /* size and intensity of the current effect, always replies:
                                  * [0xDA, 0x00] get, [0xDA, 0x01, size, intensity] set (live), [0xDA, 0x02] save
                                  * -> [0xDA, sub, mode, flags (1 = size, 2 = intensity apply), size, intensity] */

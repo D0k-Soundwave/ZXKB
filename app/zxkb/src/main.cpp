@@ -669,7 +669,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     }
     if (msg == g_settings_msg && msg) { // the other copy changed favourites, hotkeys, the VU style or looked up a keyboard
         load_settings();
-        if (g_board && g_board->kind == Board::VIA) boards::apply_definition(g_board);
+        if (g_board) boards::apply_definition(g_board);
         update_tray();
         window_refresh();
         return 0;

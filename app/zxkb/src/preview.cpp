@@ -1,11 +1,14 @@
-// Live preview: the keyboard drawn with its keycaps (D0k's Q3 with KAM Wraith caps, or plain keys from the LED
-// positions on other boards), lit with the colours the keyboard reports. Direct2D and DirectWrite resources live
+// Live preview: the keyboard drawn from its published layout, with the chosen keycap set's legends and colours or
+// labels from what each key does in the Windows keyboard language, lit with the colours the keyboard reports (ZXKB
+// firmware). Without a layout, plain keys at the LED positions the keyboard reports. Direct2D and DirectWrite resources live
 // only while the preview exists.
 // Copyright 2026 D0k
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "preview.h"
 #include "app.h"
 #include "labels.h"
+#include "keycaps.h"
+#include "settings.h"
 #include <d2d1.h>
 #include <dwrite.h>
 #include <algorithm>
@@ -23,10 +26,6 @@ struct BoardKey {
     unsigned       top, side, main_rgb, sub_rgb;
     const wchar_t *main, *sub, *keyword;
 };
-const BoardKey q3_keys[] = {
-#include "board_q3.inc"
-};
-constexpr int    Q3_W = 1925, Q3_H = 625; // board size in hundredths of a key
 constexpr float  GAP  = 0.06f;            // [A] gap between caps, in keys, where the light shows
 constexpr float  GAMMA = 1 / 2.2f;        // [A] LED brightness is linear; a screen needs gamma to look alike
 
@@ -45,7 +44,10 @@ ID2D1BitmapRenderTarget *g_caps_rt = nullptr;
 ID2D1Bitmap           *g_caps = nullptr;
 const Board           *g_caps_board = nullptr; // the keyboard and size the picture was made for
 int                    g_labels_stamp = 0, g_caps_stamp = -1; // labels changed since the picture was made
-std::vector<labels::Label> g_labels;          // key labels for keyboards drawn from their definition
+struct KeyText { std::wstring main, sub, keyword; };
+std::vector<KeyText>   g_text;                // the legends the drawn keys point at
+std::vector<KeyRect>   g_set;                 // the chosen keycap set (empty: labels from the keyboard language)
+std::wstring           g_set_name;
 D2D1_SIZE_U            g_caps_size = {};
 IDWriteTextFormat     *g_fmt[5] = {};     // big char, word, sub, keyword, small
 float                  g_fmt_unit = 0;    // the key size the formats were made for
@@ -54,9 +56,6 @@ uint8_t                g_rgb[256 * 3];
 
 template <class T> void release(T *&p) { if (p) { p->Release(); p = nullptr; } }
 
-bool is_q3() {
-    return g_board && g_board->led_count == 88 && g_board->product.find(L"q3") != std::wstring::npos;
-}
 
 D2D1_COLOR_F hex(unsigned v, float a = 1) {
     return D2D1::ColorF(((v >> 16) & 255) / 255.f, ((v >> 8) & 255) / 255.f, (v & 255) / 255.f, a);
@@ -153,49 +152,81 @@ void draw_cap(const BoardKey &k, float ox, float oy, float unit) {
         text(k.keyword, g_fmt[4], DWRITE_TEXT_ALIGNMENT_CENTER, D2D1::RectF(l - lip, b - unit * 0.17f, r + lip, b + lip), 0xF2F5F8);
 }
 
-// Size of the drawing in keys: the Q3 picture, the keyboard's own layout, or its LED space (224 x 64) as 15 x 5 keys
+// Size of the drawing in keys: the keyboard's own layout, or its LED space (224 x 64) as 15 x 5 keys
 void board_size(float *bw, float *bh) {
     *bw = 15.f;
     *bh = 5.f;
-    if (!g_board) return;
-    if (is_q3()) { *bw = Q3_W / 100.f; *bh = Q3_H / 100.f; return; }
-    if (!g_board->keys.empty()) {
-        int w, h;
-        kle::bounds(g_board->keys, &w, &h);
-        if (w > 0 && h > 0) { *bw = w / 100.f; *bh = h / 100.f; }
-    }
+    if (!g_board || g_board->keys.empty()) return;
+    int w, h;
+    kle::bounds(g_board->keys, &w, &h);
+    if (w > 0 && h > 0) { *bw = w / 100.f; *bh = h / 100.f; }
 }
 
-std::vector<BoardKey> board_keys(bool *q3) { // the keys to draw for the connected keyboard
+unsigned darker(unsigned c) { // a cap's side when the set gives only its top colour
+    return ((c >> 16 & 255) * 4 / 5) << 16 | ((c >> 8 & 255) * 4 / 5) << 8 | (c & 255) * 4 / 5;
+}
+
+std::vector<BoardKey> board_keys() { // the keys to draw for the connected keyboard
     std::vector<BoardKey> keys;
-    *q3 = is_q3();
-    if (*q3) keys.assign(q3_keys, q3_keys + sizeof(q3_keys) / sizeof(q3_keys[0]));
-    else if (!g_board->keys.empty()) { // the layout from the keyboard's definition (no LEDs known: drawn unlit)
-        // labels from what each key does, in the keyboard language in use (no keycap set needed)
-        HKL hkl = labels::current_layout();
-        g_labels.assign(g_board->keys.size(), labels::Label());
-        for (size_t i = 0; i < g_board->keys.size(); i++) {
-            const KeyRect &r = g_board->keys[i];
-            size_t at = (size_t)(r.row * g_board->cols + r.col);
-            if (r.row >= 0 && r.col >= 0 && at < g_board->keymap.size())
-                g_labels[i] = labels::for_keycode(g_board->keymap[at], hkl, g_board->custom_names);
-        }
-        for (size_t i = 0; i < g_board->keys.size(); i++) {
-            const KeyRect &r = g_board->keys[i];
-            const wchar_t *m = g_labels[i].main.c_str(), *sub = g_labels[i].sub.c_str();
-            BoardKey k = {r.x, r.y, r.w, r.h, -1, r.knob ? 2 : 0, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xC8D0D8, m, sub, L""};
-            if (r.w2) { // ISO Enter: drawn as the usual two-part shape over both rectangles
-                int x0 = std::min(r.x, r.x2), x1 = std::max(r.x + r.w, r.x2 + r.w2);
-                int y0 = std::min(r.y, r.y2), y1 = std::max(r.y + r.h, r.y2 + r.h2);
-                k = {x0, y0, x1 - x0, y1 - y0, -1, 1, 0x5F7690, 0x4A5E75, 0xF2F5F8, 0xC8D0D8, m, sub, L""};
-            }
-            keys.push_back(k);
-        }
-    }
-    else // keys at the LED positions the keyboard reported
+    if (g_board->keys.empty()) { // no layout: keys at the LED positions the keyboard reported
         for (int i = 0; i < g_board->led_count && i * 3 + 1 < (int)g_board->leds.size(); i++)
             keys.push_back({(int)(g_board->leds[i * 3] / 224.f * 1400), (int)(g_board->leds[i * 3 + 1] / 64.f * 400), 100, 100, i, 0,
                             0x5F7690, 0x4A5E75, 0xF2F5F8, 0xFF5A4A, L"", L"", L""});
+        return keys;
+    }
+    // the chosen keycap set, if any
+    std::wstring want = keycaps::chosen(g_board->vid, g_board->pid);
+    if (want != g_set_name) {
+        g_set.clear();
+        if (!want.empty()) keycaps::load(want, &g_set);
+        g_set_name = want;
+    }
+    HKL hkl = labels::current_layout();
+    const std::vector<KeyRect> &bk = g_board->keys;
+    g_text.assign(bk.size(), KeyText());
+    for (size_t i = 0; i < bk.size(); i++) {
+        const KeyRect &r = bk[i];
+        unsigned top = 0x5F7690, side = 0x4A5E75, main_rgb = 0xF2F5F8, sub_rgb = 0xC8D0D8;
+        KeyText &t = g_text[i];
+        bool knob = r.knob;
+        const KeyRect *cap = g_set.empty() ? nullptr : keycaps::match(g_set, r, bk);
+        if (cap) { // legends as the set has them: big character at label 0 (shifted at 2), or a word at 4; 7 below
+            const std::vector<std::string> &l = cap->labels;
+            if (!l[0].empty()) {
+                t.main = settings::widen(l[0]);
+                int si = !l[2].empty() ? 2 : 1;
+                t.sub = settings::widen(l[si]);
+                t.keyword = settings::widen(l[7]);
+                if (cap->text_rgb[0] >= 0) main_rgb = cap->text_rgb[0];
+                if (cap->text_rgb[si] >= 0) sub_rgb = cap->text_rgb[si];
+            } else {
+                t.main = settings::widen(l[4]);
+                t.sub = settings::widen(l[7]);
+                if (cap->text_rgb[4] >= 0) main_rgb = cap->text_rgb[4];
+                if (cap->text_rgb[7] >= 0) sub_rgb = cap->text_rgb[7];
+            }
+            if (cap->cap_rgb >= 0) { top = cap->cap_rgb; side = cap->side_rgb >= 0 ? cap->side_rgb : darker(top); }
+            knob |= cap->knob;
+        } else { // labels from what the key does, in the keyboard language in use
+            size_t at = (size_t)(r.row * g_board->cols + r.col);
+            if (r.row >= 0 && r.col >= 0 && at < g_board->keymap.size()) {
+                labels::Label lb = labels::for_keycode(g_board->keymap[at], hkl, g_board->custom_names);
+                t.main = lb.main;
+                t.sub = lb.sub;
+            }
+        }
+        // the LED under the key (ZXKB firmware reports which), so the key lights as on the keyboard
+        int led = -1;
+        size_t m = (size_t)(r.row * g_board->map_cols + r.col);
+        if (r.row >= 0 && r.col >= 0 && m < g_board->led_map.size() && g_board->led_map[m] != 255) led = g_board->led_map[m];
+        BoardKey k = {r.x, r.y, r.w, r.h, led, knob ? 2 : 0, top, side, main_rgb, sub_rgb, t.main.c_str(), t.sub.c_str(), t.keyword.c_str()};
+        if (r.w2) { // ISO Enter: drawn as the usual two-part shape over both rectangles
+            int x0 = std::min(r.x, r.x2), x1 = std::max(r.x + r.w, r.x2 + r.w2);
+            int y0 = std::min(r.y, r.y2), y1 = std::max(r.y + r.h, r.y2 + r.h2);
+            k.x = x0; k.y = y0; k.w = x1 - x0; k.h = y1 - y0; k.shape = 1;
+        }
+        keys.push_back(k);
+    }
     return keys;
 }
 
@@ -220,11 +251,10 @@ void render() {
     }
     float W = (float)rc.right, H = (float)rc.bottom;
     D2D1_SIZE_U size = D2D1::SizeU(rc.right, rc.bottom);
-    bool q3 = false;
     std::vector<BoardKey> keys;
     float unit = 0, ox = 0, oy = 0;
     if (g_board) {
-        keys = board_keys(&q3);
+        keys = board_keys();
         float bw, bh;
         board_size(&bw, &bh);
         unit = std::fmin((W - 8) / bw, (H - 8) / bh);

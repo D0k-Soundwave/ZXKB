@@ -12,7 +12,9 @@ struct KeyRect {
     int x2 = 0, y2 = 0, w2 = 0, h2 = 0; // second rectangle (ISO Enter, big-ass Enter); w2 = 0 if none
     int row = -1, col = -1;             // keyboard matrix position ("row,col" in VIA files), -1 if not given
     bool knob = false;                  // rotary encoder (VIA: "e" in label 9)
-    std::vector<std::string> labels;    // KLE labels, top-left first (12 positions, missing ones empty)
+    std::vector<std::string> labels;    // KLE labels in the order written (12 positions, missing ones empty)
+    int cap_rgb = -1, side_rgb = -1;    // keycap sets: cap top ("c") and side ("zs", ZXKB's own) colours, -1 if none
+    int text_rgb[12] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}; // legend colour per label ("t")
 };
 
 namespace kle {
@@ -21,5 +23,6 @@ std::vector<KeyRect> from_kle(const Json &rows);
 // Keys from a VIA definition's "layouts": raw KLE ("keymap", as in VIA's source files) or VIA's compiled form
 // ("keys" with row, col, x, y, w, h, x2/y2/w2/h2, "ei" for knobs; "optionKeys" alternatives, choice 0 kept)
 std::vector<KeyRect> from_via(const Json &layouts);
+int  colour(const std::string &hex); // "#rrggbb" or "#rgb" -> 0xRRGGBB, -1 if not a colour
 void bounds(const std::vector<KeyRect> &keys, int *w, int *h); // size in hundredths of a key
 } // namespace kle

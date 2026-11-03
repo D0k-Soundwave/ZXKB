@@ -40,6 +40,8 @@ struct Board {
     int                      rows = 0, cols = 0;  // keyboard matrix (VIA definition)
     std::vector<std::wstring> custom_names;     // the keyboard's own key codes (QK_KB + i), from its VIA definition
     std::vector<uint16_t>    keymap;            // layer 0 as the keyboard has it now (read through VIA), row * cols + col
+    std::vector<uint8_t>     led_map;           // ZXKB firmware: LED under each matrix position (255 none), row * map_cols + col
+    int                      map_rows = 0, map_cols = 0;
     std::vector<std::string> names; // names[m - 1] = effect number m
     std::vector<uint8_t>     kinds; // 0 QMK, 1 module, 2 board/keymap
     std::vector<uint8_t>     leds;  // x, y, flags per LED

@@ -81,6 +81,9 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   `src/boards` + `src/json` + `src/layout`: plain VIA keyboards (Board::VIA): VIA definition from
   usevia.app/definitions/v3/<vid*65536+pid>.json (asked first, kept in %APPDATA%\ZXKB\boards), effect names and
   layout from it. Test switch: environment ZXKB_TEST_VIA=1 makes the app treat a ZXKB keyboard as plain VIA.
+  `src/labels` (key labels: QMK keycode -> HID usage -> scan code -> Windows layout), `src/keycaps` (KLE keycap sets in
+  <exe>\keycaps and %APPDATA%\ZXKB\keycaps, choice per USB ID in zxkb.ini [keycaps]). The Wraith set is
+  app/zxkb/keycaps/*.json, written by `python tools/gen_wraith_kle.py` (matrix positions from QMK's Q3 keyboard.json).
   Keychron's own firmware source: %USERPROFILE%\keychron_qmk (branch 2025q3), `make keychron/q3/iso_encoder:keychron`.
   Build from PowerShell with TMP set to a writable folder (g++ otherwise tries C:\WINDOWS for temp files).
 - Installed copy: `Documents\Keyboard Layouts\ZXKB\ZXKB.exe`, started with Windows by a shortcut in the Startup

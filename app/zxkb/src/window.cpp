@@ -9,6 +9,8 @@
 #include "preview.h"
 #include "flash.h"
 #include "boards.h"
+#include "keycaps.h"
+#include "labels.h"
 #include "../res/resource.h"
 #include <windowsx.h>
 #include <commctrl.h>
@@ -22,7 +24,7 @@
 namespace {
 
 enum : int {
-    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP,
+    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP, IDC_KEYCAPS,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -39,6 +41,7 @@ constexpr int W = 680, MARGIN = 12, ROW = 30, LIST_W = 300, LIST_H = 226, SWATCH
 constexpr UINT TIMER_MIRROR = 1;
 constexpr UINT WM_LOOKED_UP = WM_APP + 120; // wParam 1 = found; lParam: error text (new std::wstring) or 0
 void look_up();
+void fill_keycaps();
 constexpr UINT MIRROR_KEEPALIVE_MS = 1000; // [C] half the keyboard's 2 s keep-alive, so the colours never stop
 
 HWND  g_win = nullptr;
@@ -64,6 +67,7 @@ void layout() {
     int y = MARGIN, inner = W - 2 * MARGIN;
     MoveWindow(item(IDC_NOW), px(MARGIN), px(y), px(inner - 230), px(20), FALSE);
     MoveWindow(item(IDC_LOOKUP), px(W - MARGIN - 220), px(y - 3), px(220), px(24), FALSE);
+    MoveWindow(item(IDC_KEYCAPS), px(W - MARGIN - 260), px(y - 3), px(260), px(200), FALSE);
     y += 26;
     MoveWindow(item(IDC_PREVIEW), px(MARGIN), px(y), px(inner), px(preview_h()), FALSE);
     y += preview_h() + 10;
@@ -192,13 +196,63 @@ void refresh() {
     if (!on) ver += L" - keyboard not connected";
     else if (g_board->kind == Board::VIA) ver += L", " + (g_board->def_name.empty() ? g_board->product : g_board->def_name) + L" (standard VIA firmware)";
     else if (g_st.fw_version) ver += L", keyboard firmware v" + std::to_wstring(g_st.fw_version);
-    // a plain VIA keyboard ZXKB has no definition for yet: offer to look it up
-    ShowWindow(item(IDC_LOOKUP), on && g_board->kind == Board::VIA && !boards::has_definition(*g_board) ? SW_SHOW : SW_HIDE);
+    // a keyboard ZXKB has no definition for yet: offer to look it up; once it has a layout, the keycaps choice
+    bool known = on && !g_board->keys.empty();
+    ShowWindow(item(IDC_LOOKUP), on && !boards::has_definition(*g_board) ? SW_SHOW : SW_HIDE);
+    ShowWindow(item(IDC_KEYCAPS), known ? SW_SHOW : SW_HIDE);
+    if (known) fill_keycaps();
     SetWindowTextW(item(IDC_VERSION), ver.c_str());
     g_updating = false;
 }
 
 // QMK hue and saturation (0-255) from a picked RGB colour; brightness stays with the Brightness slider
+// Keycaps: labels from the keyboard language (default), a keycap set, or import one
+std::vector<std::wstring> g_sets;
+void fill_keycaps() {
+    HWND cb = item(IDC_KEYCAPS);
+    SendMessageW(cb, CB_RESETCONTENT, 0, 0);
+    wchar_t lang[LOCALE_NAME_MAX_LENGTH] = {0}, name[128] = L"Windows keyboard language";
+    if (LCIDToLocaleName(MAKELCID(LOWORD((UINT_PTR)labels::current_layout()), SORT_DEFAULT), lang, LOCALE_NAME_MAX_LENGTH, 0))
+        GetLocaleInfoEx(lang, LOCALE_SLOCALIZEDDISPLAYNAME, name, 128);
+    SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)(L"Key labels: " + std::wstring(name)).c_str());
+    g_sets = keycaps::list();
+    std::wstring now = keycaps::chosen(g_board->vid, g_board->pid);
+    int sel = 0;
+    for (size_t i = 0; i < g_sets.size(); i++) {
+        SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)(L"Keycaps: " + g_sets[i]).c_str());
+        if (g_sets[i] == now) sel = (int)i + 1;
+    }
+    SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)L"Import a keycap set (KLE file)...");
+    SendMessageW(cb, CB_SETCURSEL, sel, 0);
+}
+
+void on_keycaps() {
+    int sel = (int)SendMessageW(item(IDC_KEYCAPS), CB_GETCURSEL, 0, 0);
+    if (sel < 0 || !g_board) return;
+    std::wstring name;
+    if (sel == 0) name = L"";
+    else if (sel <= (int)g_sets.size()) name = g_sets[sel - 1];
+    else { // import
+        wchar_t path[MAX_PATH] = {0};
+        OPENFILENAMEW of = {sizeof(of)};
+        of.hwndOwner   = g_win;
+        of.lpstrFilter = L"Keyboard layout (KLE, *.json)\0*.json\0";
+        of.lpstrFile   = path;
+        of.nMaxFile    = MAX_PATH;
+        of.Flags       = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+        std::wstring error;
+        if (!GetOpenFileNameW(&of)) { fill_keycaps(); return; }
+        if (!keycaps::import(path, &name, &error)) {
+            MessageBoxW(g_win, error.c_str(), L"ZXKB", MB_OK | MB_ICONINFORMATION);
+            fill_keycaps();
+            return;
+        }
+    }
+    keycaps::choose(g_board->vid, g_board->pid, name);
+    fill_keycaps();
+    preview_relabel();
+}
+
 void rgb_to_hue_sat(COLORREF c, uint8_t *hue, uint8_t *sat) {
     int r = GetRValue(c), g = GetGValue(c), b = GetBValue(c);
     int mx = r > g ? (r > b ? r : b) : (g > b ? g : b), mn = r < g ? (r < b ? r : b) : (g < b ? g : b), d = mx - mn;
@@ -305,6 +359,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDCANCEL) { window_close(); return 0; }
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
             if (id == IDC_LOOKUP) { look_up(); return 0; }
+            if (id == IDC_KEYCAPS && HIWORD(wp) == CBN_SELCHANGE) { on_keycaps(); return 0; }
             if (g_updating) return 0;
             if (id == IDC_ON) {
                 set_effect(Button_GetCheck(item(IDC_ON)) == BST_CHECKED ? (g_st.mode ? g_st.mode : 1) : 0);
@@ -342,6 +397,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         case WM_INPUTLANGCHANGE: // the keyboard language changed: the labels follow it
             preview_relabel();
+            if (g_board && !g_board->keys.empty()) fill_keycaps();
             break;
         case WM_LOOKED_UP:
             EnableWindow(item(IDC_LOOKUP), TRUE);
@@ -446,6 +502,7 @@ void window_show() {
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP, IDC_VERSION);
     make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);
     make(L"BUTTON", L"Look up this keyboard online...", WS_TABSTOP, IDC_LOOKUP);
+    make(WC_COMBOBOXW, L"", WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST, IDC_KEYCAPS);
 
     set_font();
     layout();
