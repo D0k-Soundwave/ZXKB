@@ -141,6 +141,9 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       colour, notification flash). Checked in QMK source (via.c, 2026-11-03): VIA's live lighting changes are not
       written to the keyboard's settings memory, so streaming them does not wear its flash. Rate it accepts: not
       measured. Per-key colour, the VU bars and ZXKB's own effects still need ZXKB, OpenRGB or SignalRGB firmware
+- [ ] Standard firmware keeps the maker's LED colour balance (Q3: red 68, green/blue 157, so red is weak and white is
+      not true white); VIA cannot change it, only ZXKB firmware can (D0k, 2026-11-03). The window says so on boards
+      whose balance ZXKB knows is off
 - [ ] Simulated preview for keyboards without the ZXKB firmware: the app recreates QMK's standard effects from the
       effect, speed, colour and brightness (read through VIA) and the LED positions (VIA/QMK definitions); typing
       effects from Windows key presses. Marked "simulated" in the window. Effects a maker added cannot be simulated
