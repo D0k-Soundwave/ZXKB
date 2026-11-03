@@ -37,6 +37,8 @@ Written 2026-11-03, after D0k confirmed the requirements list complete. Replaces
    - Key labels from the chosen Windows keyboard language. Keycap sets as an extra: KLE import; D0k's Wraith set
      becomes the first set instead of being built in.
    - LED mirror sends only changed frames (still keyboard costs nothing while the window is open).
+   - Standard QMK + VIA keyboards without reflashing: keyboard functions, the board's own effects, whole-keyboard
+     PC effects, simulated preview, Fn + number as F13-F22 hotkeys. Tested on the Q3 with standard firmware.
    - Downside: real tests only on keyboards D0k owns. Other boards are checked by building the module for a few
      of them (no flashing) and by reading their published definitions.
 
@@ -59,7 +61,8 @@ Written 2026-11-03, after D0k confirmed the requirements list complete. Replaces
    - App-only key actions: launch app or URL, paste text, timer. On-screen notice on profile change.
 
 8. **PC effects** (app 0.16)
-   - Streamed effect engine, then screen ambient, system load (read directly: Windows' performance counters are
+   - Streamed effect engine; the ZX effects, Key explosion, typing effects and VU bars as streamed effects for any
+     keyboard with a direct protocol (ZXKB, OpenRGB, SignalRGB firmware). Then screen ambient, system load (read directly: Windows' performance counters are
      broken on D0k's PC), beat pulse, notification flash, GPU temperature.
    - Each measured on its own; screen ambient has no estimate yet and is measured before being called light.
 
