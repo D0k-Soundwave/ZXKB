@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 5 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+#define ZXKB_PROTOCOL_VERSION 6 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
                                  * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
-                                 * 5: key matrix -> LED map (0xD9 0x03) */
+                                 * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD) */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -34,6 +34,15 @@
                                   * stray reports. Settings are kept (no EEPROM clear). */
 #define ZXKB_BOOT_NONE      0 /* status byte 17: bootloader the app can flash */
 #define ZXKB_BOOT_STM32_DFU 1 /* STM32 ROM DFU, USB 0483:DF11 */
+#define ZXKB_CMD_KEYS      0xDD /* per-key colours, drawn over any effect (indicators such as Caps Lock still on top),
+                                 * scaled by the brightness. Always replies [0xDD, sub, ...]:
+                                 * [0xDD, 0x00, first] get -> [0xDD, 0x00, first, n, n x (set, r, g, b)] (n <= 7)
+                                 * [0xDD, 0x01, first, n, n x (set, r, g, b)] change (live, not saved), n <= 7
+                                 * [0xDD, 0x02] save, [0xDD, 0x03] all keys back to the effect (live) */
+#define ZXKB_KEYS_GET   0x00
+#define ZXKB_KEYS_SET   0x01
+#define ZXKB_KEYS_SAVE  0x02
+#define ZXKB_KEYS_CLEAR 0x03
 #define ZXKB_TUNE_GET      0x00
 #define ZXKB_TUNE_SET      0x01
 #define ZXKB_TUNE_SAVE     0x02

@@ -25,6 +25,7 @@ namespace {
 
 enum : int {
     IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP, IDC_KEYCAPS,
+    IDC_KEYS_INFO, IDC_KEYS_ALL, IDC_KEYS_NONE, IDC_KEYS_EFFECT, IDC_KEYS_OFF, IDC_KEYS_COLOUR,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -37,11 +38,12 @@ constexpr int VU_GROUP = 100; // list group for the VU styles
 
 // Layout in device-independent pixels (scaled for the screen's DPI). [A] sizes chosen to fit the controls:
 // the preview across the top, the effect list on the left, the controls on the right.
-constexpr int W = 680, MARGIN = 12, ROW = 30, LIST_W = 300, LIST_H = 226, SWATCH = 24, GUTTER = 16;
+constexpr int W = 680, MARGIN = 12, ROW = 30, LIST_W = 300, LIST_H = 226, SWATCH = 24, GUTTER = 16, KEYS_ROW = 36;
 constexpr UINT TIMER_MIRROR = 1;
 constexpr UINT WM_LOOKED_UP = WM_APP + 120; // wParam 1 = found; lParam: error text (new std::wstring) or 0
 void look_up();
 void fill_keycaps();
+void refresh_keys();
 constexpr UINT MIRROR_KEEPALIVE_MS = 1000; // [C] half the keyboard's 2 s keep-alive, so the colours never stop
 
 HWND  g_win = nullptr;
@@ -61,7 +63,7 @@ void set_font() {
 }
 
 int preview_h() { return (int)((W - 2 * MARGIN) * preview_aspect()); }
-int content_height() { return MARGIN + 26 + preview_h() + 10 + LIST_H + 10 + 26 + MARGIN; }
+int content_height() { return MARGIN + 26 + preview_h() + 6 + KEYS_ROW + LIST_H + 10 + 26 + MARGIN; }
 
 void layout() {
     int y = MARGIN, inner = W - 2 * MARGIN;
@@ -70,7 +72,19 @@ void layout() {
     MoveWindow(item(IDC_KEYCAPS), px(W - MARGIN - 260), px(y - 3), px(260), px(200), FALSE);
     y += 26;
     MoveWindow(item(IDC_PREVIEW), px(MARGIN), px(y), px(inner), px(preview_h()), FALSE);
-    y += preview_h() + 10;
+    y += preview_h() + 6;
+    { // per-key colours: what is selected, then the buttons, right to left
+        const int bw[5] = {84, 62, 96, 50, 80}; // Colour..., Off, Follow effect, Clear, Select all
+        const int ids[5] = {IDC_KEYS_COLOUR, IDC_KEYS_OFF, IDC_KEYS_EFFECT, IDC_KEYS_NONE, IDC_KEYS_ALL};
+        int bx = W - MARGIN;
+        for (int i = 0; i < 5; i++) {
+            bx -= bw[i];
+            MoveWindow(item(ids[i]), px(bx), px(y), px(bw[i]), px(26), FALSE);
+            bx -= i == 2 ? 14 : 6; // a wider gap between the colour buttons and the selection buttons
+        }
+        MoveWindow(item(IDC_KEYS_INFO), px(MARGIN), px(y + 4), px(bx - MARGIN), px(20), FALSE);
+    }
+    y += KEYS_ROW;
     int top = y;
     HWND list = item(IDC_LIST);
     MoveWindow(list, px(MARGIN), px(y), px(LIST_W), px(LIST_H), FALSE);
@@ -201,6 +215,7 @@ void refresh() {
     ShowWindow(item(IDC_LOOKUP), on && !boards::has_definition(*g_board) ? SW_SHOW : SW_HIDE);
     ShowWindow(item(IDC_KEYCAPS), known ? SW_SHOW : SW_HIDE);
     if (known) fill_keycaps();
+    refresh_keys();
     SetWindowTextW(item(IDC_VERSION), ver.c_str());
     g_updating = false;
 }
@@ -285,6 +300,41 @@ void pick_colour() {
     set_colour(h, s);
 }
 
+// Per-key colours for the keys selected in the preview
+void refresh_keys() {
+    bool can = per_key_possible();
+    int  n   = preview_selected_count();
+    std::wstring t = !g_board ? L""
+                   : !can ? L"Key colours need ZXKB firmware v19"
+                   : n == 0 ? L"Click keys to colour them (Ctrl: more)"
+                   : std::to_wstring(n) + (n == 1 ? L" key selected" : L" keys selected");
+    SetWindowTextW(item(IDC_KEYS_INFO), t.c_str());
+    EnableWindow(item(IDC_KEYS_ALL), can);
+    EnableWindow(item(IDC_KEYS_NONE), can && n > 0);
+    EnableWindow(item(IDC_KEYS_EFFECT), can && n > 0);
+    EnableWindow(item(IDC_KEYS_OFF), can && n > 0);
+    EnableWindow(item(IDC_KEYS_COLOUR), can && n > 0);
+}
+
+void pick_key_colour() {
+    // the Spectrum colours (as calibrated) offered first among the picker's own colours
+    static COLORREF custom[16];
+    static bool     seeded = false;
+    static COLORREF last   = RGB(204, 0, 0);
+    if (!seeded) {
+        for (int c = 0; c < 7; c++) custom[c] = colours[c].swatch;
+        seeded = true;
+    }
+    CHOOSECOLORW cc = {sizeof(cc)};
+    cc.hwndOwner    = g_win;
+    cc.rgbResult    = last;
+    cc.lpCustColors = custom;
+    cc.Flags        = CC_FULLOPEN | CC_RGBINIT;
+    if (!ChooseColorW(&cc)) return;
+    last = cc.rgbResult;
+    set_key_colours(preview_selected_leds(), true, GetRValue(last), GetGValue(last), GetBValue(last));
+}
+
 void on_slider(int s) {
     int pos = (int)SendMessageW(item(IDC_SLIDER + s), TBM_GETPOS, 0, 0);
     switch (s) {
@@ -365,6 +415,12 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
             if (id == IDC_LOOKUP) { look_up(); return 0; }
             if (id == IDC_KEYCAPS && HIWORD(wp) == CBN_SELCHANGE) { on_keycaps(); return 0; }
+            if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh_keys(); return 0; }
+            if (id == IDC_KEYS_ALL) { preview_select_all(); refresh_keys(); return 0; }
+            if (id == IDC_KEYS_NONE) { preview_select_none(); refresh_keys(); return 0; }
+            if (id == IDC_KEYS_EFFECT) { set_key_colours(preview_selected_leds(), false, 0, 0, 0); return 0; }
+            if (id == IDC_KEYS_OFF) { set_key_colours(preview_selected_leds(), true, 0, 0, 0); return 0; }
+            if (id == IDC_KEYS_COLOUR) { pick_key_colour(); return 0; }
             if (g_updating) return 0;
             if (id == IDC_ON) {
                 set_effect(Button_GetCheck(item(IDC_ON)) == BST_CHECKED ? (g_st.mode ? g_st.mode : 1) : 0);
@@ -508,6 +564,12 @@ void window_show() {
     make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);
     make(L"BUTTON", L"Look up this keyboard online...", WS_TABSTOP, IDC_LOOKUP);
     make(WC_COMBOBOXW, L"", WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST, IDC_KEYCAPS);
+    make(L"STATIC", L"", SS_LEFTNOWORDWRAP | SS_ENDELLIPSIS, IDC_KEYS_INFO);
+    make(L"BUTTON", L"Select all", WS_TABSTOP, IDC_KEYS_ALL);
+    make(L"BUTTON", L"Clear", WS_TABSTOP, IDC_KEYS_NONE);
+    make(L"BUTTON", L"Follow effect", WS_TABSTOP, IDC_KEYS_EFFECT);
+    make(L"BUTTON", L"Off", WS_TABSTOP, IDC_KEYS_OFF);
+    make(L"BUTTON", L"Colour...", WS_TABSTOP, IDC_KEYS_COLOUR);
 
     set_font();
     layout();

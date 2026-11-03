@@ -9,6 +9,8 @@
 #include <objbase.h>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <cstring>
 #include "../res/resource.h"
 #define ZXKB_WIDEN2(s) L##s
 #define ZXKB_WIDEN(s)  ZXKB_WIDEN2(s)
@@ -111,6 +113,36 @@ void send(std::initializer_list<uint8_t> bytes);
 void request_keymap() {
     if (g_board && g_board->via_protocol && g_board->rows && g_board->cols) g_link.request_keymap(g_board->rows, g_board->cols);
 }
+bool per_key_possible() { return zxkb_board() && g_board->protocol >= 6; }
+void schedule_save();
+
+void set_key_colours(const std::vector<int> &leds, bool on, uint8_t r, uint8_t g, uint8_t b) {
+    if (!per_key_possible()) return;
+    std::vector<int> l = leds;
+    std::sort(l.begin(), l.end());
+    for (int led : l) {
+        if (led < 0 || led >= g_board->led_count) continue;
+        g_board->key_set[led] = on;
+        g_board->key_rgb[led * 3] = r; g_board->key_rgb[led * 3 + 1] = g; g_board->key_rgb[led * 3 + 2] = b;
+    }
+    // runs of neighbouring LEDs, up to 7 per report
+    for (size_t i = 0; i < l.size();) {
+        int first = l[i], n = 0;
+        uint8_t q[proto::REPORT] = {proto::KEYS, proto::KEYS_SET, (uint8_t)first};
+        while (i < l.size() && l[i] == first + n && n < proto::KEYS_PER_PACKET) {
+            int led = l[i];
+            q[4 + n * 4] = g_board->key_set[led];
+            std::memcpy(&q[5 + n * 4], &g_board->key_rgb[led * 3], 3);
+            n++;
+            i++;
+        }
+        if (!n) { i++; continue; } // out of range
+        q[3] = (uint8_t)n;
+        g_link.send(q, 4 + n * 4);
+    }
+    schedule_save();
+}
+
 void enter_bootloader() {
     if (zxkb_board()) send({proto::BOOTLOADER, 'Z', 'X', 'B', 'L'});
 }
@@ -169,6 +201,7 @@ void save_now() {
     if (g_board && g_save_pending) {
         if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
         if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
+        if (per_key_possible()) send({proto::KEYS, proto::KEYS_SAVE});
     }
     g_save_pending = false;
 }

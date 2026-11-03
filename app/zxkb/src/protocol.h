@@ -22,6 +22,9 @@ constexpr uint8_t MIRROR    = 0xDB; // [0xDB, 1] send LED colours for 2 s, [0xDB
 constexpr uint8_t BOOTLOADER = 0xDC; // [0xDC, 'Z', 'X', 'B', 'L'] -> [0xDC, 1], then the keyboard restarts into its bootloader
 constexpr uint8_t BOOT_NONE      = 0; // status byte 17 (protocol 4): bootloader ZXKB can write firmware with
 constexpr uint8_t BOOT_STM32_DFU = 1; // STM32 ROM DFU, USB 0483:DF11
+constexpr uint8_t KEYS      = 0xDD; // per-key colours (protocol 6): sub 0 get, 1 set, 2 save, 3 clear; always replies
+constexpr uint8_t KEYS_GET = 0x00, KEYS_SET = 0x01, KEYS_SAVE = 0x02, KEYS_CLEAR = 0x03;
+constexpr int     KEYS_PER_PACKET = 7;  // 4 bytes per LED (set, r, g, b) after a 4-byte header
 constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
 constexpr uint8_t TUNE_GET  = 0x00;
 constexpr uint8_t TUNE_SET  = 0x01; // [0xDA, 0x01, size, intensity]

@@ -54,4 +54,7 @@ void mirror_request(bool on);                 // ask the keyboard to keep sendin
 void set_favourite(const std::string &n, bool on);
 void enter_bootloader();
 void settings_changed();
-void request_keymap();                        // read the keyboard's keymap (for key labels), if its matrix is known                      // tell the other ZXKB copy to read settings (and keyboard files) again                      // the keyboard restarts into its bootloader (firmware v17 on)
+void request_keymap();
+bool per_key_possible();                      // the keyboard keeps per-key colours (ZXKB firmware v19 on)
+// Give keys (LED numbers) their own colour (on) or hand them back to the effect (off); kept on the keyboard
+void set_key_colours(const std::vector<int> &leds, bool on, uint8_t r, uint8_t g, uint8_t b);                        // read the keyboard's keymap (for key labels), if its matrix is known                      // tell the other ZXKB copy to read settings (and keyboard files) again                      // the keyboard restarts into its bootloader (firmware v17 on)

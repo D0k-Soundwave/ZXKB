@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v19 | 2026-11-03 | 61,212 bytes | Per-key colours kept on the keyboard (0xDD, protocol 6): any key its own colour or off, over any effect, scaled by brightness; Caps Lock still on top. Settings memory grows by 275 bytes (module block version 3), so the first start resets the VIA keymap and macros to the firmware defaults. |
 | v18 | 2026-11-03 | 60,760 bytes | Reports which LED sits under each key (0xD9 0x03, protocol 5), so ZXKB can light any keyboard drawn from its published layout. |
 | v17 | 2026-11-03 | 60,688 bytes | Restarts into its bootloader when ZXKB asks (0xDC, settings kept), so ZXKB can install firmware without QMK Toolbox or holding Esc. Reports its bootloader type. LED mirror sends only LEDs that changed (protocol 4). |
 | v16 | 2026-11-03 | 60,496 bytes | LED mirror: the keyboard sends the colours actually on its LEDs (after effects, brightness and Caps Lock) while the ZXKB window asks for them, for the live preview (protocol 3). |
@@ -38,6 +39,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.17 | 2026-11-03 | 506,880 bytes | Click keys in the preview to select them (Ctrl+click for more), then Colour..., Off or Follow effect; Select all, Clear. The picker offers the calibrated Spectrum colours first. The preview builds its key list only when the board, size or labels change, not every frame. |
 | 0.16 | 2026-11-03 | 500,736 bytes | Key labels name the Windows keyboard layout itself, not the language (D0k's English (UK) uses his custom "US - Spectrum (GBP on AltGr+4)" layout); any installed layout can be chosen for the labels, or "as Windows types", which follows a layout switch. |
 | 0.15 | 2026-11-03 | 498,688 bytes | One preview for every keyboard: layout from the keyboard's VIA definition (looked up once after asking), lit through the firmware's key-to-LED map (v18), with labels from what each key does in the Windows keyboard language (keymap read through VIA) or a keycap set. Keycap sets are KLE files; D0k's KAM Wraith set is the first, no longer built in. Import a KLE file from the window. The built-in Q3 picture is gone. |
 | 0.14 | 2026-11-03 | 485,888 bytes | The effect list ignores typed letters (it used to jump to the effect starting with the letter, changing the keyboard's effect while trying typing effects). |

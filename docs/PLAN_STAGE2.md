@@ -53,6 +53,8 @@ Written 2026-11-03, after D0k confirmed the requirements list complete. Replaces
    - Layers and zones as one combined effect on the keyboard (one effect slot), streamed from the PC on boards
      without the module or room.
    - More effect controls: direction, two or more colours, full colour picker.
+   - Per-key colours brought forward (D0k, 2026-11-03): select keys in the preview, colour / off / follow effect
+     (v19, 0.17). Still to come here: painting by dragging, saved key-colour sets.
    - Per-key paint editor, including per-key colour on/off over any effect (indicators keep their own
      behaviour), gradient builder, calibration tool with reset to defaults.
 

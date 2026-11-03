@@ -92,7 +92,7 @@ bool HidLink::transact(HANDLE h, uint8_t *buf, int in_len, int out_len) {
     while (GetTickCount() - start < REPLY_TIMEOUT_MS) {
         if (!read_report(h, in, in_len, REPLY_TIMEOUT_MS)) return false;
         if (in[1] == 0xFF && cmd != 0xFF) return false; // VIA: "unknown command", e.g. a ZXKB query to a plain VIA board
-        if (in[1] == cmd && (cmd != proto::INFO || in[2] == sub)) {
+        if (in[1] == cmd && ((cmd != proto::INFO && cmd != proto::KEYS) || in[2] == sub)) {
             std::memcpy(buf, in + 1, proto::REPORT);
             return true;
         }
@@ -143,6 +143,18 @@ bool HidLink::probe(HANDLE h, int in_len, int out_len, Board *board) {
             board->led_map.insert(board->led_map.end(), q + 6, q + 6 + n);
             first += n;
             if (n == 0 || first >= total || first >= 256) break;
+        }
+    board->key_set.assign(board->led_count, 0);
+    board->key_rgb.assign(board->led_count * 3, 0);
+    if (board->protocol >= 6) // per-key colours as the keyboard keeps them
+        for (int first = 0; first < board->led_count;) {
+            uint8_t q[proto::REPORT] = {proto::KEYS, proto::KEYS_GET, (uint8_t)first};
+            if (!transact(h, q, in_len, out_len) || q[3] == 0) break;
+            for (int k = 0; k < q[3] && first + k < board->led_count; k++) {
+                board->key_set[first + k] = q[5 + k * 4];
+                std::memcpy(&board->key_rgb[(first + k) * 3], &q[6 + k * 4], 3);
+            }
+            first += q[3];
         }
     { // most ZXKB keyboards have VIA too: needed to read their keymap for the key labels
         uint8_t q[proto::REPORT] = {proto::VIA_PROTOCOL};

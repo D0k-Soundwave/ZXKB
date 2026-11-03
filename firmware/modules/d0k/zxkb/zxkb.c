@@ -69,6 +69,8 @@ typedef struct PACKED {
     uint8_t home_mode;                    /* the keyboard's own effect, kept while an overlay shows */
     uint8_t size[ZXKB_TUNABLES];          /* per tunable effect, see tunables[] */
     uint8_t intensity[ZXKB_TUNABLES];
+    uint8_t key_set[(RGB_MATRIX_LED_COUNT + 7) / 8]; /* per-key colour in use (bit per LED) */
+    uint8_t key_rgb[RGB_MATRIX_LED_COUNT][3];        /* per-key colour, before brightness; 0, 0, 0 = off */
 } zxkb_config_t;
 _Static_assert(sizeof(zxkb_config_t) == EECONFIG_MODULE_ZXKB_DATA_SIZE, "update EECONFIG_MODULE_ZXKB_DATA_SIZE in config.h");
 static zxkb_config_t cfg;
@@ -105,7 +107,61 @@ void eeconfig_init_zxkb_datablock(void) { /* first start, or the saved layout ch
         def.size[i]      = ZXKB_TUNE_DEFAULT_SIZE;
         def.intensity[i] = ZXKB_TUNE_DEFAULT_INTENSITY;
     }
+    memset(def.key_set, 0, sizeof(def.key_set));
+    memset(def.key_rgb, 0, sizeof(def.key_rgb));
     eeconfig_update_zxkb_datablock(&def, 0, sizeof(def));
+}
+
+/* ---------- Per-key colours ---------- */
+static bool key_is_set(uint8_t i) { return cfg.key_set[i / 8] & (1 << (i % 8)); }
+
+static void keys_command(uint8_t *data, uint8_t length) {
+    uint8_t sub = data[1];
+    if (sub == ZXKB_KEYS_GET) {
+        uint8_t first = data[2], n = 0;
+        memset(&data[3], 0, length - 3);
+        while (n < 7 && first + n < RGB_MATRIX_LED_COUNT) {
+            uint8_t i = first + n;
+            data[5 + n * 4] = key_is_set(i);
+            memcpy(&data[6 + n * 4], cfg.key_rgb[i], 3);
+            n++;
+        }
+        data[2] = first;
+        data[3] = n;
+        /* data[4] spare */
+    } else if (sub == ZXKB_KEYS_SET) {
+        uint8_t first = data[2], n = data[3];
+        for (uint8_t k = 0; k < n && k < 7 && first + k < RGB_MATRIX_LED_COUNT; k++) {
+            uint8_t i = first + k;
+            if (data[4 + k * 4]) cfg.key_set[i / 8] |= 1 << (i % 8);
+            else cfg.key_set[i / 8] &= ~(1 << (i % 8));
+            memcpy(cfg.key_rgb[i], &data[5 + k * 4], 3);
+        }
+        memset(&data[2], 0, length - 2);
+        data[2] = 1;
+    } else if (sub == ZXKB_KEYS_SAVE) {
+        eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg)); /* only changed bytes are written */
+        memset(&data[2], 0, length - 2);
+        data[2] = 1;
+    } else if (sub == ZXKB_KEYS_CLEAR) {
+        memset(cfg.key_set, 0, sizeof(cfg.key_set));
+        memset(&data[2], 0, length - 2);
+        data[2] = 1;
+    } else {
+        memset(&data[2], 0xFF, length - 2);
+    }
+    raw_hid_send(data, length);
+}
+
+/* Over the effect, before the keymap's own indicators (Caps Lock), so those stay on top. Not over PC direct
+ * colour: the PC then draws every key itself. */
+bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
+    if (!rgb_matrix_indicators_advanced_zxkb_kb(led_min, led_max)) return false;
+    if (overlay == ZXKB_OVERLAY_DIRECT) return true;
+    uint16_t v = rgb_matrix_get_val();
+    for (uint8_t i = led_min; i < led_max && i < RGB_MATRIX_LED_COUNT; i++)
+        if (key_is_set(i)) rgb_matrix_set_color(i, cfg.key_rgb[i][0] * v / 255, cfg.key_rgb[i][1] * v / 255, cfg.key_rgb[i][2] * v / 255);
+    return true;
 }
 
 static int8_t tunable_index(uint8_t mode) {
@@ -509,6 +565,9 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length) {
             mirroring = data[1] != 0;
             mirror_until = timer_read32() + ZXKB_MIRROR_KEEPALIVE_MS;
             mirror_full  = (RGB_MATRIX_LED_COUNT + 8) / 9; /* one whole frame, for an app that has just opened */
+            return true;
+        case ZXKB_CMD_KEYS:
+            keys_command(data, length);
             return true;
         case ZXKB_CMD_BOOTLOADER:
             if (data[1] == 'Z' && data[2] == 'X' && data[3] == 'B' && data[4] == 'L') {

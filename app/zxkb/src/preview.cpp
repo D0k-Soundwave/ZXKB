@@ -45,6 +45,9 @@ ID2D1Bitmap           *g_caps = nullptr;
 const Board           *g_caps_board = nullptr; // the keyboard and size the picture was made for
 int                    g_labels_stamp = 0, g_caps_stamp = -1; // labels changed since the picture was made
 struct KeyText { std::wstring main, sub, keyword; };
+std::vector<struct BoardKey> g_keys_cache;    // the keys as last laid out (rebuilt with the caps picture)
+std::vector<bool>      g_sel;                 // selected keys (index into g_keys_cache)
+float                  g_ox = 0, g_oy = 0, g_unit = 0; // where the keys were drawn
 std::vector<KeyText>   g_text;                // the legends the drawn keys point at
 std::vector<KeyRect>   g_set;                 // the chosen keycap set (empty: labels from the keyboard language)
 std::wstring           g_set_name;
@@ -258,10 +261,10 @@ void render() {
     }
     float W = (float)rc.right, H = (float)rc.bottom;
     D2D1_SIZE_U size = D2D1::SizeU(rc.right, rc.bottom);
-    std::vector<BoardKey> keys;
+    std::vector<BoardKey> &keys = g_keys_cache;
     float unit = 0, ox = 0, oy = 0;
+    if (!g_board) keys.clear();
     if (g_board) {
-        keys = board_keys();
         float bw, bh;
         board_size(&bw, &bh);
         unit = std::fmin((W - 8) / bw, (H - 8) / bh);
@@ -269,6 +272,10 @@ void render() {
         oy = (H - bh * unit) / 2;
         if (g_caps_board != g_board || g_caps_size.width != size.width || g_caps_size.height != size.height || g_caps_stamp != g_labels_stamp) {
             drop_caps();
+            // the key list (with labels, keycaps and LEDs) only changes with the board, size or labels, not per frame
+            size_t before = keys.size();
+            keys = board_keys();
+            if (keys.size() != before) g_sel.assign(keys.size(), false);
             if (!g_fmt[0] || std::fabs(unit - g_fmt_unit) > 0.5f) make_formats(unit);
             if (SUCCEEDED(g_rt->CreateCompatibleRenderTarget(D2D1::SizeF(W, H), &g_caps_rt))) {
                 g_cur = g_caps_rt;
@@ -292,7 +299,20 @@ void render() {
         for (const BoardKey &k : keys) draw_light(k, ox, oy, unit);
         g_rt->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
         g_rt->DrawBitmap(g_caps, D2D1::RectF(0, 0, W, H), 1.f, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR);
+        // selected keys: a white outline with a dark edge, readable over any light
+        for (size_t i = 0; i < keys.size() && i < g_sel.size(); i++) {
+            if (!g_sel[i]) continue;
+            const BoardKey &k = keys[i];
+            D2D1_ROUNDED_RECT r = D2D1::RoundedRect(D2D1::RectF(ox + k.x / 100.f * unit + 1.5f, oy + k.y / 100.f * unit + 1.5f,
+                                                                ox + (k.x + k.w) / 100.f * unit - 1.5f, oy + (k.y + k.h) / 100.f * unit - 1.5f),
+                                                    unit * 0.1f, unit * 0.1f);
+            g_brush->SetColor(hex(0x000000));
+            g_rt->DrawRoundedRectangle(r, g_brush, 4.f);
+            g_brush->SetColor(hex(0xFFFFFF));
+            g_rt->DrawRoundedRectangle(r, g_brush, 2.f);
+        }
     }
+    g_ox = ox; g_oy = oy; g_unit = unit;
     if (g_rt->EndDraw() == D2DERR_RECREATE_TARGET) {
         drop_caps();
         release(g_brush);
@@ -312,12 +332,36 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_ERASEBKGND:
             return 1;
+        case WM_LBUTTONDOWN: { // select the key under the pointer (Ctrl: add or remove it)
+            float x = (float)(short)LOWORD(lp), y = (float)(short)HIWORD(lp);
+            int hit = -1;
+            for (size_t i = 0; i < g_keys_cache.size() && g_unit > 0; i++) {
+                const BoardKey &k = g_keys_cache[i];
+                if (x >= g_ox + k.x / 100.f * g_unit && x < g_ox + (k.x + k.w) / 100.f * g_unit &&
+                    y >= g_oy + k.y / 100.f * g_unit && y < g_oy + (k.y + k.h) / 100.f * g_unit) hit = (int)i;
+            }
+            if (g_sel.size() != g_keys_cache.size()) g_sel.assign(g_keys_cache.size(), false);
+            if (wp & MK_CONTROL) {
+                if (hit >= 0) g_sel[hit] = !g_sel[hit];
+            } else {
+                g_sel.assign(g_keys_cache.size(), false);
+                if (hit >= 0) g_sel[hit] = true;
+            }
+            InvalidateRect(hwnd, nullptr, FALSE);
+            SendMessageW(GetParent(hwnd), WM_COMMAND, MAKEWPARAM(GetDlgCtrlID(hwnd), PREVIEW_SELECTION), (LPARAM)hwnd);
+            return 0;
+        }
         case WM_SIZE:
             if (g_rt) g_rt->Resize(D2D1::SizeU(LOWORD(lp), HIWORD(lp))); // the caps picture is redrawn for the new size
             InvalidateRect(hwnd, nullptr, FALSE);
             return 0;
         case WM_DESTROY:
             drop_caps();
+            g_keys_cache.clear();
+            g_sel.clear();
+            g_text.clear();
+            g_set.clear();
+            g_set_name.clear();
             for (auto &f : g_fmt) release(f);
             release(g_brush);
             release(g_rt);
@@ -365,6 +409,26 @@ void preview_update() {
     if (std::memcmp(now, g_rgb, n * 3) == 0) return;
     std::memcpy(g_rgb, now, n * 3);
     InvalidateRect(g_hwnd_preview, nullptr, FALSE);
+}
+
+std::vector<int> preview_selected_leds() {
+    std::vector<int> leds;
+    for (size_t i = 0; i < g_sel.size() && i < g_keys_cache.size(); i++)
+        if (g_sel[i] && g_keys_cache[i].led >= 0) leds.push_back(g_keys_cache[i].led);
+    return leds;
+}
+int preview_selected_count() {
+    int n = 0;
+    for (bool s : g_sel) n += s;
+    return n;
+}
+void preview_select_all() {
+    g_sel.assign(g_keys_cache.size(), true);
+    if (g_hwnd_preview) InvalidateRect(g_hwnd_preview, nullptr, FALSE);
+}
+void preview_select_none() {
+    g_sel.assign(g_keys_cache.size(), false);
+    if (g_hwnd_preview) InvalidateRect(g_hwnd_preview, nullptr, FALSE);
 }
 
 void preview_relabel() {
