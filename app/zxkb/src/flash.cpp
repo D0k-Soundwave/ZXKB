@@ -71,6 +71,17 @@ bool dfu_present() {
     return found;
 }
 
+void log_bytes(const char *s, DWORD n);
+// A timed line in firmware.log, to learn how long each phase really takes
+DWORD g_t0;
+void log_phase(const char *what) {
+    char line[160];
+    SYSTEMTIME t;
+    GetLocalTime(&t);
+    int n = wsprintfA(line, "\r\n[%02d:%02d:%02d, +%lu ms] %s\r\n", t.wHour, t.wMinute, t.wSecond, GetTickCount() - g_t0, what);
+    log_bytes(line, (DWORD)n);
+}
+
 void log_bytes(const char *s, DWORD n) {
     HANDLE f = CreateFileW((settings::folder() + L"\\firmware.log").c_str(), FILE_APPEND_DATA, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, 0, nullptr);
     if (f == INVALID_HANDLE_VALUE) return;
@@ -96,6 +107,7 @@ void dfu_line(const std::string &line, std::string *last) {
 DWORD WINAPI work(void *) {
     // 1. wait for the bootloader
     DWORD start = GetTickCount();
+    log_phase("waiting for the bootloader");
     while (!dfu_present()) {
         if (g_cancel) { PostMessageW(g_dlg, WM_FW_DONE, 0, (LPARAM) new std::wstring(L"Cancelled. Nothing was written.")); return 0; }
         if (GetTickCount() - start > g_wait_ms) {
@@ -107,6 +119,7 @@ DWORD WINAPI work(void *) {
         Sleep(250);
     }
     g_state = WRITING;
+    log_phase("bootloader found");
     post_status(L"Writing the firmware. Do not unplug the keyboard...");
 
     // 2. dfu-util writes the file and starts the new firmware (":leave")
@@ -150,6 +163,7 @@ DWORD WINAPI work(void *) {
     GetExitCodeProcess(pi.hProcess, &code);
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
+    log_phase(code == 0 ? "dfu-util finished" : "dfu-util failed");
     bool ok = all.find("File downloaded successfully") != std::string::npos || (code == 0 && all.find("Download done") != std::string::npos);
     PostMessageW(g_dlg, WM_FW_DONE, ok, ok ? 0 : (LPARAM) new std::wstring(
         L"Writing failed (" + settings::widen(last) + L"). The keyboard stays in its bootloader with its lights off until "
@@ -238,6 +252,8 @@ void install() {
 
     g_cancel = false;
     g_state  = WAITING;
+    g_t0     = GetTickCount();
+    log_phase(settings::narrow(L"install " + g_files[sel] + (by_command ? L" (bootloader command)" : L" (by hand)")).c_str());
     SendDlgItemMessageW(g_dlg, IDC_FW_PROGRESS, PBM_SETPOS, 0, 0);
     if (by_command) {
         g_wait_ms = BOOT_WAIT_MS;
@@ -310,7 +326,10 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
                 KillTimer(dlg, TIMER_RECONNECT);
                 if (g_state == RECONNECTING) {
                     g_state = IDLE;
-                    set_status(L"The firmware was written, but the keyboard has not come back yet. Unplug it and plug it in again.");
+                    // [M] 2026-11-03: once in two installs the Q3 stayed dark after writing until it was replugged
+                    log_phase(dfu_present() ? "keyboard not back: still in its bootloader" : "keyboard not back: not on USB");
+                    set_status(L"The firmware is written and checked, but the keyboard did not restart by itself (this happens "
+                               L"now and then). Unplug the keyboard and plug it back in: it will start with the new firmware.");
                     set_busy(false, false);
                 }
             }
@@ -353,6 +372,7 @@ void flash_refresh() {
         KillTimer(g_dlg, TIMER_RECONNECT);
         g_state = IDLE;
         fill_list();
+        log_phase("keyboard back");
         set_status(L"Done: the keyboard runs firmware v" + std::to_wstring(g_st.fw_version) + L".");
         set_busy(false, false);
     }

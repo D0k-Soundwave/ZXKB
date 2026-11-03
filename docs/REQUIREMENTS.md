@@ -86,7 +86,8 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
 - [ ] Debounce time adjustable from the app (QMK fixes it at 5 ms; firmware work)
 - [ ] NKRO toggle and Windows key repeat delay / rate in the app
 - [~] Firmware updates from the app: keyboard enters its bootloader on command, flashed with dfu-util from the
-      kept versions (replaces QMK Toolbox and holding Esc). Built in 0.11 + v17 (STM32 bootloader only so far)
+      kept versions (replaces QMK Toolbox and holding Esc). Built in 0.11 + v17 (STM32 bootloader only so far); tested
+      by D0k 2026-11-03: both installs written, one needed a replug to start
 - [ ] Knob assignment (VIA encoder commands)
 - [ ] On-screen notice when the profile changes
 - Not doing: CPU temperature (driver), faster polling (already 1,000 Hz, the USB full-speed limit), OLED (Q3 has none)

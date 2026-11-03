@@ -82,6 +82,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Firmware v17 size | 60,688 bytes (+192 on v16) | M | build.sh, 2026-11-03 |
 | 0.11 ZXKB.exe size | 433,152 bytes | M | 2026-11-03 |
 | dfu-util.exe (QMK MSYS, 0.11-dev, static) | 365,056 bytes, imports only KERNEL32 and msvcrt | M | ls, objdump -p, 2026-11-03 |
+| Firmware installs from the app (0.11, v16 -> v17 by hand, then v17 -> v17 by command) | 2 of 2 written ("File downloaded successfully", 60,672 bytes); keyboard restarted by itself 1 of 2 (the by-hand install stayed dark until replugged) | M | D0k + firmware.log, 2026-11-03; phases not timed (timing added in 0.12) |
 | Wait for the bootloader after the command / after unplug + Esc | 10 s / 120 s | A | not timed yet |
 | dfu-util time limit / wait for the keyboard to return | 120 s / 20 s | A | QMK Toolbox writes the Q3 in a few seconds (not timed) |
 | Largest firmware file accepted | 2 MB | P | largest STM32 flash among QMK-supported parts (STM32F4/H7 class); not re-checked |

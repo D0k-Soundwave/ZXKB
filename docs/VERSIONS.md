@@ -31,6 +31,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.12 | 2026-11-03 | 433,664 bytes | Firmware install: clearer message when the keyboard does not restart by itself after writing (unplug and replug, firmware is already written); firmware.log records the time of each phase. |
 | 0.11 | 2026-11-03 | 433,152 bytes | Firmware... button in the window: lists the kept firmware files, checks a file is for this keyboard, restarts the keyboard into its bootloader (v17 on; older firmware: unplug and hold Esc) and writes it with dfu-util, with progress, then waits for the keyboard to come back. dfu-util.exe installed next to ZXKB.exe. |
 | 0.10 | 2026-11-03 | 419,328 bytes | Live preview made light: keycaps and legends drawn once, each frame only paints the lights (36% -> 2.2% of one core while animating); frames with no colour change are skipped. Version number in the file properties fixed (0.9 said 0.8 there). |
 | 0.9 | 2026-11-03 | 417,792 bytes | The ZXKB window runs as its own copy of ZXKB.exe, started by the tray, so closing it gives all its memory back. Live preview of the keyboard with its keycaps, lit as the keyboard is (needs firmware v16). Favourites, hotkeys and VU style changed in one are picked up by the other. |

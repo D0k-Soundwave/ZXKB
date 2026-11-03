@@ -20,7 +20,7 @@ Written 2026-11-03, after D0k confirmed the requirements list complete. Replaces
    - Live preview with LED mirror (built, not released). Measure preview CPU at 30 frames/s.
    - Check: closing the window gives all its memory back; tray RAM unchanged.
 
-3. **Firmware updates from the app** - built (firmware v17, app 0.11), being tested
+3. **Firmware updates from the app** - done (firmware v17, app 0.11 and 0.12)
    - Done early because every later step needs flashing: no more QMK Toolbox or holding Esc.
    - The app sends the keyboard into its bootloader and flashes a kept version with dfu-util (GPL, shipped
      alongside ZXKB.exe). Choose any kept version to go back.
