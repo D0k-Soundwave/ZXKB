@@ -100,7 +100,10 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       - VIA's keyboard definitions, github.com/the-via/keyboards (GPL-3.0; JSON per keyboard in v3/) for
         VIA-only boards
 - [ ] Independent of keycaps: by default keys are labelled from what they do, in the user's chosen language
-      (any Windows keyboard layout, e.g. UK, US, German, French), worked out on the PC with no database
+      (any Windows keyboard layout, e.g. UK, US, German, French), worked out on the PC with no database.
+      Checked 2026-11-03 on D0k's PC: Windows gives the character for every key in each installed layout
+      (English UK with a US-style layout), and can follow a language switch. It does not know the physical shape
+      (ISO/ANSI, key sizes): that comes from the keyboard or the QMK/VIA databases
 - [ ] Keycap sets as an optional extra: the user picks or defines the caps on their keyboard (legends, cap and
       legend colours). Import keycap sets from KLE files (keyboard-layout-editor, the common format for layouts
       and keycap designs). No keycap legend database was found (searched 2026-11-03). D0k's KAM Wraith set
