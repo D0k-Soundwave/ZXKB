@@ -309,12 +309,12 @@ void refresh_keys() {
     int  n   = preview_selected_count();
     std::wstring t = !g_board ? L""
                    : !can ? L"Key colours need ZXKB firmware v19"
-                   : n == 0 ? L"Click keys to colour them (Ctrl: more)"
+                   : n == 0 ? L"Click keys to colour them (Ctrl: more; empty spot: none)"
                    : std::to_wstring(n) + (n == 1 ? L" key: pick a colour below, Off or Follow effect"
                                                     : L" keys: pick a colour below, Off or Follow effect");
     SetWindowTextW(item(IDC_KEYS_INFO), t.c_str());
     EnableWindow(item(IDC_KEYS_ALL), can);
-    EnableWindow(item(IDC_KEYS_NONE), can && n > 0);
+    EnableWindow(item(IDC_KEYS_NONE), can);
     EnableWindow(item(IDC_KEYS_EFFECT), can && n > 0);
     EnableWindow(item(IDC_KEYS_OFF), can && n > 0);
 }
@@ -420,7 +420,12 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDC_KEYCAPS && HIWORD(wp) == CBN_SELCHANGE) { on_keycaps(); return 0; }
             if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh(); return 0; }
             if (id == IDC_KEYS_ALL) { preview_select_all(); refresh(); return 0; }
-            if (id == IDC_KEYS_NONE) { preview_select_none(); refresh(); return 0; }
+            if (id == IDC_KEYS_NONE) { // Clear: every key off (black), whatever is selected (D0k, 2026-11-03)
+                std::vector<int> all;
+                for (int i = 0; g_board && i < g_board->led_count; i++) all.push_back(i);
+                set_key_colours(all, true, 0, 0, 0);
+                return 0;
+            }
             if (id == IDC_KEYS_EFFECT) { set_key_colours(preview_selected_leds(), false, 0, 0, 0); return 0; }
             if (id == IDC_KEYS_OFF) { set_key_colours(preview_selected_leds(), true, 0, 0, 0); return 0; }
             if (g_updating) return 0;
