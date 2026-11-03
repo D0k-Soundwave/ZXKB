@@ -32,6 +32,8 @@ enum : int {
     IDC_SWATCH = 300, // + colour index
 };
 enum Slider { BRIGHTNESS, SPEED, SIZE, INTENSITY, SLIDERS };
+// The seven Spectrum colours, then black (BLACK): for keys only, as an effect's colour has no black (that is brightness 0)
+constexpr int BLACK = 7, SWATCHES = 8;
 const wchar_t *slider_names[SLIDERS] = {L"Brightness", L"Speed", L"Size", L"Intensity"};
 constexpr int VU_ITEM = 1000; // list item data: effect number, or VU_ITEM + VuStyle
 constexpr int VU_GROUP = 100; // list group for the VU styles
@@ -102,8 +104,8 @@ void layout() {
         y += ROW;
     }
     y += 8;
-    for (int c = 0; c < 7; c++) MoveWindow(item(IDC_SWATCH + c), px(x + c * (SWATCH + 6)), px(y), px(SWATCH), px(SWATCH), FALSE);
-    MoveWindow(item(IDC_PICK), px(x + 7 * (SWATCH + 6) + 6), px(y), px(cw - 7 * (SWATCH + 6) - 6), px(SWATCH), FALSE);
+    for (int c = 0; c < SWATCHES; c++) MoveWindow(item(IDC_SWATCH + c), px(x + c * (SWATCH + 6)), px(y), px(SWATCH), px(SWATCH), FALSE);
+    MoveWindow(item(IDC_PICK), px(x + SWATCHES * (SWATCH + 6) + 4), px(y), px(cw - SWATCHES * (SWATCH + 6) - 4), px(SWATCH), FALSE);
     MoveWindow(item(IDC_VERSION), px(MARGIN), px(top + LIST_H + 14), px(inner - 130), px(18), FALSE);
     MoveWindow(item(IDC_FIRMWARE), px(W - MARGIN - 120), px(top + LIST_H + 10), px(120), px(26), FALSE);
     InvalidateRect(g_win, nullptr, TRUE);
@@ -203,8 +205,8 @@ void refresh() {
 
     // with keys selected in the preview the colours below colour those keys; otherwise the effect (D0k, 2026-11-03)
     bool keys = keys_mode();
-    for (int c = 0; c < 7; c++) {
-        EnableWindow(item(IDC_SWATCH + c), fx || keys);
+    for (int c = 0; c < SWATCHES; c++) {
+        EnableWindow(item(IDC_SWATCH + c), c == BLACK ? keys : fx || keys); // black: keys only (an effect has no black)
         InvalidateRect(item(IDC_SWATCH + c), nullptr, FALSE);
     }
     EnableWindow(item(IDC_PICK), fx || keys);
@@ -351,12 +353,12 @@ void on_slider(int s) {
 
 void draw_swatch(const DRAWITEMSTRUCT *d) {
     int c = (int)d->CtlID - IDC_SWATCH;
-    bool chosen = IsWindowEnabled(d->hwndItem) && !keys_mode() && g_st.sat == colours[c].sat && (colours[c].sat == 0 || g_st.hue == colours[c].hue);
+    bool chosen = c != BLACK && IsWindowEnabled(d->hwndItem) && !keys_mode() && g_st.sat == colours[c].sat && (colours[c].sat == 0 || g_st.hue == colours[c].hue);
     HBRUSH bg = GetSysColorBrush(COLOR_WINDOW);
     FillRect(d->hDC, &d->rcItem, bg);
     RECT r = d->rcItem;
     InflateRect(&r, -px(3), -px(3));
-    HBRUSH fill = CreateSolidBrush(IsWindowEnabled(d->hwndItem) ? colours[c].swatch : GetSysColor(COLOR_BTNFACE));
+    HBRUSH fill = CreateSolidBrush(!IsWindowEnabled(d->hwndItem) ? GetSysColor(COLOR_BTNFACE) : c == BLACK ? RGB(0, 0, 0) : colours[c].swatch);
     FillRect(d->hDC, &r, fill);
     DeleteObject(fill);
     if (chosen || (d->itemState & ODS_FOCUS)) {
@@ -437,6 +439,9 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             } else if (id == IDC_PICK) {
                 if (keys_mode()) pick_key_colour();
                 else pick_colour();
+                refresh();
+            } else if (id == IDC_SWATCH + BLACK) {
+                if (keys_mode()) set_key_colours(preview_selected_leds(), true, 0, 0, 0);
                 refresh();
             } else if (id >= IDC_SWATCH && id < IDC_SWATCH + 7) {
                 const Colour &c = colours[id - IDC_SWATCH];
@@ -568,7 +573,7 @@ void window_show() {
         make(TRACKBAR_CLASSW, L"", WS_TABSTOP | TBS_HORZ | TBS_NOTICKS, IDC_SLIDER + s);
         make(L"STATIC", L"", SS_RIGHT, IDC_VALUE + s);
     }
-    for (int c = 0; c < 7; c++) make(L"BUTTON", colours[c].name, WS_TABSTOP | BS_OWNERDRAW, IDC_SWATCH + c);
+    for (int c = 0; c < SWATCHES; c++) make(L"BUTTON", c == BLACK ? L"Black" : colours[c].name, WS_TABSTOP | BS_OWNERDRAW, IDC_SWATCH + c);
     make(L"BUTTON", L"More colours...", WS_TABSTOP, IDC_PICK);
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP, IDC_VERSION);
     make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);

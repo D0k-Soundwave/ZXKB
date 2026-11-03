@@ -39,6 +39,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.20 | 2026-11-03 | 506,880 bytes | Black added to the colour boxes, for keys (turns the selected keys off); greyed out for the effect colour, which has no black. |
 | 0.19 | 2026-11-03 | 506,880 bytes | Clear gives every key black as its own colour (lighting stays on, keys can then be coloured from the app); clicking an empty spot in the preview deselects. |
 | 0.18 | 2026-11-03 | 506,880 bytes | With keys selected, the colour swatches and More colours... colour those keys (in 0.17 they still set the effect's colour for the whole board, which is what D0k hit; only a separate Colour... button coloured keys). The selection outline sits on the cap, so the key's light stays visible. |
 | 0.17 | 2026-11-03 | 506,880 bytes | Click keys in the preview to select them (Ctrl+click for more), then Colour..., Off or Follow effect; Select all, Clear. The picker offers the calibrated Spectrum colours first. The preview builds its key list only when the board, size or labels change, not every frame. |
