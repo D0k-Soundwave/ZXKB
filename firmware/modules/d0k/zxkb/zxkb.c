@@ -114,6 +114,11 @@ void eeconfig_init_zxkb_datablock(void) { /* first start, or the saved layout ch
 /* ---------- Per-key colours and effects ---------- */
 #define KEYS_PER_PACKET 4 /* [C] (32 - 4 header bytes) / 7 bytes a key */
 
+/* How long each step of a key's effect lasts (a flash's colour, a fifth of a breath), by speed 0-15. Range asked for
+ * by D0k 2026-11-03: 16 ms ([P] QMK's RGB_MATRIX_LED_FLUSH_LIMIT, the fastest the LEDs are redrawn) to 5 s.
+ * [C] speed 12 stays 320 ms (Spectrum FLASH, as v20); 0-12 about x1.26 a step, 12-15 about x2.7. Same table in the app. */
+static const uint16_t key_step_ms[16] = {5000, 3950, 3150, 2500, 2000, 1600, 1260, 1000, 800, 640, 500, 400, 320, 120, 44, 16};
+
 static void keys_command(uint8_t *data, uint8_t length) {
     uint8_t sub = data[1];
     if (sub == ZXKB_KEYS_GET) {
@@ -159,8 +164,7 @@ bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
         const uint8_t *a = &k[1], *b = &k[4];
         uint8_t        c[3];
         uint8_t        mix = 255; /* 255 = first colour, 0 = second */
-        /* [A] speeds chosen so speed 12 gives the Spectrum FLASH rate (320 ms) and 0-15 spans 16x */
-        uint32_t step = 80u * (16 - speed); /* 80 ms (speed 15) to 1,280 ms (speed 0) */
+        uint32_t step = key_step_ms[speed];
         switch (fx) {
             case ZXKB_KEY_FLASH: mix = (now / step) & 1 ? 0 : 255; break;
             case ZXKB_KEY_BREATHE: mix = sin8((uint8_t)(now * 256 / (step * 5))); break; /* one breath = 5 steps */

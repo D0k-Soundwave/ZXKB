@@ -217,7 +217,9 @@ void refresh() {
         std::vector<int> sel = preview_selected_leds();
         const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
         int ks = k && (k[0] >> 4) ? (k[0] & 15) : proto::KEY_SPEED_DEFAULT;
-        set_slider(SPEED, 0, 15, ks, true, pct(ks, 15));
+        int ms = proto::KEY_STEP_MS[ks];
+        set_slider(SPEED, 0, 15, ks, true, ms >= 1000 ? std::to_wstring(ms / 1000) + L"." + std::to_wstring(ms % 1000 / 100) + L" s"
+                                                      : std::to_wstring(ms) + L" ms");
         SetWindowTextW(item(IDC_LABEL + SPEED), L"Key speed");
     } else {
         set_slider(SPEED, 0, 255, g_st.speed, fx, pct(g_st.speed, 255));

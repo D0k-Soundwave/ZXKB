@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v21 | 2026-11-03 | 61,496 bytes | Per-key effect speeds 16 ms to 5 s per step (was 80 ms to 1.28 s); speed 12 stays 320 ms. Same settings layout: key colours are kept. |
 | v20 | 2026-11-03 | 61,472 bytes | Per-key effects (protocol 7): each key Steady, Flash (two colours, all in step; speed 12 = Spectrum FLASH 320 ms), Breathe, Colour cycle or Twinkle, with its own speed (0-15) and two colours; 7 bytes a key (module block version 4, 645 bytes on the Q3), so the first start resets the keymap, macros and key colours. |
 | v19 | 2026-11-03 | 61,212 bytes | Per-key colours kept on the keyboard (0xDD, protocol 6): any key its own colour or off, over any effect, scaled by brightness; Caps Lock still on top. Settings memory grows by 275 bytes (module block version 3), so the first start resets the VIA keymap and macros to the firmware defaults. |
 | v18 | 2026-11-03 | 60,760 bytes | Reports which LED sits under each key (0xD9 0x03, protocol 5), so ZXKB can light any keyboard drawn from its published layout. |
@@ -40,6 +41,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.24 | 2026-11-03 | 511,488 bytes | Key speed shows the step time (ms or s) instead of a percentage, using the v21 speed table. |
 | 0.23 | 2026-11-03 | 510,976 bytes | With keys selected, the Speed slider on the right becomes Key speed (0-15) for them; the separate key speed slider under the preview is gone (D0k moved the effect's Speed, which does nothing visible on Solid colour). |
 | 0.22 | 2026-11-03 | 510,464 bytes | Fix: the window copy could take the tray copy's replies while both read the keyboard (Windows gives every reply to both), so its key-to-LED map came out wrong and a selected key lit another key (D0k: G lit "-", and the up arrow in the preview). Every reply must now echo the effect, LED or map position asked for. |
 | 0.21 | 2026-11-03 | 510,464 bytes | Second row under the preview for the selected keys: Key effect, Speed, and buttons 1 / 2 choosing which of the keys' two colours the colour boxes set. Needs firmware v20. |

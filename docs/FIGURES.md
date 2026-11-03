@@ -101,7 +101,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Per-key colour, one key (0.18 + v19) | keyboard holds LED 51 = 255, 255, 0 and its LED mirror reports the same; 0 other keys changed | M | probe keys / probe mirror, 2026-11-03 |
 | Firmware v20 size / static RAM | 61,472 bytes / .bss 7,204 bytes | M | build.sh, 2026-11-03 |
 | Per-key effects in settings memory (Q3) | 616 bytes (module block 645) | C | 88 LEDs x 7 bytes; + 29 |
-| Per-key effect speeds | flash step 80 ms (speed 15) to 1,280 ms (speed 0); breath 5 steps, twinkle 6, colour cycle 10 | A | chosen so speed 12 = 320 ms (Spectrum FLASH, M by eye 2026-11-02 for Caps Lock); judge by eye |
+| Per-key effect speeds (v21) | step 16 ms (speed 15) to 5 s (speed 0): 5000 3950 3150 2500 2000 1600 1260 1000 800 640 500 400 320 120 44 16; breath 5 steps, twinkle 6, colour cycle 10 | P / C / A | range by D0k 2026-11-03; 16 ms = QMK RGB_MATRIX_LED_FLUSH_LIMIT (P); 320 ms kept at 12 (C); the curve between is a choice (A) |
 | Macro space left on the keyboard with v20 | 574 bytes, 16 macros | M | probe macros (VIA 0x0C / 0x0D), 2026-11-03 |
 | 0.21 ZXKB.exe size | 510,464 bytes | M | 2026-11-03 |
 | Key-to-LED map read by 3 programs at once | old code 18 of 18 reads wrong; 0.22 code 0 of 18 | M | probe matrix x3 in parallel x6, compared with QMK's keyboard.json, 2026-11-03 |
@@ -145,6 +145,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 ## Corrected figures (guesses later measured)
 | Figure | Guessed (A) | Measured / found | When |
 |---|---|---|---|
+| Per-key speed range (v20) | 80 ms to 1,280 ms per step | widened to 16 ms to 5 s at D0k's request (v21) | 2026-11-03 |
 | Macro space left with v20 | about 560 bytes | 574 bytes (per-key effects take 616: about 1,190 before v19, C) | 2026-11-03 |
 | ZXKB idle RAM | 2-5 MB | 1.8-2.8 MB private (working set 13-24 MB incl. shared Windows DLLs) | 2026-11-02 |
 | ZXKB.exe size | under 1 MB | 385,536 bytes (0.1), 390,144 bytes (0.7) | 2026-11-02 |

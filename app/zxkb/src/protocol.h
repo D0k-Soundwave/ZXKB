@@ -28,6 +28,8 @@ constexpr int     KEY_BYTES       = 7; // effect << 4 | speed, first r g b, seco
 constexpr int     KEYS_PER_PACKET = 4; // (32 - 4 header bytes) / 7
 constexpr uint8_t KEY_NONE = 0, KEY_STEADY = 1, KEY_FLASH = 2, KEY_BREATHE = 3, KEY_CYCLE = 4, KEY_TWINKLE = 5;
 constexpr int     KEY_SPEED_DEFAULT = 12; // 320 ms flash, the Spectrum FLASH rate (firmware zxkb.c)
+// ms per step of a key's effect by speed; firmware v21 on (v20: 80 x (16 - speed)). Same table as zxkb.c key_step_ms.
+constexpr uint16_t KEY_STEP_MS[16] = {5000, 3950, 3150, 2500, 2000, 1600, 1260, 1000, 800, 640, 500, 400, 320, 120, 44, 16};
 constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
 constexpr uint8_t TUNE_GET  = 0x00;
 constexpr uint8_t TUNE_SET  = 0x01; // [0xDA, 0x01, size, intensity]
