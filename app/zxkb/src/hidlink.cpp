@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hidlink.h"
 #include "protocol.h"
+#include "boards.h"
 #include <setupapi.h>
 #include <cstring>
 extern "C" {
@@ -90,6 +91,7 @@ bool HidLink::transact(HANDLE h, uint8_t *buf, int in_len, int out_len) {
     DWORD start = GetTickCount();
     while (GetTickCount() - start < REPLY_TIMEOUT_MS) {
         if (!read_report(h, in, in_len, REPLY_TIMEOUT_MS)) return false;
+        if (in[1] == 0xFF && cmd != 0xFF) return false; // VIA: "unknown command", e.g. a ZXKB query to a plain VIA board
         if (in[1] == cmd && (cmd != proto::INFO || in[2] == sub)) {
             std::memcpy(buf, in + 1, proto::REPORT);
             return true;
@@ -133,12 +135,54 @@ bool HidLink::probe(HANDLE h, int in_len, int out_len, Board *board) {
     return true;
 }
 
+// Plain VIA firmware: VIA protocol version, then the lighting state through VIA's lighting values
+bool HidLink::probe_via(HANDLE h, int in_len, int out_len, Board *board) {
+    uint8_t buf[proto::REPORT] = {proto::VIA_PROTOCOL};
+    if (!transact(h, buf, in_len, out_len)) return false;
+    uint16_t v = (uint16_t)(buf[1] << 8 | buf[2]);
+    if (v == 0 || v == 0xFFFF) return false;
+    board->kind         = Board::VIA;
+    board->via_protocol = v;
+    board->protocol     = 0;
+    board->led_count    = 0;
+    boards::apply_definition(board); // effect names and lighting channel, if the definition is kept
+    Status &s = board->status;
+    s         = Status();
+    s.max_val = 255; // VIA scales brightness to 0-255 itself
+    s.vu_possible = 0;
+    if (board->via_channel) {
+        const uint8_t ids[4] = {proto::VIA_BRIGHTNESS, proto::VIA_SPEED, proto::VIA_EFFECT, proto::VIA_COLOUR};
+        for (uint8_t id : ids) {
+            uint8_t q[proto::REPORT] = {proto::VIA_GET, board->via_channel, id};
+            if (!transact(h, q, in_len, out_len)) continue;
+            if (id == proto::VIA_BRIGHTNESS) s.val = q[3];
+            else if (id == proto::VIA_SPEED) s.speed = q[3];
+            else if (id == proto::VIA_EFFECT) { s.mode = q[3]; s.enabled = q[3] != 0; }
+            else { s.hue = q[3]; s.sat = q[4]; }
+        }
+    }
+    return true;
+}
+
+void HidLink::request_via_status() {
+    if (kind_ != Board::VIA || !via_channel_) return;
+    const uint8_t ids[4] = {proto::VIA_BRIGHTNESS, proto::VIA_SPEED, proto::VIA_EFFECT, proto::VIA_COLOUR}; // colour last: it posts
+    for (uint8_t id : ids) {
+        uint8_t q[3] = {proto::VIA_GET, via_channel_, id};
+        send(q, 3);
+    }
+}
+
 bool HidLink::open_board(Board *board) {
     GUID hid_guid;
     HidD_GetHidGuid(&hid_guid);
     HDEVINFO set = SetupDiGetClassDevsW(&hid_guid, nullptr, nullptr, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
     if (set == INVALID_HANDLE_VALUE) return false;
     bool found = false;
+    // A ZXKB keyboard is preferred; the first plain VIA keyboard is kept open in case there is none
+    HANDLE   via_h = INVALID_HANDLE_VALUE;
+    Board    via_board;
+    HIDP_CAPS via_caps = {};
     SP_DEVICE_INTERFACE_DATA ifd = {sizeof(ifd)};
     for (DWORD i = 0; !found && SetupDiEnumDeviceInterfaces(set, nullptr, &hid_guid, i, &ifd); i++) {
         DWORD need = 0;
@@ -158,26 +202,49 @@ bool HidLink::open_board(Board *board) {
             raw = HidP_GetCaps(pp, &caps) == HIDP_STATUS_SUCCESS && caps.UsagePage == proto::USAGE_PAGE && caps.Usage == proto::USAGE;
             HidD_FreePreparsedData(pp);
         }
-        if (raw && probe(h, caps.InputReportByteLength, caps.OutputReportByteLength, board)) {
-            HIDD_ATTRIBUTES at = {sizeof(at)};
-            if (HidD_GetAttributes(h, &at)) { board->vid = at.VendorID; board->pid = at.ProductID; }
-            wchar_t name[128] = {0};
-            if (HidD_GetProductString(h, name, sizeof(name) - sizeof(wchar_t))) board->product = name;
-            EnterCriticalSection(&write_lock_);
-            dev_     = h;
-            protocol_ = board->protocol;
-            led_count_ = board->led_count;
-            in_len_  = caps.InputReportByteLength;
-            out_len_ = caps.OutputReportByteLength;
-            broken_  = false;
-            LeaveCriticalSection(&write_lock_);
+        if (!raw) { CloseHandle(h); continue; }
+        HIDD_ATTRIBUTES at = {sizeof(at)};
+        wchar_t name[128] = {0};
+        HidD_GetAttributes(h, &at);
+        HidD_GetProductString(h, name, sizeof(name) - sizeof(wchar_t));
+        board->vid = at.VendorID; board->pid = at.ProductID; board->product = name;
+        // test switch: ZXKB_TEST_VIA=1 treats a ZXKB keyboard as plain VIA (it answers VIA too)
+        static const bool test_via = GetEnvironmentVariableW(L"ZXKB_TEST_VIA", nullptr, 0) > 0;
+        if (!test_via && probe(h, caps.InputReportByteLength, caps.OutputReportByteLength, board)) {
+            board->kind = Board::ZXKB;
+            adopt(h, caps, *board);
             found = true;
+        } else if (via_h == INVALID_HANDLE_VALUE) {
+            via_board.vid = at.VendorID; via_board.pid = at.ProductID; via_board.product = name;
+            if (probe_via(h, caps.InputReportByteLength, caps.OutputReportByteLength, &via_board)) { via_h = h; via_caps = caps; }
+            else CloseHandle(h);
         } else {
             CloseHandle(h);
         }
     }
     SetupDiDestroyDeviceInfoList(set);
+    if (found) {
+        if (via_h != INVALID_HANDLE_VALUE) CloseHandle(via_h);
+    } else if (via_h != INVALID_HANDLE_VALUE) {
+        *board = via_board;
+        adopt(via_h, via_caps, *board);
+        found = true;
+    }
     return found;
+}
+
+void HidLink::adopt(HANDLE h, const HIDP_CAPS &caps, const Board &board) {
+    EnterCriticalSection(&write_lock_);
+    dev_         = h;
+    protocol_    = board.protocol;
+    led_count_   = board.led_count;
+    kind_        = board.kind;
+    via_channel_ = board.via_channel;
+    via_status_  = board.status;
+    in_len_      = caps.InputReportByteLength;
+    out_len_     = caps.OutputReportByteLength;
+    broken_      = false;
+    LeaveCriticalSection(&write_lock_);
 }
 
 void HidLink::mirror(uint8_t *rgb, int leds) {
@@ -214,6 +281,15 @@ void HidLink::read_loop() {
             if (count <= 9 && first + count <= 256) std::memcpy(mirror_ + first * 3, p + 3, count * 3);
             // from v17 the keyboard sends only the LEDs that changed, so any packet can be the last of a frame
             if (InterlockedExchange(&mirror_posted_, 1) == 0) PostMessageW(hwnd_, WM_ZX_MIRROR, 0, 0);
+        } else if (p[0] == proto::VIA_GET && kind_ == Board::VIA && p[1] == via_channel_) {
+            Status &s = via_status_;
+            if (p[2] == proto::VIA_BRIGHTNESS) s.val = p[3];
+            else if (p[2] == proto::VIA_SPEED) s.speed = p[3];
+            else if (p[2] == proto::VIA_EFFECT) { s.mode = p[3] ? p[3] : s.mode; s.enabled = p[3] != 0; }
+            else if (p[2] == proto::VIA_COLOUR) {
+                s.hue = p[3]; s.sat = p[4];
+                PostMessageW(hwnd_, WM_ZX_STATUS, 0, (LPARAM) new Status(s)); // the last of request_via_status()
+            }
         } else if (p[0] == proto::TUNE) {
             Tune *t = new Tune;
             t->mode = p[2]; t->flags = p[3]; t->size = p[4]; t->intensity = p[5];

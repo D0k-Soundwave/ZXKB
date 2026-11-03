@@ -34,6 +34,7 @@ constexpr uint8_t DIRECT_ENABLE  = 0x25;
 constexpr uint8_t DIRECT_DISABLE = 0x26;
 
 // Standard VIA lighting commands (QMK quantum/via.h)
+constexpr uint8_t VIA_PROTOCOL = 0x01; // [0x01] -> [0x01, version hi, lo]
 constexpr uint8_t VIA_SET   = 0x07; // [0x07, channel, value id, data...]
 constexpr uint8_t VIA_GET   = 0x08;
 constexpr uint8_t VIA_SAVE  = 0x09; // [0x09, channel]

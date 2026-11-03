@@ -29,7 +29,11 @@ struct Tune { // size and intensity of the keyboard's current effect
 };
 
 struct Board {
-    uint8_t                  protocol = 0, led_count = 0;
+    enum Kind : uint8_t { ZXKB, VIA } kind = ZXKB; // ZXKB module, or plain VIA firmware (no ZXKB commands)
+    uint8_t                  protocol = 0, led_count = 0; // ZXKB protocol (0 on VIA boards)
+    uint16_t                 via_protocol = 0;  // VIA protocol version (0 = no VIA)
+    uint8_t                  via_channel  = 3;  // VIA lighting channel: 3 RGB matrix, 2 RGB light, 0 none
+    std::wstring             def_name;          // keyboard name from its VIA definition
     std::vector<std::string> names; // names[m - 1] = effect number m
     std::vector<uint8_t>     kinds; // 0 QMK, 1 module, 2 board/keymap
     std::vector<uint8_t>     leds;  // x, y, flags per LED
@@ -46,12 +50,15 @@ public:
     bool send(const uint8_t *payload, int length); // thread-safe; pads to one report
     bool connected() const { return dev_ != INVALID_HANDLE_VALUE && !broken_; }
     void mirror(uint8_t *rgb, int leds); // copy of the LED colours the keyboard last reported (r, g, b per LED)
+    void request_via_status();           // VIA boards: ask for brightness, speed, effect and colour (posts WM_ZX_STATUS)
 
 private:
     static DWORD WINAPI thread_main(LPVOID self);
     void run();
     bool open_board(Board *board);
     bool probe(HANDLE h, int in_len, int out_len, Board *board);
+    bool probe_via(HANDLE h, int in_len, int out_len, Board *board);
+    void adopt(HANDLE h, const struct _HIDP_CAPS &caps, const Board &board); // this keyboard is the one
     bool write_report(HANDLE h, const uint8_t *payload, int length, int out_len);
     bool read_report(HANDLE h, uint8_t *buf, int in_len, DWORD timeout_ms);
     bool transact(HANDLE h, uint8_t *buf, int in_len, int out_len); // request -> matching reply
@@ -64,6 +71,8 @@ private:
     int              in_len_ = 0, out_len_ = 0;
     uint8_t          protocol_ = 0; // ZXKB protocol version of the connected board
     uint8_t          led_count_ = 0;
+    uint8_t          kind_ = 0, via_channel_ = 3;
+    Status           via_status_;                  // VIA boards: built up from the replies to request_via_status()
     uint8_t          mirror_[256 * 3] = {};
     volatile LONG    mirror_posted_ = 0; // a WM_ZX_MIRROR is waiting to be handled (do not queue another)
     volatile bool    broken_ = false;

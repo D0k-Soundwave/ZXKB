@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "effects.h"
 #include "settings.h"
+#include <cctype>
 #include <cstring>
 
 namespace effects {
@@ -93,9 +94,21 @@ const Known known[] = {
     {"MULTISPLASH", L"Splash (multi)", TYPING},
     {"SOLID_SPLASH", L"Solid splash", TYPING},
     {"SOLID_MULTISPLASH", L"Solid splash (multi)", TYPING},
+    // names some VIA definitions use (e.g. Keychron's) for the same QMK effects
+    {"REACTIVE_SIMPLE", L"Reactive", TYPING},
+    {"REACTIVE", L"Reactive (hue shift)", TYPING},
+    {"REACTIVE_WIDE", L"Reactive wide", TYPING},
+    {"REACTIVE_MULTIWIDE", L"Reactive wide (multi)", TYPING},
+    {"REACTIVE_CROSS", L"Reactive cross", TYPING},
+    {"REACTIVE_MULTICROSS", L"Reactive cross (multi)", TYPING},
+    {"REACTIVE_NEXUS", L"Reactive nexus", TYPING},
+    {"REACTIVE_MULTINEXUS", L"Reactive nexus (multi)", TYPING},
+    {"SOLID_COLOUR", L"Solid colour", SOLID},
 };
 
-const Known *find(const std::string &name) {
+const Known *find(const std::string &raw) {
+    std::string name = raw; // VIA definitions may say "Solid Color": compare as "SOLID_COLOR"
+    for (char &c : name) c = c == ' ' || c == '-' ? '_' : (char)toupper((unsigned char)c);
     for (const Known &k : known)
         if (name == k.name) return &k;
     return nullptr;

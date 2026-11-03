@@ -8,6 +8,7 @@
 #include "vumath.h"
 #include "preview.h"
 #include "flash.h"
+#include "boards.h"
 #include "../res/resource.h"
 #include <windowsx.h>
 #include <commctrl.h>
@@ -21,7 +22,7 @@
 namespace {
 
 enum : int {
-    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE,
+    IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -36,6 +37,8 @@ constexpr int VU_GROUP = 100; // list group for the VU styles
 // the preview across the top, the effect list on the left, the controls on the right.
 constexpr int W = 680, MARGIN = 12, ROW = 30, LIST_W = 300, LIST_H = 226, SWATCH = 24, GUTTER = 16;
 constexpr UINT TIMER_MIRROR = 1;
+constexpr UINT WM_LOOKED_UP = WM_APP + 120; // wParam 1 = found; lParam: error text (new std::wstring) or 0
+void look_up();
 constexpr UINT MIRROR_KEEPALIVE_MS = 1000; // [C] half the keyboard's 2 s keep-alive, so the colours never stop
 
 HWND  g_win = nullptr;
@@ -59,7 +62,8 @@ int content_height() { return MARGIN + 26 + preview_h() + 10 + LIST_H + 10 + 26 
 
 void layout() {
     int y = MARGIN, inner = W - 2 * MARGIN;
-    MoveWindow(item(IDC_NOW), px(MARGIN), px(y), px(inner), px(20), FALSE);
+    MoveWindow(item(IDC_NOW), px(MARGIN), px(y), px(inner - 230), px(20), FALSE);
+    MoveWindow(item(IDC_LOOKUP), px(W - MARGIN - 220), px(y - 3), px(220), px(24), FALSE);
     y += 26;
     MoveWindow(item(IDC_PREVIEW), px(MARGIN), px(y), px(inner), px(preview_h()), FALSE);
     y += preview_h() + 10;
@@ -113,10 +117,11 @@ void fill_list() {
     g_listed = g_board;
     if (!g_board) return;
     add_group(list, effects::SPECTRUM, effects::group_names[effects::SPECTRUM]);
-    add_group(list, VU_GROUP, L"VU meter");
+    if (vu_mode()) add_group(list, VU_GROUP, L"VU meter");
     for (int gr = effects::SOLID; gr < effects::HIDDEN; gr++) add_group(list, gr, effects::group_names[gr]);
     const int order[3] = {VU_MUSIC, VU_BANDS, VU_ABC};
-    for (int s : order) add_item(list, VU_GROUP, VU_ITEM + s, vu_label(s));
+    if (vu_mode())
+        for (int s : order) add_item(list, VU_GROUP, VU_ITEM + s, vu_label(s));
     for (size_t i = 0; i < g_board->names.size(); i++) {
         effects::Group gr = effects::group(g_board->names[i], g_board->kinds[i]);
         if (gr == effects::HIDDEN || replaced(i)) continue;
@@ -185,7 +190,10 @@ void refresh() {
 
     std::wstring ver = L"ZXKB " ZXKB_W(ZXKB_VERSION_STR);
     if (!on) ver += L" - keyboard not connected";
+    else if (g_board->kind == Board::VIA) ver += L", " + (g_board->def_name.empty() ? g_board->product : g_board->def_name) + L" (standard VIA firmware)";
     else if (g_st.fw_version) ver += L", keyboard firmware v" + std::to_wstring(g_st.fw_version);
+    // a plain VIA keyboard ZXKB has no definition for yet: offer to look it up
+    ShowWindow(item(IDC_LOOKUP), on && g_board->kind == Board::VIA && !boards::has_definition(*g_board) ? SW_SHOW : SW_HIDE);
     SetWindowTextW(item(IDC_VERSION), ver.c_str());
     g_updating = false;
 }
@@ -296,6 +304,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             int id = LOWORD(wp);
             if (id == IDCANCEL) { window_close(); return 0; }
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
+            if (id == IDC_LOOKUP) { look_up(); return 0; }
             if (g_updating) return 0;
             if (id == IDC_ON) {
                 set_effect(Button_GetCheck(item(IDC_ON)) == BST_CHECKED ? (g_st.mode ? g_st.mode : 1) : 0);
@@ -331,11 +340,46 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_TIMER:
             if (wp == TIMER_MIRROR) mirror_request(true);
             return 0;
+        case WM_LOOKED_UP:
+            EnableWindow(item(IDC_LOOKUP), TRUE);
+            SetWindowTextW(item(IDC_LOOKUP), L"Look up this keyboard online...");
+            if (wp && g_board) {
+                boards::apply_definition(g_board);
+                settings_changed(); // the tray copy reads it too
+                fill_list();
+                layout();
+                refresh();
+            } else if (lp) {
+                auto *e = reinterpret_cast<std::wstring *>(lp);
+                MessageBoxW(hwnd, (L"The lookup did not work: " + *e).c_str(), L"ZXKB", MB_OK | MB_ICONINFORMATION);
+                delete e;
+            }
+            return 0;
         case WM_CLOSE:
             window_close();
             return 0;
     }
     return DefWindowProcW(hwnd, msg, wp, lp);
+}
+
+DWORD WINAPI lookup_thread(void *p) {
+    uint32_t     id = (uint32_t)(UINT_PTR)p;
+    std::wstring error;
+    bool ok = boards::lookup_online((uint16_t)(id >> 16), (uint16_t)id, &error);
+    if (g_win) PostMessageW(g_win, WM_LOOKED_UP, ok, ok ? 0 : (LPARAM) new std::wstring(error));
+    return 0;
+}
+
+void look_up() {
+    if (!g_board) return;
+    std::wstring ask = L"ZXKB does not know this keyboard's effects and layout yet.\n\nLook them up online? ZXKB downloads the "
+                       L"keyboard's public VIA definition from " + boards::definition_source() +
+                       L" by its USB ID (about 10 KB), once, and keeps it. Nothing else is sent.";
+    if (MessageBoxW(g_win, ask.c_str(), L"ZXKB", MB_YESNO | MB_ICONQUESTION) != IDYES) return;
+    EnableWindow(item(IDC_LOOKUP), FALSE);
+    SetWindowTextW(item(IDC_LOOKUP), L"Looking up...");
+    UINT_PTR id = ((UINT_PTR)g_board->vid << 16) | g_board->pid;
+    if (HANDLE t = CreateThread(nullptr, 64 * 1024, lookup_thread, (void *)id, STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr)) CloseHandle(t);
 }
 
 HWND make(const wchar_t *cls, const wchar_t *text, DWORD style, int id) {
@@ -389,6 +433,7 @@ void window_show() {
     make(L"BUTTON", L"More colours...", WS_TABSTOP, IDC_PICK);
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP, IDC_VERSION);
     make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);
+    make(L"BUTTON", L"Look up this keyboard online...", WS_TABSTOP, IDC_LOOKUP);
 
     set_font();
     layout();

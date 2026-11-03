@@ -52,4 +52,5 @@ bool is_favourite(const std::string &n);
 void keyboard_mirror(uint8_t *rgb, int leds); // the LED colours the keyboard last reported
 void mirror_request(bool on);                 // ask the keyboard to keep sending its LED colours (for 2 s)
 void set_favourite(const std::string &n, bool on);
-void enter_bootloader();                      // the keyboard restarts into its bootloader (firmware v17 on)
+void enter_bootloader();
+void settings_changed();                      // tell the other ZXKB copy to read settings (and keyboard files) again                      // the keyboard restarts into its bootloader (firmware v17 on)

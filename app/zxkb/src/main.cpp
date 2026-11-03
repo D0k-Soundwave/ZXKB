@@ -21,6 +21,7 @@
 #include "app.h"
 #include "window.h"
 #include "preview.h"
+#include "boards.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -74,6 +75,8 @@ const wchar_t  TRAY_CLASS[]   = L"ZXKB";      // the tray copy's hidden window
 const wchar_t  WINDOW_CLASS[] = L"ZXKB.link"; // the window copy's hidden window
 
 // ---------- helpers ----------
+bool zxkb_board() { return g_board && g_board->kind == Board::ZXKB; } // has the ZXKB commands (not plain VIA)
+
 std::string effect_name(int mode) {
     return g_board && mode >= 1 && mode <= (int)g_board->names.size() ? g_board->names[mode - 1] : "";
 }
@@ -106,10 +109,10 @@ std::string current_name() {
 void keyboard_mirror(uint8_t *rgb, int leds) { g_link.mirror(rgb, leds); }
 void send(std::initializer_list<uint8_t> bytes);
 void enter_bootloader() {
-    if (g_board) send({proto::BOOTLOADER, 'Z', 'X', 'B', 'L'});
+    if (zxkb_board()) send({proto::BOOTLOADER, 'Z', 'X', 'B', 'L'});
 }
 void mirror_request(bool on) {
-    if (g_board) send({proto::MIRROR, (uint8_t)on});
+    if (zxkb_board()) send({proto::MIRROR, (uint8_t)on});
 }
 
 bool is_favourite(const std::string &n) {
@@ -152,7 +155,7 @@ void send(std::initializer_list<uint8_t> bytes) {
 }
 
 void via_set(uint8_t value_id, uint8_t a, uint8_t b = 0) {
-    send({proto::VIA_SET, proto::VIA_RGB_MATRIX, value_id, a, b});
+    if (g_board && g_board->via_channel) send({proto::VIA_SET, g_board->via_channel, value_id, a, b});
 }
 
 bool g_save_pending = false;
@@ -161,8 +164,8 @@ void schedule_save() { g_save_pending = true; SetTimer(g_hwnd, TIMER_SAVE, SAVE_
 void save_now() {
     KillTimer(g_hwnd, TIMER_SAVE);
     if (g_board && g_save_pending) {
-        send({proto::VIA_SAVE, proto::VIA_RGB_MATRIX});
-        send({proto::TUNE, proto::TUNE_SAVE});
+        if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
+        if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
     }
     g_save_pending = false;
 }
@@ -238,9 +241,11 @@ void set_effect(int mode) { // 0 = lighting off
     via_set(proto::VIA_EFFECT, (uint8_t)mode);
     if (mode) g_st.mode = (uint8_t)mode;
     g_st.enabled = mode != 0;
-    g_st.vu_possible = 1; // the keyboard reports at once if the VU meter cannot show (e.g. Spectrum mode)
-    update_capture();
-    send({proto::TUNE, proto::TUNE_GET}); // this effect's own size and intensity
+    if (zxkb_board()) {
+        g_st.vu_possible = 1; // the keyboard reports at once if the VU meter cannot show (e.g. Spectrum mode)
+        update_capture();
+        send({proto::TUNE, proto::TUNE_GET}); // this effect's own size and intensity
+    }
     schedule_save();
     update_tray();
 }
@@ -383,10 +388,14 @@ void sep(HMENU m) { AppendMenuW(m, MF_SEPARATOR, 0, nullptr); }
 // Ask the keyboard for its current state (it may have changed from its own keys) and wait briefly for it.
 void refresh_status() {
     if (!g_board) return;
-    send({proto::INFO, proto::INFO_STATUS});
-    send({proto::TUNE, proto::TUNE_GET});
+    bool status = false, tune = !zxkb_board(); // plain VIA boards have no size and intensity
+    if (zxkb_board()) {
+        send({proto::INFO, proto::INFO_STATUS});
+        send({proto::TUNE, proto::TUNE_GET});
+    } else {
+        g_link.request_via_status();
+    }
     DWORD start = GetTickCount();
-    bool  status = false, tune = false;
     MSG   msg;
     // [C] replies take about 5 ms (hidlink.cpp, measured); waiting up to 150 ms (30x) keeps the menu current
     while (GetTickCount() - start < 150 && !(status && tune)) {
@@ -587,7 +596,9 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             delete g_board;
             g_board = reinterpret_cast<Board *>(lp);
             g_st    = g_board->status;
-            send({proto::TUNE, proto::TUNE_GET});
+            g_tune  = Tune();
+            g_tune.flags = 0;
+            if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
             update_capture();
             update_tray();
             window_refresh();
@@ -645,8 +656,9 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             PostQuitMessage(0);
             return 0;
     }
-    if (msg == g_settings_msg && msg) { // the other copy changed favourites, hotkeys or the VU style
+    if (msg == g_settings_msg && msg) { // the other copy changed favourites, hotkeys, the VU style or looked up a keyboard
         load_settings();
+        if (g_board && g_board->kind == Board::VIA) boards::apply_definition(g_board);
         update_tray();
         window_refresh();
         return 0;
