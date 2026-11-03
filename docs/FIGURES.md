@@ -96,6 +96,17 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Silence fed after | 100 ms | A | Windows sends nothing while nothing plays |
 | Audio retry / device check | 2 s / 2 s | A | retry from ZX VU |
 
+## Stage 2 weight estimates (assessment 2026-11-03, all to be measured)
+| Figure | Value | Tag | Source / working |
+|---|---|---|---|
+| Tray core idle with all core features (per-app profiles, playlists, scheduler, notices, SDK server) | 3-6 MB private, 0.000% CPU | A | features are event- or timer-driven; measure at each step |
+| ZXKB.exe with the full feature set | 1-2 MB | A | 390,144 bytes today (M) |
+| Streaming a PC effect at 30 frames/s | under 1% of one core | A | 300 packets/s (C: 30 x 10); VU at 40 updates/s with audio analysis is 0.469% (M) |
+| Screen ambient (desktop duplication) | unknown | A | measure before promising it as light |
+| WebView2 for Lightscripts | tens of MB, several processes | A | not measured here; reason to run it only while a Lightscript is chosen |
+| Python drop-ins | 19.3 MB or more while running | M / A | Python tray floor measured 2026-11-02; drop-in work on top not measured |
+| Keymap layer in keyboard settings memory | 192 bytes | C | 96 matrix positions x 2 bytes |
+
 ## Corrected figures (guesses later measured)
 | Figure | Guessed (A) | Measured / found | When |
 |---|---|---|---|
