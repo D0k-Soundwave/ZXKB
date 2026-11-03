@@ -93,6 +93,18 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       - VIA boards: keymap, macros, knob, basic lighting; layout from VIA's public definitions or a file
       - Boards with OpenRGB or SignalRGB QMK firmware: lighting only
       - Other brands (Razer, Corsair, Logitech...): only through the OpenRGB app, later
+- [ ] Layouts for keyboards ZXKB does not already know, looked up once by USB vendor/product ID (asking first,
+      as it goes online) and kept, from:
+      - QMK's keyboard database, keyboards.qmk.fm (key positions and sizes, matrix, RGB LED positions, USB IDs;
+        checked 2026-11-03 with the Q3's entry). Not yet checked: whether it can be searched by USB ID
+      - VIA's keyboard definitions, github.com/the-via/keyboards (GPL-3.0; JSON per keyboard in v3/) for
+        VIA-only boards
+- [ ] Independent of keycaps: by default keys are labelled from what they do, in the user's chosen language
+      (any Windows keyboard layout, e.g. UK, US, German, French), worked out on the PC with no database
+- [ ] Keycap sets as an optional extra: the user picks or defines the caps on their keyboard (legends, cap and
+      legend colours). Import keycap sets from KLE files (keyboard-layout-editor, the common format for layouts
+      and keycap designs). No keycap legend database was found (searched 2026-11-03). D0k's KAM Wraith set
+      (docs/keyboard/keycaps.json) becomes the first such set rather than built in
 
 ## Process
 - [x] Number every firmware and app build handed to D0k and keep each for fallback (docs/VERSIONS.md), from
