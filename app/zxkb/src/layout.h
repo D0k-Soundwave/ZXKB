@@ -12,6 +12,7 @@ struct KeyRect {
     int x2 = 0, y2 = 0, w2 = 0, h2 = 0; // second rectangle (ISO Enter, big-ass Enter); w2 = 0 if none
     int row = -1, col = -1;             // keyboard matrix position ("row,col" in VIA files), -1 if not given
     bool knob = false;                  // rotary encoder (VIA: "e" in label 9)
+    int  encoder = -1;                  // its encoder number (VIA "ei", or the n in label 9 "en")
     std::vector<std::string> labels;    // KLE labels in the order written (12 positions, missing ones empty)
     int cap_rgb = -1, side_rgb = -1;    // keycap sets: cap top ("c") and side ("zs", ZXKB's own) colours, -1 if none
     int text_rgb[12] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}; // legend colour per label ("t")

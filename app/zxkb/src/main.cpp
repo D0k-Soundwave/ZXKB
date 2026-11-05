@@ -298,6 +298,25 @@ bool set_key_function(int key, uint16_t code) {
     return true;
 }
 
+bool knob_function(int key, bool cw, uint16_t *code) {
+    if (!g_board || key < 0 || key >= (int)g_board->keys.size() || g_board->keys[key].encoder < 0) return false;
+    // [P] VIA id_dynamic_keymap_get_encoder 0x14 [layer, encoder, clockwise] -> [.., .., .., hi, lo] (quantum/via.c)
+    uint8_t q[4] = {0x14, (uint8_t)g_board->shown_layer, (uint8_t)g_board->keys[key].encoder, (uint8_t)cw}, r[proto::REPORT];
+    if (!keyboard_ask(q, 4, r, 4)) return false;
+    *code = (uint16_t)(r[4] << 8 | r[5]);
+    return true;
+}
+
+bool set_knob_function(int key, bool cw, uint16_t code) {
+    if (!g_board || key < 0 || key >= (int)g_board->keys.size() || g_board->keys[key].encoder < 0) return false;
+    int enc = g_board->keys[key].encoder;
+    // [P] VIA id_dynamic_keymap_set_encoder 0x15 [layer, encoder, clockwise, hi, lo], echoed back
+    uint8_t q[6] = {0x15, (uint8_t)g_board->shown_layer, (uint8_t)enc, (uint8_t)cw, (uint8_t)(code >> 8), (uint8_t)code}, r[proto::REPORT];
+    if (!keyboard_ask(q, 6, r, 4)) return false;
+    keystore::record_knob(g_board->shown_layer, enc, cw, code);
+    return true;
+}
+
 int caps_lock_led() { // KC_CAPS (0x39) in layer 0 of the keymap, through the firmware's key-to-LED map
     if (!g_board || g_board->keymap.empty() || g_board->led_map.empty() || !g_board->cols) return -1;
     for (size_t i = 0; i < g_board->keymap.size(); i++) {

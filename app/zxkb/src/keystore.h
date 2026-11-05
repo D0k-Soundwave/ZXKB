@@ -10,6 +10,7 @@
 namespace keystore {
 void record(int layer, int row, int col, uint16_t code); // a key set through ZXKB
 void forget(int layer, int row, int col);                // put back to the firmware's own (no longer ZXKB's to keep)
+void record_knob(int layer, int encoder, bool cw, uint16_t code); // a knob direction set through ZXKB
 void forget_all();
 int  count();                                            // key changes kept for the connected keyboard
 int  reapply(int *failed);                               // set every kept change on the keyboard; returns how many changed

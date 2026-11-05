@@ -15,6 +15,12 @@ namespace {
 
 HWND g_dlg = nullptr;
 std::vector<keycodes::Choice> g_choices;
+int  g_knob_part = 0; // knob selected: 0 press, 1 turn left, 2 turn right
+
+int knob_key() { // the first selected key, if it is a knob
+    std::vector<int> keys = preview_selected_keys();
+    return !keys.empty() && g_board && g_board->keys[keys[0]].encoder >= 0 ? keys[0] : -1;
+}
 
 void fill() {
     HWND list = GetDlgItem(g_dlg, IDC_RM_LIST);
@@ -56,8 +62,19 @@ void show() {
     else {
         t += std::to_wstring(keys.size()) + (keys.size() == 1 ? L" key selected" : L" keys selected");
         uint16_t kc;
-        if (key_function(keys[0], &kc)) t += L"; now: " + keycodes::describe(kc, labels::current_layout(), g_board->custom_names);
+        HKL hkl = labels::current_layout();
+        int knob = knob_key();
+        if (knob >= 0) { // the knob: what pressing and turning it do
+            uint16_t l, r;
+            t = L"Layer " + std::to_wstring(g_board->shown_layer) + L", the knob: press ";
+            t += key_function(knob, &kc) ? keycodes::describe(kc, hkl, g_board->custom_names) : L"?";
+            t += L"; left " + (knob_function(knob, false, &l) ? keycodes::describe(l, hkl, g_board->custom_names) : std::wstring(L"?"));
+            t += L"; right " + (knob_function(knob, true, &r) ? keycodes::describe(r, hkl, g_board->custom_names) : std::wstring(L"?"));
+        } else if (key_function(keys[0], &kc)) t += L"; now: " + keycodes::describe(kc, hkl, g_board->custom_names);
     }
+    bool knob = knob_key() >= 0;
+    for (int id : {IDC_RM_PRESS, IDC_RM_LEFT, IDC_RM_RIGHT}) ShowWindow(GetDlgItem(g_dlg, id), knob ? SW_SHOW : SW_HIDE);
+    CheckRadioButton(g_dlg, IDC_RM_PRESS, IDC_RM_RIGHT, IDC_RM_PRESS + g_knob_part);
     SetDlgItemTextW(g_dlg, IDC_RM_INFO, t.c_str());
     EnableWindow(GetDlgItem(g_dlg, IDC_RM_ASSIGN), !keys.empty());
     int kept = keystore::count();
@@ -83,7 +100,11 @@ void assign() {
         return;
     }
     int done = 0;
-    for (int k : keys) done += set_key_function(k, g_choices[(size_t)it.lParam].code);
+    uint16_t code = g_choices[(size_t)it.lParam].code;
+    for (int k : keys) {
+        bool turn = g_knob_part && g_board->keys[k].encoder >= 0;
+        done += turn ? set_knob_function(k, g_knob_part == 2, code) : set_key_function(k, code);
+    }
     if (done < (int)keys.size())
         MessageBoxW(g_dlg, (L"The keyboard did not take the change for " + std::to_wstring(keys.size() - done) + L" of " +
                             std::to_wstring(keys.size()) + L" keys.").c_str(), L"ZXKB", MB_OK | MB_ICONWARNING);
@@ -117,6 +138,7 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             return FALSE;
         case WM_COMMAND:
             if (LOWORD(wp) == IDC_RM_ASSIGN) { assign(); return TRUE; }
+            if (LOWORD(wp) >= IDC_RM_PRESS && LOWORD(wp) <= IDC_RM_RIGHT) { g_knob_part = LOWORD(wp) - IDC_RM_PRESS; show(); return TRUE; }
             if (LOWORD(wp) == IDC_RM_REAPPLY) {
                 int failed = 0, n = keystore::reapply(&failed);
                 std::wstring t = std::to_wstring(n) + (n == 1 ? L" key put back" : L" keys put back") +

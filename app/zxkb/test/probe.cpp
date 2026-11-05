@@ -230,6 +230,24 @@ int main(int argc, char **argv) {
         link.send(q, 4);
         std::printf("mode %d\n", q[3]);
         pump(100, false);
+    } else if (!std::strcmp(cmd, "knob")) { // probe knob: what turning the knob does on each layer (VIA 0x14)
+        link.raw_reports(true);
+        for (int layer = 0; layer < 4; layer++)
+            for (int cw = 0; cw < 2; cw++) {
+                uint8_t q[4] = {0x14, (uint8_t)layer, 0, (uint8_t)cw};
+                link.send(q, 4);
+                DWORD start = GetTickCount();
+                MSG m;
+                int kc = -1;
+                while (kc < 0 && GetTickCount() - start < 300) {
+                    if (PeekMessageW(&m, nullptr, WM_ZX_RAW, WM_ZX_RAW, PM_REMOVE)) {
+                        uint8_t *r = reinterpret_cast<uint8_t *>(m.lParam);
+                        if (!std::memcmp(r, q, 4)) kc = r[4] << 8 | r[5];
+                        delete[] r;
+                    } else MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+                }
+                std::printf("layer %d, turn %s: 0x%04X\n", layer, cw ? "right" : "left ", kc);
+            }
     } else if ((!std::strcmp(cmd, "getkey") && argc > 4) || (!std::strcmp(cmd, "setkey") && argc > 5)) {
         // probe getkey LAYER ROW COL / probe setkey LAYER ROW COL CODE(hex): one key of the keymap through VIA
         bool set = cmd[0] == 's';

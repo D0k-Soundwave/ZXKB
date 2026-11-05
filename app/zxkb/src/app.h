@@ -85,4 +85,7 @@ int  layer_count();                            // VIA's dynamic keymap layers (a
 int  macro_count();                            // VIA macros the keyboard holds
 void show_layer(int layer);                    // read that layer; labels and Change keys follow it
 bool key_function(int key, uint16_t *code);    // what the key does on the layer shown
-bool set_key_function(int key, uint16_t code); // set it, on the layer shown                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown
+bool set_key_function(int key, uint16_t code); // set it, on the layer shown
+// The knob: what turning it does (cw = turning right), on the layer shown; key = the knob in the layout
+bool knob_function(int key, bool cw, uint16_t *code);
+bool set_knob_function(int key, bool cw, uint16_t code);                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown

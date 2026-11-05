@@ -27,11 +27,12 @@ std::wstring key(int layer, int row, int col) {
 
 struct Entry { int layer, row, col; uint16_t code; };
 
-std::vector<Entry> load() { // [keys] "layer,row,col=code (hex)"
+// [keys] "layer,row,col=code (hex)"; [knob] "layer,encoder,clockwise=code"
+std::vector<Entry> load(const wchar_t *section = L"keys") {
     std::vector<Entry> v;
     std::wstring f = file();
     std::vector<wchar_t> buf(32768);
-    DWORD n = GetPrivateProfileSectionW(L"keys", buf.data(), (DWORD)buf.size(), f.c_str());
+    DWORD n = GetPrivateProfileSectionW(section, buf.data(), (DWORD)buf.size(), f.c_str());
     for (const wchar_t *p = buf.data(); p < buf.data() + n && *p; p += wcslen(p) + 1) {
         wchar_t *e;
         Entry x;
@@ -56,15 +57,25 @@ void record(int layer, int row, int col, uint16_t code) {
     WritePrivateProfileStringW(L"keys", key(layer, row, col).c_str(), c, file().c_str());
 }
 
+void record_knob(int layer, int encoder, bool cw, uint16_t code) {
+    if (!g_board) return;
+    wchar_t c[8];
+    swprintf(c, 8, L"%04X", code);
+    WritePrivateProfileStringW(L"knob", key(layer, encoder, cw ? 1 : 0).c_str(), c, file().c_str());
+}
+
 void forget(int layer, int row, int col) {
     if (g_board) WritePrivateProfileStringW(L"keys", key(layer, row, col).c_str(), nullptr, file().c_str());
 }
 
 void forget_all() {
-    if (g_board) WritePrivateProfileStringW(L"keys", nullptr, nullptr, file().c_str());
+    if (g_board) {
+        WritePrivateProfileStringW(L"keys", nullptr, nullptr, file().c_str());
+        WritePrivateProfileStringW(L"knob", nullptr, nullptr, file().c_str());
+    }
 }
 
-int count() { return g_board ? (int)load().size() : 0; }
+int count() { return g_board ? (int)(load().size() + load(L"knob").size()) : 0; }
 
 int reapply(int *failed) {
     int changed = 0;
@@ -74,6 +85,13 @@ int reapply(int *failed) {
         uint8_t q[4] = {0x04, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col}, r[32];
         if (keyboard_ask(q, 4, r, 4) && (uint16_t)(r[4] << 8 | r[5]) == e.code) continue; // already so
         uint8_t s[6] = {0x05, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col, (uint8_t)(e.code >> 8), (uint8_t)e.code};
+        if (keyboard_ask(s, 6, r, 4)) changed++;
+        else (*failed)++;
+    }
+    for (const Entry &e : load(L"knob")) { // row = encoder, col = clockwise
+        uint8_t q[4] = {0x14, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col}, r[32];
+        if (keyboard_ask(q, 4, r, 4) && (uint16_t)(r[4] << 8 | r[5]) == e.code) continue;
+        uint8_t s[6] = {0x15, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col, (uint8_t)(e.code >> 8), (uint8_t)e.code};
         if (keyboard_ask(s, 6, r, 4)) changed++;
         else (*failed)++;
     }

@@ -67,6 +67,7 @@ std::vector<KeyRect> from_kle(const Json &rows) {
                 k.col = atoi(rc.c_str() + comma + 1);
             }
             k.knob = !k.labels[9].empty() && k.labels[9][0] == 'e';
+            if (k.knob) k.encoder = atoi(k.labels[9].c_str() + 1);
             if (!matrix.empty()) {
                 size_t mc = matrix.find(',');
                 if (mc != std::string::npos) { k.row = atoi(matrix.c_str()); k.col = atoi(matrix.c_str() + mc + 1); }
@@ -118,6 +119,7 @@ static KeyRect compiled_key(const Json &k) {
     r.row  = k["row"].to_int(-1);
     r.col  = k["col"].to_int(-1);
     r.knob = k["ei"].is(Json::NUM);
+    r.encoder = k["ei"].to_int(-1);
     r.labels.resize(12);
     return r;
 }
