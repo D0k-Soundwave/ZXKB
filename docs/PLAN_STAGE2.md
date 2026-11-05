@@ -28,7 +28,7 @@ Written 2026-11-03, after D0k confirmed the requirements list complete. Replaces
      needs is not yet checked and will be before release.
 
 4. **Any keyboard: capability detection, layouts, labels** - done (firmware v18, app 0.13-0.30; Vial and Keychron
-   per-key commands not tried: no such keyboard here) (firmware v17, app 0.12)
+   per-key commands not tried: no such keyboard here)
    - The module reports its limits and features: effects present, free effect slots, settings memory size,
      layers, matrix size, knob, and the physical layout (added by the build from QMK's own data).
    - The app recognises ZXKB module, Vial, VIA, OpenRGB-firmware and SignalRGB-firmware boards and offers only
