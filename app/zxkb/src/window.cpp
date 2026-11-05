@@ -271,9 +271,15 @@ void refresh() {
     bool keymap = on && g_board->via_protocol && !g_board->keys.empty();
     HWND lc = item(IDC_LAYER);
     int layers = keymap ? layer_count() : 0;
-    if ((int)SendMessageW(lc, CB_GETCOUNT, 0, 0) != layers) {
+    // the layer the keyboard types from now is marked (ZXKB firmware v26 on reports it: side switch, Fn held)
+    static int listed_base = -1;
+    bool knows = on && g_board->kind == Board::ZXKB && g_board->protocol >= 11;
+    int base = knows ? g_st.base_layer : -1;
+    if ((int)SendMessageW(lc, CB_GETCOUNT, 0, 0) != layers || base != listed_base) {
         SendMessageW(lc, CB_RESETCONTENT, 0, 0);
-        for (int l = 0; l < layers; l++) SendMessageW(lc, CB_ADDSTRING, 0, (LPARAM)(L"Layer " + std::to_wstring(l)).c_str());
+        for (int l = 0; l < layers; l++)
+            SendMessageW(lc, CB_ADDSTRING, 0, (LPARAM)(L"Layer " + std::to_wstring(l) + (l == base ? L" (in use)" : L"")).c_str());
+        listed_base = base;
     }
     SendMessageW(lc, CB_SETCURSEL, keymap ? g_board->shown_layer : -1, 0);
     EnableWindow(lc, keymap);

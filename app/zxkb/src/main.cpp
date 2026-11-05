@@ -849,6 +849,8 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_tune  = Tune();
             g_tune.flags = 0;
             if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
+            // the window opens on the layer the keyboard types from (v26 on), not always layer 0 (D0k 2026-11-05)
+            if (g_window_mode && g_board->kind == Board::ZXKB && g_board->protocol >= 11) g_board->shown_layer = g_st.base_layer;
             if (g_window_mode) request_keymap(); // labels for the preview (only the window shows them)
             else fnkeys::listen(hwnd);            // F13-F22 hotkeys, if set up for this keyboard
             if (!g_window_mode && keystore::firmware_changed() && keystore::count() > 0) {

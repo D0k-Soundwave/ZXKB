@@ -25,6 +25,7 @@ struct Status {
     uint8_t vu_possible = 1; // the VU meter could show now (lighting on, allowed, e.g. Windows mode)
     uint8_t fw_version = 0;  // the keyboard's firmware version (0 = not reported)
     uint8_t bootloader = 0;  // proto::BOOT_* (protocol 4 on; 0 from older firmware)
+    uint8_t base_layer = 0, top_layer = 0; // layers in use (protocol 11): base (side switch), top (Fn held)
 };
 
 struct Tune { // size and intensity of the keyboard's current effect

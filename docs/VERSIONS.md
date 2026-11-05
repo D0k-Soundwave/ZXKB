@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v26 | 2026-11-05 | 62,504 bytes | Status reports the layers in use: base layer (the side switch) and top layer (Fn held), sent when they change (protocol 11). |
 | v25 | 2026-11-05 | 62,432 bytes | Caps Lock light: command to put it back on the keys it started on (0xDE 0x03, protocol 10). Same settings layout: nothing is reset. |
 | v24 | 2026-11-05 | 62,408 bytes | Caps Lock light set from the app (0xDE, protocol 9): effect (off / steady / flash / breathe), two colours, speed, full brightness or not, which keys; starts as v23 (magenta / white, 320 ms, full brightness, Tab Q Caps A Caps-Shift \). 32 spare bytes for later settings. Module block version 6 (785 bytes): the first start resets keymap, macros and key colours. |
 | v23 | 2026-11-05 | 61,968 bytes | Caps Lock on: Tab, Q, Caps Lock, A, Caps Shift and \ all flash magenta/white (320 ms) at full brightness, over any effect and key colours; back to normal when Caps Lock is off. Same settings layout: key colours are kept. |
@@ -45,6 +46,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.34 | 2026-11-05 | 554,496 bytes | The window opens on the layer the keyboard types from and marks it "(in use)" in the Layer list; Change keys says when the layer being changed is not the one in use (D0k set Y on layer 0, the Spectrum base, while typing in Windows mode, layer 2). Needs firmware v26. |
 | 0.33 | 2026-11-05 | 553,984 bytes | Change keys: choosing an entry with no keys selected says to select keys first (it said the keyboard refused the change, D0k); a partial failure says how many keys. |
 | 0.32 | 2026-11-05 | 553,984 bytes | Key changes made in ZXKB (Change keys, Fn + number set-up) are kept per keyboard in %APPDATA%\ZXKB\keymaps and put back by themselves when the keyboard comes back with a different firmware (VIA resets the keymap for every new build), with a tray notice; Change keys window: Put my key changes back, Forget my key changes. |
 | 0.31 | 2026-11-05 | 549,376 bytes | Key remapping: Layer list under the preview (labels show what keys do on that layer; the keycap set only on layer 0), Change keys... window with everything a key can do in groups (letters, numbers, symbols, F1-F24, editing, keypad, modifiers, media, mouse, layers, lighting, ZXKB hotkeys and VU, macros, the keyboard's own codes, special); sets the keys selected in the preview through VIA. Clearer labels (Fn 1, TG 2, Bri+, Mode+, Hot 1, VU, NKRO, WinLk). |

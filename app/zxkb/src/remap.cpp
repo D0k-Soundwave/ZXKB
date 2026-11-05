@@ -47,6 +47,11 @@ void show() {
     if (!g_dlg) return;
     std::vector<int> keys = preview_selected_keys();
     std::wstring t = L"Layer " + std::to_wstring(g_board ? g_board->shown_layer : 0) + L": ";
+    // changing a layer the keyboard is not typing from now: say so (D0k set Y on layer 0 while typing from layer 2)
+    if (g_board && g_board->kind == Board::ZXKB && g_board->protocol >= 11 && g_board->shown_layer != g_st.base_layer &&
+        g_board->shown_layer != g_st.top_layer)
+        t = L"Layer " + std::to_wstring(g_board->shown_layer) + L" (the keyboard types from layer " + std::to_wstring(g_st.base_layer) +
+            L" now): ";
     if (keys.empty()) t += L"select keys in the preview (Ctrl+click for more), then choose what they do.";
     else {
         t += std::to_wstring(keys.size()) + (keys.size() == 1 ? L" key selected" : L" keys selected");

@@ -6,11 +6,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 10 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+#define ZXKB_PROTOCOL_VERSION 11 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
                                  * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
                                  * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD). 7: per-key effects (0xDD, 7 bytes a key).
                                  * 8: 8 bytes a key (speed 0-255); size down to 1, intensity down to 0.
-                                 * 9: Caps Lock light (0xDE). 10: its starting keys back (0xDE 0x03) */
+                                 * 9: Caps Lock light (0xDE). 10: its starting keys back (0xDE 0x03).
+                                 * 11: status bytes 18 / 19: base layer / top layer in use (sent on change) */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */

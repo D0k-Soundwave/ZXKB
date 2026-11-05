@@ -392,9 +392,10 @@ void housekeeping_task_zxkb(void) {
 
     /* Tell the app at once when something it cares about changes (lighting on/off, effect, overlay, whether the
      * VU meter could show), so it can stop listening to audio while nothing would show it. */
-    static uint8_t last[5];
+    static uint8_t last[7];
     static bool    sent = false;
-    uint8_t        now[5] = {rgb_matrix_is_enabled(), own_mode(), overlay, vu_requested, vu_possible()};
+    uint8_t        now[7] = {rgb_matrix_is_enabled(), own_mode(), overlay, vu_requested, vu_possible(),
+                             get_highest_layer(default_layer_state), get_highest_layer(layer_state | default_layer_state)};
     if (!sent || memcmp(now, last, sizeof(now)) != 0) {
         memcpy(last, now, sizeof(now));
         sent = true;
@@ -554,6 +555,8 @@ static void info_status(uint8_t *data, uint8_t length) {
     data[13] = vu_allowed;
     data[14] = vu_requested;
     data[15] = vu_possible();
+    data[18] = get_highest_layer(default_layer_state);                /* the base layer (e.g. the Q3's side switch) */
+    data[19] = get_highest_layer(layer_state | default_layer_state);  /* the layer keys come from now (Fn held...) */
 #ifdef BOOTLOADER_STM32_DFU
     data[17] = ZXKB_BOOT_STM32_DFU;
 #else
