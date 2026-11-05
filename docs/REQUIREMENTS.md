@@ -79,7 +79,8 @@ Rule: do not build until D0k confirms the list is complete.
 Mechanical switches only. Most use QMK's VIA support already in the firmware; firmware work is marked.
 - [~] Remap any key: key, shortcut, mouse action, media, brightness, layer or profile switch; disable a key (0.31: any
       layer, through VIA; shortcuts with modifiers and profile switch still to come)
-- [ ] Keymap and macros kept across firmware updates: VIA resets them to the firmware's own whenever a different
+- [~] Keymap and macros kept across firmware updates (0.32: key changes made in ZXKB kept and put back after a
+      firmware change, or by hand; macros still to come): VIA resets them to the firmware's own whenever a different
       firmware build starts (P: QMK quantum/via.c, the EEPROM magic is the build date), so the app saves them before
       installing firmware and puts them back after (found 2026-11-05)
 - [ ] Game-mode lock: Win key (exists) plus blocking Alt+Tab / Alt+F4 (firmware work)

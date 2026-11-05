@@ -28,6 +28,7 @@
 #include "caps.h"
 #include "fnkeys.h"
 #include "remap.h"
+#include "keystore.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -293,6 +294,7 @@ bool set_key_function(int key, uint16_t code) {
     if (!keyboard_ask(q, 6, r, 4)) return false;
     size_t at = (size_t)(k.row * g_board->cols + k.col);
     if (at < g_board->keymap.size()) g_board->keymap[at] = code;
+    keystore::record(g_board->shown_layer, k.row, k.col, code); // to put back after a firmware update
     return true;
 }
 
@@ -849,6 +851,22 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
             if (g_window_mode) request_keymap(); // labels for the preview (only the window shows them)
             else fnkeys::listen(hwnd);            // F13-F22 hotkeys, if set up for this keyboard
+            if (!g_window_mode && keystore::firmware_changed() && keystore::count() > 0) {
+                // a firmware update reset the keymap (VIA does so for every new build): ZXKB's key changes back
+                int failed = 0, n = keystore::reapply(&failed);
+                if (n || failed) {
+                    std::wstring t = n ? L"ZXKB put back " + std::to_wstring(n) + (n == 1 ? L" key change" : L" key changes") +
+                                             L" after the firmware update."
+                                       : L"";
+                    if (failed) t += (t.empty() ? L"" : L" ") + std::to_wstring(failed) + L" could not be put back.";
+                    g_nid.uFlags |= NIF_INFO;
+                    lstrcpynW(g_nid.szInfoTitle, L"ZXKB", ARRAYSIZE(g_nid.szInfoTitle));
+                    lstrcpynW(g_nid.szInfo, t.c_str(), ARRAYSIZE(g_nid.szInfo));
+                    g_nid.dwInfoFlags = NIIF_INFO;
+                    Shell_NotifyIconW(NIM_MODIFY, &g_nid);
+                    g_nid.uFlags &= ~NIF_INFO;
+                }
+            }
             if (!g_window_mode) { // test switch: ZXKB_TEST_FN=setup or undo runs it at connect, result in fnkeys.log
                 wchar_t t[16] = {0};
                 if (GetEnvironmentVariableW(L"ZXKB_TEST_FN", t, 16)) {

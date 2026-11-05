@@ -1,0 +1,95 @@
+// Key changes kept by ZXKB. Copyright 2026 D0k
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "keystore.h"
+#include "app.h"
+#include "settings.h"
+#include <cwchar>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+namespace keystore {
+namespace {
+
+std::wstring file() {
+    std::wstring dir = settings::folder() + L"\\keymaps";
+    CreateDirectoryW(dir.c_str(), nullptr);
+    wchar_t name[24];
+    swprintf(name, 24, L"\\%04X_%04X.ini", g_board ? g_board->vid : 0, g_board ? g_board->pid : 0);
+    return dir + name;
+}
+
+std::wstring key(int layer, int row, int col) {
+    wchar_t k[24];
+    swprintf(k, 24, L"%d,%d,%d", layer, row, col);
+    return k;
+}
+
+struct Entry { int layer, row, col; uint16_t code; };
+
+std::vector<Entry> load() { // [keys] "layer,row,col=code (hex)"
+    std::vector<Entry> v;
+    std::wstring f = file();
+    std::vector<wchar_t> buf(32768);
+    DWORD n = GetPrivateProfileSectionW(L"keys", buf.data(), (DWORD)buf.size(), f.c_str());
+    for (const wchar_t *p = buf.data(); p < buf.data() + n && *p; p += wcslen(p) + 1) {
+        wchar_t *e;
+        Entry x;
+        x.layer = (int)wcstol(p, &e, 10);
+        if (*e != L',') continue;
+        x.row = (int)wcstol(e + 1, &e, 10);
+        if (*e != L',') continue;
+        x.col = (int)wcstol(e + 1, &e, 10);
+        if (*e != L'=') continue;
+        x.code = (uint16_t)wcstoul(e + 1, nullptr, 16);
+        v.push_back(x);
+    }
+    return v;
+}
+
+} // namespace
+
+void record(int layer, int row, int col, uint16_t code) {
+    if (!g_board) return;
+    wchar_t c[8];
+    swprintf(c, 8, L"%04X", code);
+    WritePrivateProfileStringW(L"keys", key(layer, row, col).c_str(), c, file().c_str());
+}
+
+void forget(int layer, int row, int col) {
+    if (g_board) WritePrivateProfileStringW(L"keys", key(layer, row, col).c_str(), nullptr, file().c_str());
+}
+
+void forget_all() {
+    if (g_board) WritePrivateProfileStringW(L"keys", nullptr, nullptr, file().c_str());
+}
+
+int count() { return g_board ? (int)load().size() : 0; }
+
+int reapply(int *failed) {
+    int changed = 0;
+    *failed = 0;
+    for (const Entry &e : load()) {
+        // [P] VIA get keycode 0x04 [layer, row, col] -> [.., hi, lo]; set 0x05 [layer, row, col, hi, lo]
+        uint8_t q[4] = {0x04, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col}, r[32];
+        if (keyboard_ask(q, 4, r, 4) && (uint16_t)(r[4] << 8 | r[5]) == e.code) continue; // already so
+        uint8_t s[6] = {0x05, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col, (uint8_t)(e.code >> 8), (uint8_t)e.code};
+        if (keyboard_ask(s, 6, r, 4)) changed++;
+        else (*failed)++;
+    }
+    return changed;
+}
+
+bool firmware_changed() {
+    if (!g_board) return false;
+    // the firmware this keyboard ran when last seen: ZXKB version, or VIA protocol for standard firmware
+    wchar_t now[32];
+    swprintf(now, 32, L"%d.%d.%d", (int)g_board->kind, g_board->kind == Board::ZXKB ? g_st.fw_version : 0, g_board->via_protocol);
+    wchar_t was[32] = {0};
+    GetPrivateProfileStringW(L"keyboard", L"firmware", L"", was, 32, file().c_str());
+    if (!wcscmp(was, now)) return false;
+    WritePrivateProfileStringW(L"keyboard", L"firmware", now, file().c_str());
+    return *was != 0; // the first time seen is not a change
+}
+
+} // namespace keystore

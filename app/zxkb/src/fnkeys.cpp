@@ -3,6 +3,7 @@
 #include "fnkeys.h"
 #include "app.h"
 #include "settings.h"
+#include "keystore.h"
 #include <cwchar>
 #include <cwchar>
 #include <cstdlib>
@@ -83,6 +84,7 @@ bool set_up(std::wstring *message) {
         uint16_t old;
         if (!get_key(fn, row, col, &old)) continue;
         if (!set_key(fn, row, col, (uint16_t)(KC_F13 + n))) continue;
+        keystore::record(fn, row, col, (uint16_t)(KC_F13 + n)); // put back after a firmware update too
         wchar_t part[48];
         swprintf(part, 48, L"%d,%d,%d,%04X;", fn, row, col, old);
         saved += part;
@@ -99,7 +101,8 @@ bool set_up(std::wstring *message) {
 bool undo(std::wstring *message) {
     std::vector<Saved> v = load();
     int put = 0;
-    for (const Saved &k : v) put += set_key(k.layer, k.row, k.col, k.old);
+    for (const Saved &k : v)
+        if (set_key(k.layer, k.row, k.col, k.old)) { put++; keystore::forget(k.layer, k.row, k.col); }
     stop_listening(g_hwnd);
     if (put < (int)v.size()) {
         *message = L"Only " + std::to_wstring(put) + L" of " + std::to_wstring(v.size()) + L" keys could be put back; try again.";

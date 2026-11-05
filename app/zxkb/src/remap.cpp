@@ -5,6 +5,7 @@
 #include "keycodes.h"
 #include "labels.h"
 #include "preview.h"
+#include "keystore.h"
 #include "../res/resource.h"
 #include <commctrl.h>
 #include <string>
@@ -54,6 +55,11 @@ void show() {
     }
     SetDlgItemTextW(g_dlg, IDC_RM_INFO, t.c_str());
     EnableWindow(GetDlgItem(g_dlg, IDC_RM_ASSIGN), !keys.empty());
+    int kept = keystore::count();
+    SetDlgItemTextW(g_dlg, IDC_RM_KEPT, (std::to_wstring(kept) + (kept == 1 ? L" key change" : L" key changes") +
+                                        L" kept by ZXKB, put back after firmware updates").c_str());
+    EnableWindow(GetDlgItem(g_dlg, IDC_RM_REAPPLY), kept > 0);
+    EnableWindow(GetDlgItem(g_dlg, IDC_RM_FORGET), kept > 0);
 }
 
 void assign() {
@@ -99,6 +105,22 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             return FALSE;
         case WM_COMMAND:
             if (LOWORD(wp) == IDC_RM_ASSIGN) { assign(); return TRUE; }
+            if (LOWORD(wp) == IDC_RM_REAPPLY) {
+                int failed = 0, n = keystore::reapply(&failed);
+                std::wstring t = std::to_wstring(n) + (n == 1 ? L" key put back" : L" keys put back") +
+                                 (failed ? L", " + std::to_wstring(failed) + L" could not be." : L" (the others were already so).");
+                MessageBoxW(dlg, t.c_str(), L"ZXKB", MB_OK | (failed ? MB_ICONWARNING : MB_ICONINFORMATION));
+                show_layer(g_board ? g_board->shown_layer : 0); // read the layer again for the labels
+                show();
+                return TRUE;
+            }
+            if (LOWORD(wp) == IDC_RM_FORGET) {
+                if (MessageBoxW(dlg, L"Forget the key changes ZXKB keeps? The keys stay as they are now; ZXKB just stops putting "
+                                     L"them back after firmware updates.", L"ZXKB", MB_YESNO | MB_ICONQUESTION) == IDYES)
+                    keystore::forget_all();
+                show();
+                return TRUE;
+            }
             if (LOWORD(wp) == IDCANCEL || LOWORD(wp) == IDOK) { DestroyWindow(dlg); return TRUE; }
             break;
         case WM_DESTROY:
