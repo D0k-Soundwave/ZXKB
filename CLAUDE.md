@@ -51,7 +51,8 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   lighting keys, Fn+1..0 = hotkey slots, Fn+V = switch to/from the VU meter effect, Fn+N = NKRO, Win lock.
 - Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after). The VU meter is a
   normal effect fed by ZXKB (dark without it); PC direct mode is an overlay, only in Windows mode.
-- Caps Lock: flashing magenta/white every 320 ms (Spectrum FLASH rate).
+- Caps Lock: Tab, Q, Caps Lock, A, Caps Shift and \ (LEDs 33, 34, 49, 50, 63, 64) flash magenta/white every 320 ms
+  (Spectrum FLASH rate) at full brightness (255 white, 255,0,255 magenta) while Caps Lock is on (v23).
 - Raw HID (32-byte reports, `zxkb.h`):
   - `0xD0` + 16 levels: VU data. `0xD1` + 0/1: VU mode request. `0xD2` + n (1-6): Spectrum effect (old app).
   - `0xD3` + r,g,b / `0xD4` / `0xD5`: LED driver current tune set / save / get (keymap, replies).

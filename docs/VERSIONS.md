@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v23 | 2026-11-05 | 61,968 bytes | Caps Lock on: Tab, Q, Caps Lock, A, Caps Shift and \ all flash magenta/white (320 ms) at full brightness, over any effect and key colours; back to normal when Caps Lock is off. Same settings layout: key colours are kept. |
 | v22 | 2026-11-03 | 61,956 bytes | Full ranges (D0k): each key's speed is a whole byte, 256 steps from 5 s to 16 ms (speed 122 = 320 ms); size 1-255 and intensity 0-255 (both stopped at 16 before). 8 bytes a key (module block version 5, 733 bytes on the Q3): the first start resets the keymap, macros and key colours. Protocol 8. |
 | v21 | 2026-11-03 | 61,496 bytes | Per-key effect speeds 16 ms to 5 s per step (was 80 ms to 1.28 s); speed 12 stays 320 ms. Same settings layout: key colours are kept. |
 | v20 | 2026-11-03 | 61,472 bytes | Per-key effects (protocol 7): each key Steady, Flash (two colours, all in step; speed 12 = Spectrum FLASH 320 ms), Breathe, Colour cycle or Twinkle, with its own speed (0-15) and two colours; 7 bytes a key (module block version 4, 645 bytes on the Q3), so the first start resets the keymap, macros and key colours. |

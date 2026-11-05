@@ -153,14 +153,22 @@ void housekeeping_task_user(void) {
     }
 }
 
-/* ---------- Caps Lock light: flashing magenta/white (normal effect when off) ---------- */
+/* ---------- Caps Lock light: Tab, Q, Caps Lock, A, Caps Shift and \ flash magenta/white (normal effect when off) ----
+ * LED numbers from QMK's Q3 ISO knob layout (keyboard.json rgb_matrix): Tab 33 (2,0), Q 34 (2,1), Caps Lock 49 (3,0),
+ * A 50 (3,1), Left Shift / Caps Shift 63 (4,0), ISO \ 64 (4,1). Requested by D0k 2026-11-05. */
+static const uint8_t caps_leds[] = {33, 34, CAPS_LOCK_LED_INDEX, 50, 63, 64};
+
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     if (host_keyboard_led_state().caps_lock) {
-        /* FLASH attribute: swap magenta and white every 320 ms, like the Spectrum's own FLASH */
-        if ((g_rgb_timer / 320) & 1) {
-            RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 195, 195, 195);
-        } else {
-            RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_LED_INDEX, 200, 0, 200);
+        /* FLASH attribute: swap magenta and white every 320 ms, like the Spectrum's own FLASH. Full brightness whatever
+         * the brightness setting: the calibrated palette colours (white 195, magenta 200,0,200) scaled to 255, so the
+         * colour balance stays the same. Drawn last, so over any effect and any per-key colours on these keys. */
+        bool white = (g_rgb_timer / 320) & 1;
+        for (uint8_t k = 0; k < sizeof(caps_leds); k++) {
+            uint8_t i = caps_leds[k];
+            if (i < led_min || i >= led_max) continue;
+            if (white) rgb_matrix_set_color(i, 255, 255, 255);
+            else rgb_matrix_set_color(i, 255, 0, 255);
         }
     }
     return false;   /* skip the board's default white Caps Lock light */

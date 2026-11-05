@@ -17,6 +17,7 @@ Rule: do not build until D0k confirms the list is complete.
 - [x] Calibrated Spectrum colours in all Spectrum effects and the VU meter (v11)
 - [x] Hardware balance red 192 / green 72 / blue 58 as firmware default (v11)
 - [x] Caps Lock flashing magenta/white (320 ms) (v11)
+- [~] Caps Lock on: Tab, Q, Caps Lock, A, Caps Shift and \ flash too, at full brightness (D0k, 2026-11-05; v23)
 - [x] Live LED current tune commands 0xD3/0xD4/0xD5 (v10)
 - [x] Spectrum effects: stripes, tape loading, VU, border flash, attribute clash, typing ripple, logo sweep (v9/v10)
 
