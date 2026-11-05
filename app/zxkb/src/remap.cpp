@@ -71,10 +71,17 @@ void assign() {
     it.iItem = sel;
     ListView_GetItem(list, &it);
     if ((size_t)it.lParam >= g_choices.size()) return;
-    std::wstring failed;
+    std::vector<int> keys = preview_selected_keys();
+    if (keys.empty()) { // D0k 2026-11-05: with nothing selected this used to say the keyboard refused the change
+        MessageBoxW(g_dlg, L"First select the keys to change: click them in the preview (Ctrl+click for more).", L"ZXKB",
+                    MB_OK | MB_ICONINFORMATION);
+        return;
+    }
     int done = 0;
-    for (int k : preview_selected_keys()) done += set_key_function(k, g_choices[(size_t)it.lParam].code);
-    if (!done) MessageBoxW(g_dlg, L"The keyboard did not take the change.", L"ZXKB", MB_OK | MB_ICONWARNING);
+    for (int k : keys) done += set_key_function(k, g_choices[(size_t)it.lParam].code);
+    if (done < (int)keys.size())
+        MessageBoxW(g_dlg, (L"The keyboard did not take the change for " + std::to_wstring(keys.size() - done) + L" of " +
+                            std::to_wstring(keys.size()) + L" keys.").c_str(), L"ZXKB", MB_OK | MB_ICONWARNING);
     preview_relabel();
     show();
 }

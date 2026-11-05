@@ -32,5 +32,5 @@
 #define IDC_RM_REAPPLY   255
 #define IDC_RM_FORGET    256
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 32 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.32" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 33 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.33" // raise for every build installed for D0k (docs/VERSIONS.md)
