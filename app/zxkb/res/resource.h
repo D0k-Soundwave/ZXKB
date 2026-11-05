@@ -13,6 +13,16 @@
 #define IDC_FW_STATUS    215
 #define IDC_FW_PROGRESS  216
 #define IDC_FW_INSTALL   217
+#define IDD_CAPS         230
+#define IDC_CAPS_FX      231
+#define IDC_CAPS_SPEED   232
+#define IDC_CAPS_SPEED_VAL 233
+#define IDC_CAPS_C1      234
+#define IDC_CAPS_C2      235
+#define IDC_CAPS_FULL    236
+#define IDC_CAPS_KEYS    237
+#define IDC_CAPS_USE_SEL 238
+#define IDC_CAPS_ONLY    239
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 25 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.25" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 26 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.26" // raise for every build installed for D0k (docs/VERSIONS.md)

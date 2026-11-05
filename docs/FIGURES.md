@@ -104,6 +104,8 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Per-key effect speeds (v22) | step 5000 x (16 / 5000) ^ (speed / 255) ms: 5 s (0) to 16 ms (255), about 2.3 % a step; 320 ms at 122; breath 5 steps, twinkle 6, colour cycle 10 | P / C | range by D0k 2026-11-03; 16 ms = QMK RGB_MATRIX_LED_FLUSH_LIMIT (P); tools/key_speed_table.py |
 | Macro space left on the keyboard with v20 | 574 bytes, 16 macros | M | probe macros (VIA 0x0C / 0x0D), 2026-11-03 |
 | Macro space with v22 | 486 bytes, 16 macros | M | probe macros, 2026-11-03 (worked out beforehand as 574 - 88 = 486, C) |
+| Macro space with v24 | about 434 bytes | C | 486 - 20 (Caps Lock light) - 32 (spare); measure once v24 is on |
+| Spare settings bytes in v24 | 32 | A | room for a few later settings without a reset; not sized against a list |
 | 0.21 ZXKB.exe size | 510,464 bytes | M | 2026-11-03 |
 | Key-to-LED map read by 3 programs at once | old code 18 of 18 reads wrong; 0.22 code 0 of 18 | M | probe matrix x3 in parallel x6, compared with QMK's keyboard.json, 2026-11-03 |
 | Per-key flash at speed 3 | 1,031 ms between changes (firmware: 80 x 13 = 1,040 ms) | M | probe blink 54 5, 2026-11-03 |

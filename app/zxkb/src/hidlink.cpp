@@ -96,7 +96,7 @@ bool HidLink::transact(HANDLE h, uint8_t *buf, int in_len, int out_len) {
         // so a reply must echo what was asked: the same sub-command, and the same effect, LED or map position.
         // (M 2026-11-03: without this the window took the tray's map replies, and G lit the "-" key.)
         bool same = in[1] == cmd;
-        if (same && (cmd == proto::INFO || cmd == proto::KEYS)) same = in[2] == sub;
+        if (same && (cmd == proto::INFO || cmd == proto::KEYS || cmd == proto::CAPS)) same = in[2] == sub;
         if (same && cmd == proto::INFO && (sub == proto::INFO_NAME || sub == proto::INFO_LEDS)) same = in[3] == buf[2];
         if (same && cmd == proto::INFO && sub == proto::INFO_MATRIX) same = in[5] == buf[2];
         if (same && cmd == proto::KEYS && sub == proto::KEYS_GET) same = in[3] == buf[2];
@@ -162,6 +162,18 @@ bool HidLink::probe(HANDLE h, int in_len, int out_len, Board *board) {
                 std::memcpy(&board->key[(first + k) * proto::KEY_BYTES], &q[4 + k * proto::KEY_BYTES], proto::KEY_BYTES);
             first += q[3];
         }
+    if (board->protocol >= 9) { // the Caps Lock light
+        uint8_t q[proto::REPORT] = {proto::CAPS, proto::CAPS_GET};
+        if (transact(h, q, in_len, out_len)) {
+            CapsLight &c = board->caps;
+            c.fx = q[2]; c.speed = q[3];
+            std::memcpy(c.a, &q[4], 3);
+            std::memcpy(c.b, &q[7], 3);
+            c.full = q[10];
+            int n = q[11] <= proto::REPORT - 12 ? q[11] : proto::REPORT - 12;
+            c.keys.assign(q + 12, q + 12 + n);
+        }
+    }
     { // most ZXKB keyboards have VIA too: needed to read their keymap for the key labels
         uint8_t q[proto::REPORT] = {proto::VIA_PROTOCOL};
         if (transact(h, q, in_len, out_len)) board->via_protocol = (uint16_t)(q[1] << 8 | q[2]);

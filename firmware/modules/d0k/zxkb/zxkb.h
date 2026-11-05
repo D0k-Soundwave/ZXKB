@@ -6,10 +6,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 8 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+#define ZXKB_PROTOCOL_VERSION 9 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
                                  * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
                                  * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD). 7: per-key effects (0xDD, 7 bytes a key).
-                                 * 8: 8 bytes a key (speed 0-255); size down to 1, intensity down to 0 */
+                                 * 8: 8 bytes a key (speed 0-255); size down to 1, intensity down to 0.
+                                 * 9: Caps Lock light (0xDE) */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -30,6 +31,15 @@
                                  * keyboard -> app: [0xDB, first LED, count (max 9), count x (r, g, b)], the colours
                                  * actually sent to the LEDs (after brightness and indicators). Needs the board to call
                                  * zxkb_mirror_set() from its LED driver; boards that do not just never send. */
+#define ZXKB_CMD_CAPS      0xDE /* the Caps Lock light: drawn over everything on its keys while Caps Lock is on.
+                                 * Always replies [0xDE, sub, ...]:
+                                 * [0xDE, 0x00] get -> [0xDE, 0x00, effect, speed, r, g, b, r2, g2, b2, full, n, n bytes of
+                                 *   key bits (bit i = LED i)]; effect ZXKB_KEY_NONE (off) / STEADY / FLASH / BREATHE;
+                                 *   full 1 = full brightness whatever the brightness setting
+                                 * [0xDE, 0x01, the same 10 + n bytes] change (live, not saved); [0xDE, 0x02] save */
+#define ZXKB_CAPS_GET  0x00
+#define ZXKB_CAPS_SET  0x01
+#define ZXKB_CAPS_SAVE 0x02
 #define ZXKB_CMD_BOOTLOADER 0xDC /* [0xDC, 'Z', 'X', 'B', 'L'] -> [0xDC, 1], then the keyboard restarts into its
                                   * bootloader so the app can install firmware. The four letters guard against
                                   * stray reports. Settings are kept (no EEPROM clear). */
@@ -126,4 +136,5 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length);
 
 /* Keymap hooks (weak, optional) */
 bool zxkb_overlay_allowed_user(uint8_t overlay);           /* default: always allowed */
-bool zxkb_command_user(uint8_t *data, uint8_t length);     /* board-specific commands; return true if handled */
+bool zxkb_command_user(uint8_t *data, uint8_t length);
+void zxkb_caps_keys_user(uint8_t *bits);                   /* first-start Caps Lock light keys: set bit i for LED i */     /* board-specific commands; return true if handled */

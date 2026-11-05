@@ -71,6 +71,9 @@ typedef struct PACKED {
     uint8_t size[ZXKB_TUNABLES];          /* per tunable effect, see tunables[] */
     uint8_t intensity[ZXKB_TUNABLES];
     uint8_t key[RGB_MATRIX_LED_COUNT][ZXKB_KEY_BYTES]; /* per key: fx and speed, first colour, second colour */
+    uint8_t caps_fx, caps_speed, caps_a[3], caps_b[3], caps_full; /* the Caps Lock light */
+    uint8_t caps_keys[(RGB_MATRIX_LED_COUNT + 7) / 8];             /* bit per LED */
+    uint8_t spare[32];                                             /* for later settings (no reset needed) */
 } zxkb_config_t;
 _Static_assert(sizeof(zxkb_config_t) == EECONFIG_MODULE_ZXKB_DATA_SIZE, "update EECONFIG_MODULE_ZXKB_DATA_SIZE in config.h");
 static zxkb_config_t cfg;
@@ -108,6 +111,16 @@ void eeconfig_init_zxkb_datablock(void) { /* first start, or the saved layout ch
         def.intensity[i] = ZXKB_TUNE_DEFAULT_INTENSITY;
     }
     memset(def.key, 0, sizeof(def.key));
+    /* Caps Lock light: flashes magenta / white at the Spectrum FLASH rate, full brightness, on the keys the keymap
+     * chooses (zxkb_caps_keys_user) or the board's Caps Lock LED */
+    def.caps_fx    = ZXKB_KEY_FLASH;
+    def.caps_speed = 122; /* 320 ms, see key_step_ms */
+    def.caps_a[0] = 255; def.caps_a[1] = 0;   def.caps_a[2] = 255;
+    def.caps_b[0] = 255; def.caps_b[1] = 255; def.caps_b[2] = 255;
+    def.caps_full = 1;
+    memset(def.caps_keys, 0, sizeof(def.caps_keys));
+    zxkb_caps_keys_user(def.caps_keys);
+    memset(def.spare, 0, sizeof(def.spare));
     eeconfig_update_zxkb_datablock(&def, 0, sizeof(def));
 }
 
@@ -169,6 +182,43 @@ static void keys_command(uint8_t *data, uint8_t length) {
 
 /* Over the effect, before the keymap's own indicators (Caps Lock), so those stay on top. Not over PC direct
  * colour: the PC then draws every key itself. */
+/* The keys the Caps Lock light starts on: the board's Caps Lock LED; a keymap can choose others */
+__attribute__((weak)) void zxkb_caps_keys_user(uint8_t *bits) {
+#ifdef CAPS_LOCK_LED_INDEX
+    bits[CAPS_LOCK_LED_INDEX / 8] |= 1 << (CAPS_LOCK_LED_INDEX % 8);
+#endif
+}
+
+#define CAPS_HEADER 10 /* effect, speed, 2 x rgb, full, n */
+static void caps_command(uint8_t *data, uint8_t length) {
+    uint8_t sub = data[1], n = sizeof(cfg.caps_keys);
+    if (CAPS_HEADER + 2 + n > length) n = length - CAPS_HEADER - 2; /* [A] boards past 160 LEDs: first 160 only */
+    if (sub == ZXKB_CAPS_SET) {
+        cfg.caps_fx    = data[2];
+        cfg.caps_speed = data[3];
+        memcpy(cfg.caps_a, &data[4], 3);
+        memcpy(cfg.caps_b, &data[7], 3);
+        cfg.caps_full = data[10];
+        if (data[11] <= n) n = data[11];
+        memcpy(cfg.caps_keys, &data[12], n);
+    } else if (sub == ZXKB_CAPS_SAVE) {
+        eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg)); /* only changed bytes are written */
+    } else if (sub != ZXKB_CAPS_GET) {
+        memset(&data[2], 0xFF, length - 2);
+        raw_hid_send(data, length);
+        return;
+    }
+    memset(&data[2], 0, length - 2);
+    data[2] = cfg.caps_fx;
+    data[3] = cfg.caps_speed;
+    memcpy(&data[4], cfg.caps_a, 3);
+    memcpy(&data[7], cfg.caps_b, 3);
+    data[10] = cfg.caps_full;
+    data[11] = n;
+    memcpy(&data[12], cfg.caps_keys, n);
+    raw_hid_send(data, length);
+}
+
 bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
     if (!rgb_matrix_indicators_advanced_zxkb_kb(led_min, led_max)) return false;
     if (overlay == ZXKB_OVERLAY_DIRECT) return true;
@@ -202,6 +252,18 @@ bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
         }
         for (uint8_t j = 0; j < 3; j++) c[j] = (uint8_t)((a[j] * mix + b[j] * (255 - mix)) / 255);
         rgb_matrix_set_color(i, c[0] * v / 255, c[1] * v / 255, c[2] * v / 255);
+    }
+    /* the Caps Lock light, over the effect and the key colours on its keys */
+    if (host_keyboard_led_state().caps_lock && cfg.caps_fx != ZXKB_KEY_NONE) {
+        uint32_t step = key_step_ms[cfg.caps_speed];
+        uint8_t  mix  = 255;
+        if (cfg.caps_fx == ZXKB_KEY_FLASH) mix = (now / step) & 1 ? 0 : 255;
+        else if (cfg.caps_fx == ZXKB_KEY_BREATHE) mix = sin8((uint8_t)(now * 256 / (step * 5)));
+        uint16_t bright = cfg.caps_full ? 255 : v;
+        uint8_t  c[3];
+        for (uint8_t j = 0; j < 3; j++) c[j] = (uint8_t)((cfg.caps_a[j] * mix + cfg.caps_b[j] * (255 - mix)) / 255 * bright / 255);
+        for (uint8_t i = led_min; i < led_max && i < RGB_MATRIX_LED_COUNT; i++)
+            if (cfg.caps_keys[i / 8] & (1 << (i % 8))) rgb_matrix_set_color(i, c[0], c[1], c[2]);
     }
     return true;
 }
@@ -606,6 +668,9 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length) {
             mirroring = data[1] != 0;
             mirror_until = timer_read32() + ZXKB_MIRROR_KEEPALIVE_MS;
             mirror_full  = (RGB_MATRIX_LED_COUNT + 8) / 9; /* one whole frame, for an app that has just opened */
+            return true;
+        case ZXKB_CMD_CAPS:
+            caps_command(data, length);
             return true;
         case ZXKB_CMD_KEYS:
             keys_command(data, length);

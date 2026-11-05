@@ -8,6 +8,7 @@
 #include "vumath.h"
 #include "preview.h"
 #include "flash.h"
+#include "caps.h"
 #include "boards.h"
 #include "keycaps.h"
 #include "protocol.h"
@@ -27,7 +28,7 @@ namespace {
 enum : int {
     IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP, IDC_KEYCAPS,
     IDC_KEYS_INFO, IDC_KEYS_ALL, IDC_KEYS_NONE, IDC_KEYS_EFFECT, IDC_KEYS_OFF, IDC_KEYS_COLOUR,
-    IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2,
+    IDC_CAPS_BTN, IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -120,8 +121,9 @@ void layout() {
     y += 8;
     for (int c = 0; c < SWATCHES; c++) MoveWindow(item(IDC_SWATCH + c), px(x + c * (SWATCH + 6)), px(y), px(SWATCH), px(SWATCH), FALSE);
     MoveWindow(item(IDC_PICK), px(x + SWATCHES * (SWATCH + 6) + 4), px(y), px(cw - SWATCHES * (SWATCH + 6) - 4), px(SWATCH), FALSE);
-    MoveWindow(item(IDC_VERSION), px(MARGIN), px(top + LIST_H + 14), px(inner - 130), px(18), FALSE);
+    MoveWindow(item(IDC_VERSION), px(MARGIN), px(top + LIST_H + 14), px(inner - 260), px(18), FALSE);
     MoveWindow(item(IDC_FIRMWARE), px(W - MARGIN - 120), px(top + LIST_H + 10), px(120), px(26), FALSE);
+    MoveWindow(item(IDC_CAPS_BTN), px(W - MARGIN - 250), px(top + LIST_H + 10), px(124), px(26), FALSE);
     InvalidateRect(g_win, nullptr, TRUE);
 }
 
@@ -489,6 +491,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             int id = LOWORD(wp);
             if (id == IDCANCEL) { window_close(); return 0; }
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
+            if (id == IDC_CAPS_BTN) { caps_dialog(g_win); return 0; }
             if (id == IDC_LOOKUP) { look_up(); return 0; }
             if (id == IDC_KEYCAPS && HIWORD(wp) == CBN_SELCHANGE) { on_keycaps(); return 0; }
             if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh(); return 0; }
@@ -663,6 +666,7 @@ void window_show() {
     make(L"BUTTON", L"More colours...", WS_TABSTOP, IDC_PICK);
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP, IDC_VERSION);
     make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);
+    make(L"BUTTON", L"Caps Lock light...", WS_TABSTOP, IDC_CAPS_BTN);
     make(L"BUTTON", L"Look up this keyboard online...", WS_TABSTOP, IDC_LOOKUP);
     make(WC_COMBOBOXW, L"", WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST, IDC_KEYCAPS);
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP | SS_ENDELLIPSIS, IDC_KEYS_INFO);

@@ -64,3 +64,9 @@ enum KeyEdit { KEY_FIRST, KEY_SECOND, KEY_EFFECT, KEY_SPEED, KEY_FOLLOW };
 // KEY_FIRST / KEY_SECOND: colour r, g, b; KEY_EFFECT: value = proto::KEY_*; KEY_SPEED: value 0-255; KEY_FOLLOW: back
 // to the keyboard's effect. A key that follows the effect becomes Steady when it is given a colour.
 void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
+
+// The Caps Lock light (ZXKB firmware v24 on): shown live, saved with the other settings
+bool caps_possible();
+CapsLight caps_light();
+void set_caps_light(const CapsLight &c);
+int  caps_lock_led();                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown

@@ -31,6 +31,11 @@ struct Tune { // size and intensity of the keyboard's current effect
     uint8_t mode = 0, flags = 0, size = 128, intensity = 255;
 };
 
+struct CapsLight { // the Caps Lock light (ZXKB firmware protocol 9)
+    uint8_t fx = 0, speed = 122, a[3] = {255, 0, 255}, b[3] = {255, 255, 255}, full = 1;
+    std::vector<uint8_t> keys; // bit i = LED i
+};
+
 struct Board {
     enum Kind : uint8_t { ZXKB, VIA } kind = ZXKB; // ZXKB module, or plain VIA firmware (no ZXKB commands)
     uint8_t                  protocol = 0, led_count = 0; // ZXKB protocol (0 on VIA boards)
@@ -43,7 +48,8 @@ struct Board {
     std::vector<uint16_t>    keymap;            // layer 0 as the keyboard has it now (read through VIA), row * cols + col
     std::vector<uint8_t>     led_map;           // ZXKB firmware: LED under each matrix position (255 none), row * map_cols + col
     int                      map_rows = 0, map_cols = 0;
-    std::vector<uint8_t>     key;               // ZXKB firmware (protocol 7): proto::KEY_BYTES per LED
+    std::vector<uint8_t>     key;               // ZXKB firmware (protocol 8): proto::KEY_BYTES per LED
+    CapsLight                caps;              // protocol 9
     std::vector<std::string> names; // names[m - 1] = effect number m
     std::vector<uint8_t>     kinds; // 0 QMK, 1 module, 2 board/keymap
     std::vector<uint8_t>     leds;  // x, y, flags per LED

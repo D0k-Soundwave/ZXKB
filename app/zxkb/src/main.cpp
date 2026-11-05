@@ -165,6 +165,31 @@ void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r,
     schedule_save();
 }
 
+bool caps_possible() { return zxkb_board() && g_board->protocol >= 9; }
+CapsLight caps_light() { return g_board ? g_board->caps : CapsLight(); }
+
+void set_caps_light(const CapsLight &c) {
+    if (!caps_possible()) return;
+    g_board->caps = c;
+    uint8_t q[proto::REPORT] = {proto::CAPS, proto::CAPS_SET, c.fx, c.speed, c.a[0], c.a[1], c.a[2], c.b[0], c.b[1], c.b[2], c.full};
+    int n = (int)c.keys.size() <= proto::REPORT - 12 ? (int)c.keys.size() : proto::REPORT - 12;
+    q[11] = (uint8_t)n;
+    std::memcpy(&q[12], c.keys.data(), n);
+    g_link.send(q, 12 + n);
+    schedule_save();
+}
+
+int caps_lock_led() { // KC_CAPS (0x39) in layer 0 of the keymap, through the firmware's key-to-LED map
+    if (!g_board || g_board->keymap.empty() || g_board->led_map.empty() || !g_board->cols) return -1;
+    for (size_t i = 0; i < g_board->keymap.size(); i++) {
+        if (g_board->keymap[i] != 0x39) continue;
+        int r = (int)i / g_board->cols, c = (int)i % g_board->cols;
+        size_t m = (size_t)(r * g_board->map_cols + c);
+        if (m < g_board->led_map.size() && g_board->led_map[m] != 255) return g_board->led_map[m];
+    }
+    return -1;
+}
+
 void enter_bootloader() {
     if (zxkb_board()) send({proto::BOOTLOADER, 'Z', 'X', 'B', 'L'});
 }
@@ -224,6 +249,7 @@ void save_now() {
         if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
         if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
         if (per_key_possible()) send({proto::KEYS, proto::KEYS_SAVE});
+        if (caps_possible()) send({proto::CAPS, proto::CAPS_SAVE});
     }
     g_save_pending = false;
 }
