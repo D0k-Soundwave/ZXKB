@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v25 | 2026-11-05 | 62,432 bytes | Caps Lock light: command to put it back on the keys it started on (0xDE 0x03, protocol 10). Same settings layout: nothing is reset. |
 | v24 | 2026-11-05 | 62,408 bytes | Caps Lock light set from the app (0xDE, protocol 9): effect (off / steady / flash / breathe), two colours, speed, full brightness or not, which keys; starts as v23 (magenta / white, 320 ms, full brightness, Tab Q Caps A Caps-Shift \). 32 spare bytes for later settings. Module block version 6 (785 bytes): the first start resets keymap, macros and key colours. |
 | v23 | 2026-11-05 | 61,968 bytes | Caps Lock on: Tab, Q, Caps Lock, A, Caps Shift and \ all flash magenta/white (320 ms) at full brightness, over any effect and key colours; back to normal when Caps Lock is off. Same settings layout: key colours are kept. |
 | v22 | 2026-11-03 | 61,956 bytes | Full ranges (D0k): each key's speed is a whole byte, 256 steps from 5 s to 16 ms (speed 122 = 320 ms); size 1-255 and intensity 0-255 (both stopped at 16 before). 8 bytes a key (module block version 5, 733 bytes on the Q3): the first start resets the keymap, macros and key colours. Protocol 8. |
@@ -44,6 +45,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.27 | 2026-11-05 | 519,680 bytes | Caps Lock light window: "Starting keys" button (after "Caps Lock only" there was no way back, D0k); the window no longer blocks the main window, so keys can be selected in the preview while it is open. Starting keys needs firmware v25. |
 | 0.26 | 2026-11-05 | 518,656 bytes | Caps Lock light... window: effect, colours 1 and 2 (picker with the Spectrum colours first), speed, full brightness, keys (the keys selected in the preview, or Caps Lock only); live, Cancel puts back. Needs firmware v24. |
 | 0.25 | 2026-11-03 | 512,000 bytes | Key speed 0-255; Size down to 1, Intensity down to 0; every slider: arrow keys move one step, a click on the bar 1/32 of the range. Needs firmware v22 for key colours. |
 | 0.24 | 2026-11-03 | 511,488 bytes | Key speed shows the step time (ms or s) instead of a percentage, using the v21 speed table. |

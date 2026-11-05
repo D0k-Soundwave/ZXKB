@@ -69,4 +69,6 @@ void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r 
 bool caps_possible();
 CapsLight caps_light();
 void set_caps_light(const CapsLight &c);
+bool caps_start_keys_possible();               // firmware v25 on
+void caps_start_keys();                        // the light back on the keys it started on (the reply updates caps_light)
 int  caps_lock_led();                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown

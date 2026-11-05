@@ -494,8 +494,8 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDC_CAPS_BTN) { caps_dialog(g_win); return 0; }
             if (id == IDC_LOOKUP) { look_up(); return 0; }
             if (id == IDC_KEYCAPS && HIWORD(wp) == CBN_SELCHANGE) { on_keycaps(); return 0; }
-            if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh(); return 0; }
-            if (id == IDC_KEYS_ALL) { preview_select_all(); refresh(); return 0; }
+            if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh(); caps_selection_changed(); return 0; }
+            if (id == IDC_KEYS_ALL) { preview_select_all(); refresh(); caps_selection_changed(); return 0; }
             if (id == IDC_KEYS_NONE) { // Clear: every key off (black), whatever is selected (D0k, 2026-11-03)
                 std::vector<int> all;
                 for (int i = 0; g_board && i < g_board->led_count; i++) all.push_back(i);

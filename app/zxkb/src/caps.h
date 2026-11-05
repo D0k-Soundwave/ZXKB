@@ -4,4 +4,6 @@
 #pragma once
 #include <windows.h>
 
-void caps_dialog(HWND owner); // modal; changes show live on the keyboard, Cancel puts back what was there
+void caps_dialog(HWND owner); // not modal; changes show live on the keyboard, Cancel puts back what was there
+HWND caps_window();           // the open Caps Lock window (for keyboard navigation), or null
+void caps_selection_changed(); // keys were selected in the preview

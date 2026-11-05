@@ -23,6 +23,7 @@
 #define IDC_CAPS_KEYS    237
 #define IDC_CAPS_USE_SEL 238
 #define IDC_CAPS_ONLY    239
+#define IDC_CAPS_START   240
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 26 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.26" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 27 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.27" // raise for every build installed for D0k (docs/VERSIONS.md)

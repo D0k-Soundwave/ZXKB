@@ -30,7 +30,7 @@ constexpr uint8_t KEY_NONE = 0, KEY_STEADY = 1, KEY_FLASH = 2, KEY_BREATHE = 3, 
 constexpr int     KEY_SPEED_DEFAULT = 122; // 320 ms a step, the Spectrum FLASH rate (firmware zxkb.c key_step_ms)
 int key_step_ms(int speed);              // 16 ms (255) to 5 s (0), as the firmware's table
 constexpr uint8_t CAPS      = 0xDE; // Caps Lock light (protocol 9): sub 0 get, 1 set, 2 save; always replies
-constexpr uint8_t CAPS_GET = 0x00, CAPS_SET = 0x01, CAPS_SAVE = 0x02;
+constexpr uint8_t CAPS_GET = 0x00, CAPS_SET = 0x01, CAPS_SAVE = 0x02, CAPS_START_KEYS = 0x03; // 3: protocol 10
 // reply/set layout: [0xDE, sub, effect, speed, r, g, b, r2, g2, b2, full, n, n bytes of key bits (bit i = LED i)]
 constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
 constexpr uint8_t TUNE_GET  = 0x00;

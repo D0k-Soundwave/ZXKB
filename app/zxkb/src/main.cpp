@@ -25,6 +25,7 @@
 #include "window.h"
 #include "preview.h"
 #include "boards.h"
+#include "caps.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -176,6 +177,33 @@ void set_caps_light(const CapsLight &c) {
     q[11] = (uint8_t)n;
     std::memcpy(&q[12], c.keys.data(), n);
     g_link.send(q, 12 + n);
+    schedule_save();
+}
+
+bool caps_start_keys_possible() { return zxkb_board() && g_board->protocol >= 10; }
+
+void caps_start_keys() {
+    if (!caps_start_keys_possible()) return;
+    // the reply carries the keys; wait for it here (about 5 ms, hidlink.cpp) so the window can show them at once
+    g_link.raw_reports(true);
+    send({proto::CAPS, proto::CAPS_START_KEYS});
+    DWORD start = GetTickCount();
+    MSG   m;
+    while (GetTickCount() - start < 300) {
+        if (PeekMessageW(&m, g_hwnd, WM_ZX_RAW, WM_ZX_RAW, PM_REMOVE)) {
+            uint8_t *r = reinterpret_cast<uint8_t *>(m.lParam);
+            bool mine = r[0] == proto::CAPS && r[1] == proto::CAPS_START_KEYS;
+            if (mine) {
+                int n = r[11] <= proto::REPORT - 12 ? r[11] : proto::REPORT - 12;
+                g_board->caps.keys.assign(r + 12, r + 12 + n);
+            }
+            delete[] r;
+            if (mine) break;
+        } else {
+            MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+        }
+    }
+    g_link.raw_reports(false);
     schedule_save();
 }
 
@@ -794,6 +822,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdline, int) {
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
         HWND win = window_handle();
         if (win && IsDialogMessageW(win, &msg)) continue; // Tab, arrows and Esc in the ZXKB window
+        if (HWND caps = caps_window()) if (IsDialogMessageW(caps, &msg)) continue;
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }

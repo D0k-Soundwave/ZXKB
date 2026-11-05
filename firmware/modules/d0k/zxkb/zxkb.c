@@ -201,6 +201,9 @@ static void caps_command(uint8_t *data, uint8_t length) {
         cfg.caps_full = data[10];
         if (data[11] <= n) n = data[11];
         memcpy(cfg.caps_keys, &data[12], n);
+    } else if (sub == ZXKB_CAPS_START_KEYS) {
+        memset(cfg.caps_keys, 0, sizeof(cfg.caps_keys));
+        zxkb_caps_keys_user(cfg.caps_keys);
     } else if (sub == ZXKB_CAPS_SAVE) {
         eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg)); /* only changed bytes are written */
     } else if (sub != ZXKB_CAPS_GET) {

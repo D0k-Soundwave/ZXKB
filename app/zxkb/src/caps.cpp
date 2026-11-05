@@ -42,6 +42,7 @@ void show() {
     EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_C2), moving);
     EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_USE_SEL), preview_selected_count() > 0);
     EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_ONLY), caps_lock_led() >= 0);
+    EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_START), caps_start_keys_possible());
     InvalidateRect(GetDlgItem(g_dlg, IDC_CAPS_C1), nullptr, FALSE);
     InvalidateRect(GetDlgItem(g_dlg, IDC_CAPS_C2), nullptr, FALSE);
     g_filling = false;
@@ -86,6 +87,12 @@ void draw(const DRAWITEMSTRUCT *d) {
 
 INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
+        case WM_DESTROY:
+            g_dlg = nullptr;
+            return TRUE;
+        case WM_ACTIVATE: // keys selected in the preview meanwhile: "Use the keys selected" may now apply
+            if (LOWORD(wp) != WA_INACTIVE && g_dlg) show();
+            return FALSE;
         case WM_INITDIALOG:
             g_dlg    = dlg;
             g_before = g_now = caps_light();
@@ -128,6 +135,11 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
                     show();
                     return TRUE;
                 }
+                case IDC_CAPS_START: // the keys it started on (D0k: after Caps Lock only there was no way back)
+                    caps_start_keys();
+                    g_now.keys = caps_light().keys;
+                    show();
+                    return TRUE;
                 case IDC_CAPS_ONLY: {
                     int led = caps_lock_led();
                     std::vector<uint8_t> bits(g_now.keys.size(), 0);
@@ -138,12 +150,12 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
                     return TRUE;
                 }
                 case IDOK:
-                    EndDialog(dlg, IDOK);
+                    DestroyWindow(dlg);
                     return TRUE;
                 case IDCANCEL: // put back what the keyboard had
                     g_now = g_before;
                     send();
-                    EndDialog(dlg, IDCANCEL);
+                    DestroyWindow(dlg);
                     return TRUE;
             }
             break;
@@ -153,11 +165,17 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
 
 } // namespace
 
+// Not modal: keys can be selected in the preview while it is open (D0k, 2026-11-05)
 void caps_dialog(HWND owner) {
     if (!caps_possible()) {
         MessageBoxW(owner, L"Setting the Caps Lock light needs ZXKB firmware v24 or later.", L"ZXKB", MB_OK | MB_ICONINFORMATION);
         return;
     }
-    DialogBoxParamW(g_inst, MAKEINTRESOURCEW(IDD_CAPS), owner, proc, 0);
-    g_dlg = nullptr;
+    if (g_dlg) { SetForegroundWindow(g_dlg); return; }
+    g_dlg = CreateDialogParamW(g_inst, MAKEINTRESOURCEW(IDD_CAPS), owner, proc, 0);
+    if (g_dlg) ShowWindow(g_dlg, SW_SHOW);
 }
+
+HWND caps_window() { return g_dlg; }
+
+void caps_selection_changed() { if (g_dlg) show(); }
