@@ -11,6 +11,7 @@
 #include "caps.h"
 #include "boards.h"
 #include "keycaps.h"
+#include "sim.h"
 #include "protocol.h"
 #include "labels.h"
 #include "../res/resource.h"
@@ -193,7 +194,10 @@ void refresh() {
     if (!g_win) return;
     g_updating = true;
     bool on = g_board != nullptr;
-    SetWindowTextW(item(IDC_NOW), (L"Now: " + current_effect_text()).c_str());
+    std::wstring now = L"Now: " + current_effect_text();
+    if (on && g_board->kind == Board::VIA && g_st.enabled && !g_pc_effect && !g_board->keys.empty())
+        now += sim::known(effect_name(g_st.mode)) ? L" (preview simulated)" : L" (no preview for this effect)";
+    SetWindowTextW(item(IDC_NOW), now.c_str());
 
     // select the current effect in the list
     HWND list = item(IDC_LIST);

@@ -8,6 +8,7 @@
 #include "app.h"
 #include "labels.h"
 #include "keycaps.h"
+#include "sim.h"
 #include "settings.h"
 #include <d2d1.h>
 #include <dwrite.h>
@@ -64,8 +65,13 @@ D2D1_COLOR_F hex(unsigned v, float a = 1) {
     return D2D1::ColorF(((v >> 16) & 255) / 255.f, ((v >> 8) & 255) / 255.f, (v & 255) / 255.f, a);
 }
 
+int g_lit = 0; // how many LED colours g_rgb holds: the keyboard's LEDs, or (simulated) one per key
+bool g_sim = false; // the preview is simulated (standard firmware: the keyboard cannot report its LEDs)
+constexpr UINT TIMER_SIM = 7;
+constexpr UINT SIM_FRAME_MS = 33; // [C] about 30 frames a second, as the LED mirror (zxkb.h)
+
 D2D1_COLOR_F led_colour(int led) {
-    if (led < 0 || !g_board || led >= g_board->led_count) return D2D1::ColorF(0, 0, 0, 0);
+    if (led < 0 || !g_board || led >= g_lit) return D2D1::ColorF(0, 0, 0, 0);
     float r = g_rgb[led * 3] / 255.f, g = g_rgb[led * 3 + 1] / 255.f, b = g_rgb[led * 3 + 2] / 255.f;
     return D2D1::ColorF(std::pow(r, GAMMA), std::pow(g, GAMMA), std::pow(b, GAMMA), 1);
 }
@@ -225,8 +231,8 @@ std::vector<BoardKey> board_keys() { // the keys to draw for the connected keybo
                 t.sub = lb.sub;
             }
         }
-        // the LED under the key (ZXKB firmware reports which), so the key lights as on the keyboard
-        int led = -1;
+        // the LED under the key (ZXKB firmware reports which), so the key lights as on the keyboard; simulated: the key
+        int led = g_sim ? (int)i : -1;
         size_t m = (size_t)(r.row * g_board->map_cols + r.col);
         if (r.row >= 0 && r.col >= 0 && m < g_board->led_map.size() && g_board->led_map[m] != 255) led = g_board->led_map[m];
         BoardKey k = {r.x, r.y, r.w, r.h, led, knob ? 2 : 0, top, side, main_rgb, sub_rgb, t.main.c_str(), t.sub.c_str(), t.keyword.c_str()};
@@ -274,6 +280,11 @@ void render() {
             drop_caps();
             // the key list (with labels, keycaps and LEDs) only changes with the board, size or labels, not per frame
             size_t before = keys.size();
+            g_sim = g_board->kind == Board::VIA && !g_board->keys.empty();
+            if (g_sim) sim::set_keys(g_board->keys, g_board->keymap, g_board->cols);
+            // frames only for a simulated preview; a ZXKB keyboard sends its own (the LED mirror)
+            if (g_sim) SetTimer(g_hwnd_preview, TIMER_SIM, SIM_FRAME_MS, nullptr);
+            else KillTimer(g_hwnd_preview, TIMER_SIM);
             keys = board_keys();
             if (keys.size() != before) g_sel.assign(keys.size(), false);
             if (!g_fmt[0] || std::fabs(unit - g_fmt_unit) > 0.5f) make_formats(unit);
@@ -334,6 +345,17 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_ERASEBKGND:
             return 1;
+        case WM_TIMER: // simulated preview: the next frame of the effect
+            if (wp == TIMER_SIM) preview_simulate();
+            return 0;
+        case WM_INPUT: { // key presses for the simulated typing effects (only while the preview exists)
+            RAWINPUT ri;
+            UINT size = sizeof(ri);
+            if (GetRawInputData((HRAWINPUT)lp, RID_INPUT, &ri, &size, sizeof(RAWINPUTHEADER)) != (UINT)-1 &&
+                ri.header.dwType == RIM_TYPEKEYBOARD && !(ri.data.keyboard.Flags & RI_KEY_BREAK))
+                sim::key_hit((uint16_t)(ri.data.keyboard.MakeCode | (ri.data.keyboard.Flags & RI_KEY_E0 ? 0xE000 : 0)));
+            return DefWindowProcW(hwnd, msg, wp, lp);
+        }
         case WM_LBUTTONDOWN: { // select the key under the pointer (Ctrl: add or remove it)
             float x = (float)(short)LOWORD(lp), y = (float)(short)HIWORD(lp);
             int hit = -1;
@@ -357,7 +379,11 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (g_rt) g_rt->Resize(D2D1::SizeU(LOWORD(lp), HIWORD(lp))); // the caps picture is redrawn for the new size
             InvalidateRect(hwnd, nullptr, FALSE);
             return 0;
-        case WM_DESTROY:
+        case WM_DESTROY: {
+            RAWINPUTDEVICE rid = {0x01, 0x06, RIDEV_REMOVE, nullptr};
+            RegisterRawInputDevices(&rid, 1, sizeof(rid));
+            KillTimer(hwnd, TIMER_SIM);
+        }
             drop_caps();
             g_keys_cache.clear();
             g_sel.clear();
@@ -399,7 +425,24 @@ HWND preview_create(HWND parent, int id) {
     if (mk_d2d) mk_d2d(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory), nullptr, (void **)&g_d2d);
     if (mk_dw) mk_dw(DWRITE_FACTORY_TYPE_ISOLATED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown **>(&g_dw));
     g_hwnd_preview = CreateWindowExW(0, L"ZXKBPreview", L"", WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, parent, (HMENU)(INT_PTR)id, g_inst, nullptr);
+    // key presses for simulated typing effects, from any keyboard, only while the preview is open (no hook)
+    RAWINPUTDEVICE rid = {0x01, 0x06, RIDEV_INPUTSINK, g_hwnd_preview};
+    RegisterRawInputDevices(&rid, 1, sizeof(rid));
     return g_hwnd_preview;
+}
+
+// Simulated preview: the effect worked out for this moment; nothing to do (and no redraw) when it is not simulated
+void preview_simulate() {
+    if (!g_hwnd_preview || !g_board || g_board->kind != Board::VIA || g_board->keys.empty()) return;
+    std::string fx = g_st.enabled && g_st.mode >= 1 && g_st.mode <= (int)g_board->names.size() ? g_board->names[g_st.mode - 1] : "";
+    size_t n = std::min<size_t>(g_board->keys.size(), 256);
+    uint8_t now[sizeof(g_rgb)] = {0};
+    if (g_pc_effect != PCFX_NONE || !sim::known(fx) || !sim::render(fx, g_st.hue, g_st.sat, g_st.val, g_st.speed, GetTickCount(), now))
+        std::memset(now, 0, n * 3); // lighting off, a ZXKB PC effect, or an effect the simulator does not have: unlit
+    g_lit = (int)n;
+    if (std::memcmp(now, g_rgb, n * 3) == 0) return;
+    std::memcpy(g_rgb, now, n * 3);
+    InvalidateRect(g_hwnd_preview, nullptr, FALSE);
 }
 
 // Redraw only when a colour changed: a still effect then costs nothing
@@ -408,6 +451,7 @@ void preview_update() {
     uint8_t now[sizeof(g_rgb)];
     int n = g_board->led_count; // at most 255, so it fits g_rgb
     keyboard_mirror(now, n);
+    g_lit = n;
     if (std::memcmp(now, g_rgb, n * 3) == 0) return;
     std::memcpy(g_rgb, now, n * 3);
     InvalidateRect(g_hwnd_preview, nullptr, FALSE);

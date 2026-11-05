@@ -220,6 +220,16 @@ int main(int argc, char **argv) {
         link.send(q, 4);
         std::printf("brightness %d\n", q[3]);
         pump(100, false);
+    } else if (!std::strcmp(cmd, "colour") && argc > 3) { // probe colour H S: effect colour (not saved)
+        uint8_t q[5] = {proto::VIA_SET, proto::VIA_RGB_MATRIX, proto::VIA_COLOUR, (uint8_t)std::atoi(argv[2]), (uint8_t)std::atoi(argv[3])};
+        link.send(q, 5);
+        std::printf("colour %d %d\n", q[3], q[4]);
+        pump(100, false);
+    } else if (!std::strcmp(cmd, "mode") && argc > 2) { // probe mode N: effect by number (not saved)
+        uint8_t q[4] = {proto::VIA_SET, proto::VIA_RGB_MATRIX, proto::VIA_EFFECT, (uint8_t)std::atoi(argv[2])};
+        link.send(q, 4);
+        std::printf("mode %d\n", q[3]);
+        pump(100, false);
     } else if (!std::strcmp(cmd, "save")) { // probe save: keep the current lighting after unplugging
         uint8_t q[2] = {proto::VIA_SAVE, proto::VIA_RGB_MATRIX};
         link.send(q, 2);

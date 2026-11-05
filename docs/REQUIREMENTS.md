@@ -160,7 +160,8 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       not true white); VIA cannot change it, only ZXKB firmware can (D0k, 2026-11-03). The window says so on boards
       whose balance ZXKB knows is off
 - [x] Standard Keychron firmware on the Q3 tested by D0k 2026-11-03 (0.13): switch, lookup, effects, back to v17 all worked
-- [ ] Simulated preview for keyboards without the ZXKB firmware: the app recreates QMK's standard effects from the
+- [~] Simulated preview for keyboards without the ZXKB firmware (0.30; tried on the Q3 as standard VIA: Cycle left to
+      right and Splash look as QMK draws them): the app recreates QMK's standard effects from the
       effect, speed, colour and brightness (read through VIA) and the LED positions (VIA/QMK definitions); typing
       effects from Windows key presses. Marked "simulated" in the window. Effects a maker added cannot be simulated
       (shown as plain keys). Only while the window is open

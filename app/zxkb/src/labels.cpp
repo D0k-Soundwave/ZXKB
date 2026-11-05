@@ -103,6 +103,12 @@ Label basic(uint16_t usage, HKL layout) {
 
 HKL current_layout() { return GetKeyboardLayout(0); }
 
+uint16_t scan_of_usage(uint8_t usage) {
+    if (usage < 0x74) return usage_to_scan[usage];
+    if (usage >= 0xE0 && usage <= 0xE7) return mod_scan[usage - 0xE0];
+    return 0;
+}
+
 std::vector<HKL> installed() {
     int n = GetKeyboardLayoutList(0, nullptr);
     std::vector<HKL> list(n > 0 ? n : 0);

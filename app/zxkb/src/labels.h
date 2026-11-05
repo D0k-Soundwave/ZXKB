@@ -16,6 +16,7 @@ struct Label {
 // custom: names of the keyboard's own key codes (QK_KB + i), from its VIA definition
 Label for_keycode(uint16_t kc, HKL layout, const std::vector<std::wstring> &custom);
 HKL   current_layout();                 // the keyboard layout in use now
+uint16_t scan_of_usage(uint8_t usage);  // PC scan code (set 1, 0xE0xx extended) of a USB HID key usage, 0 if none
 std::vector<HKL> installed();          // the layouts installed in Windows
 std::wstring layout_name(HKL layout);  // Windows' own name for the layout ("United Kingdom", "US - Spectrum ...")
 } // namespace labels

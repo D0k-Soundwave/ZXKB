@@ -86,7 +86,8 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   `src/labels` (key labels: QMK keycode -> HID usage -> scan code -> Windows layout), `src/keycaps` (KLE keycap sets in
   <exe>\keycaps and %APPDATA%\ZXKB\keycaps, choice per USB ID in zxkb.ini [keycaps]). The Wraith set is
   app/zxkb/keycaps/*.json, written by `python tools/gen_wraith_kle.py` (matrix positions from QMK's Q3 keyboard.json).
-  `src/fnkeys`: Fn + 1..0 -> F13-F22 through VIA for standard keyboards (old keys in zxkb.ini [fnkeys]); test switch
+  `src/sim`: simulated preview for standard VIA keyboards (QMK's effect maths ported; key presses by raw input while
+  the window is open). `src/fnkeys`: Fn + 1..0 -> F13-F22 through VIA for standard keyboards (old keys in zxkb.ini [fnkeys]); test switch
   ZXKB_TEST_FN=setup|undo runs it at connect (result in %APPDATA%\ZXKB\fnkeys.log). `src/caps`: Caps Lock light window.
   Keychron's own firmware source: %USERPROFILE%\keychron_qmk (branch 2025q3), `make keychron/q3/iso_encoder:keychron`.
   Build from PowerShell with TMP set to a writable folder (g++ otherwise tries C:\WINDOWS for temp files).
