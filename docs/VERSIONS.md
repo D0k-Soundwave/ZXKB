@@ -45,6 +45,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.28 | 2026-11-05 | 526,336 bytes | Fn + number hotkeys for standard VIA keyboards: tray menu Fn + number hotkeys > Set up Fn + 1 to Fn + 0 on this keyboard (after asking): finds the Fn layer and the 1-0 keys, keeps the keys there, sets them to F13-F22 through VIA, and answers F13-F22 as Windows hotkeys; Put the keyboard's own keys back undoes it. Not offered on ZXKB keyboards (they report Fn + number themselves). |
 | 0.27 | 2026-11-05 | 519,680 bytes | Caps Lock light window: "Starting keys" button (after "Caps Lock only" there was no way back, D0k); the window no longer blocks the main window, so keys can be selected in the preview while it is open. Starting keys needs firmware v25. |
 | 0.26 | 2026-11-05 | 518,656 bytes | Caps Lock light... window: effect, colours 1 and 2 (picker with the Spectrum colours first), speed, full brightness, keys (the keys selected in the preview, or Caps Lock only); live, Cancel puts back. Needs firmware v24. |
 | 0.25 | 2026-11-03 | 512,000 bytes | Key speed 0-255; Size down to 1, Intensity down to 0; every slider: arrow keys move one step, a click on the bar 1/32 of the range. Needs firmware v22 for key colours. |

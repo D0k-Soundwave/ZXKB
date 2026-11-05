@@ -163,7 +163,8 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       effect, speed, colour and brightness (read through VIA) and the LED positions (VIA/QMK definitions); typing
       effects from Windows key presses. Marked "simulated" in the window. Effects a maker added cannot be simulated
       (shown as plain keys). Only while the window is open
-- [ ] Fn + number hotkeys without the ZXKB firmware: with the user's OK the app sets Fn+1..0 to F13-F22 through VIA
+- [~] Fn + number hotkeys without the ZXKB firmware (0.28; tested on the Q3 treated as standard VIA: set up, F13-F22 held as
+      Windows hotkeys, undo restored all 10 keys exactly): with the user's OK the app sets Fn+1..0 to F13-F22 through VIA
       (old keys saved first, undo in one click) and registers them as Windows hotkeys (no polling); Ctrl+Alt+Shift+
       number as the alternative for software that uses F13-F24. Only while ZXKB runs
 - [ ] Keychron's own firmware per-key lighting (checked 2026-11-03 in github.com/Keychron/qmk_firmware, branch

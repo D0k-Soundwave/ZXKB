@@ -109,6 +109,8 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | 0.21 ZXKB.exe size | 510,464 bytes | M | 2026-11-03 |
 | Key-to-LED map read by 3 programs at once | old code 18 of 18 reads wrong; 0.22 code 0 of 18 | M | probe matrix x3 in parallel x6, compared with QMK's keyboard.json, 2026-11-03 |
 | Per-key flash at speed 3 | 1,031 ms between changes (firmware: 80 x 13 = 1,040 ms) | M | probe blink 54 5, 2026-11-03 |
+| Fn + number set-up on the Q3 (as plain VIA) | 10 of 10 keys set on layer 1, F13 and F22 held by ZXKB (F23 free), undo 10 of 10 back | M | ZXKB_TEST_FN + probe fnplan + RegisterHotKey check, 2026-11-05 |
+| 0.28 ZXKB.exe size | 526,336 bytes (546,304 with swscanf; replaced by wcstol) | M | 2026-11-05 |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

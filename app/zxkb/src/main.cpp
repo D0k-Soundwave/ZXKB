@@ -26,11 +26,13 @@
 #include "preview.h"
 #include "boards.h"
 #include "caps.h"
+#include "fnkeys.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
     ID_STYLE_BANDS = 100, ID_STYLE_ABC, ID_STYLE_MUSIC, // VU styles: ID_STYLE_BANDS + VuStyle
     ID_OFF, ID_BRIGHTER, ID_DIMMER, ID_FASTER, ID_SLOWER,
+    ID_FN_SETUP, ID_FN_UNDO,
     ID_FAV_ADD, ID_FAV_REMOVE, ID_PROFILE_SAVE, ID_AUTOSTART, ID_QUIT, ID_WINDOW, ID_BIGGER, ID_SMALLER, ID_STRONGER, ID_SOFTER,
     ID_EFFECT  = 1000, // + effect number (1-255)
     ID_FAV     = 1300, // + favourite index
@@ -205,6 +207,44 @@ void caps_start_keys() {
     }
     g_link.raw_reports(false);
     schedule_save();
+}
+
+bool keyboard_ask(const uint8_t *q, int n, uint8_t *reply32, int match) {
+    if (!g_board) return false;
+    g_link.raw_reports(true);
+    g_link.send(q, n);
+    bool  got = false;
+    DWORD start = GetTickCount();
+    MSG   m;
+    // [C] replies take about 5 ms (hidlink.cpp); 300 ms is ~60x that
+    while (!got && GetTickCount() - start < 300) {
+        if (PeekMessageW(&m, g_hwnd, WM_ZX_RAW, WM_ZX_RAW, PM_REMOVE)) {
+            uint8_t *r = reinterpret_cast<uint8_t *>(m.lParam);
+            if (std::memcmp(r, q, match) == 0) { std::memcpy(reply32, r, proto::REPORT); got = true; }
+            delete[] r;
+        } else {
+            MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+        }
+    }
+    g_link.raw_reports(false);
+    return got;
+}
+
+bool read_keymap_now() {
+    if (!g_board || !g_board->via_protocol || !g_board->rows || !g_board->cols) return false;
+    g_link.request_keymap(g_board->rows, g_board->cols);
+    DWORD start = GetTickCount();
+    MSG   m;
+    while (GetTickCount() - start < 2000) { // [A] the Q3's 192 bytes come in 7 replies, well under a second
+        if (PeekMessageW(&m, g_hwnd, WM_ZX_KEYMAP, WM_ZX_KEYMAP, PM_REMOVE)) {
+            auto *km = reinterpret_cast<std::vector<uint16_t> *>(m.lParam);
+            g_board->keymap = *km;
+            delete km;
+            return true;
+        }
+        MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+    }
+    return false;
 }
 
 int caps_lock_led() { // KC_CAPS (0x39) in layer 0 of the keymap, through the firmware's key-to-LED map
@@ -626,6 +666,11 @@ void show_menu() {
         add(k, ID_SLOT_CLR + s, L"Clear", false, !g_slots[s].empty());
         add_sub(keys, k, slot_text(s));
     }
+    if (fnkeys::possible()) {
+        sep(keys);
+        if (fnkeys::active()) add(keys, ID_FN_UNDO, L"Put the keyboard's own keys back on Fn + 1 to Fn + 0");
+        else add(keys, ID_FN_SETUP, L"Set up Fn + 1 to Fn + 0 on this keyboard...");
+    }
     add_sub(menu, keys, L"Fn + number hotkeys");
     sep(menu);
     add(menu, ID_AUTOSTART, L"Start with Windows", settings::autostart());
@@ -663,6 +708,22 @@ void show_menu() {
         if (DialogBoxParamW(g_inst, MAKEINTRESOURCEW(IDD_NAME), g_hwnd, name_dialog, (LPARAM)&name) == IDOK)
             settings::save_profile(name, current_profile());
     } else if (cmd == ID_AUTOSTART) settings::set_autostart(!settings::autostart());
+    else if (cmd == ID_FN_SETUP) {
+        std::wstring ask = L"This keyboard's firmware does not report Fn + number to ZXKB. ZXKB can set Fn + 1 to Fn + 0 "
+                           L"to send F13 to F22 (keys almost no keyboard has) in the keyboard's own keymap, and answer "
+                           L"those.\n\nThe keys there now are kept, and \"Put the keyboard's own keys back\" restores them. "
+                           L"The hotkeys work only while ZXKB runs, and a program that uses F13 to F22 itself would see "
+                           L"them too.\n\nSet them up?";
+        if (MessageBoxW(g_hwnd, ask.c_str(), L"ZXKB", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+            std::wstring msg;
+            bool ok = fnkeys::set_up(&msg);
+            MessageBoxW(g_hwnd, msg.c_str(), L"ZXKB", MB_OK | (ok ? MB_ICONINFORMATION : MB_ICONWARNING));
+        }
+    } else if (cmd == ID_FN_UNDO) {
+        std::wstring msg;
+        bool ok = fnkeys::undo(&msg);
+        MessageBoxW(g_hwnd, msg.c_str(), L"ZXKB", MB_OK | (ok ? MB_ICONINFORMATION : MB_ICONWARNING));
+    }
     else if (cmd == ID_QUIT) DestroyWindow(g_hwnd);
     else if (cmd >= ID_SLOT_PRO) {
         UINT s = (cmd - ID_SLOT_PRO) / MAX_PROFILES, i = (cmd - ID_SLOT_PRO) % MAX_PROFILES;
@@ -712,11 +773,24 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_tune.flags = 0;
             if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
             if (g_window_mode) request_keymap(); // labels for the preview (only the window shows them)
+            else fnkeys::listen(hwnd);            // F13-F22 hotkeys, if set up for this keyboard
+            if (!g_window_mode) { // test switch: ZXKB_TEST_FN=setup or undo runs it at connect, result in fnkeys.log
+                wchar_t t[16] = {0};
+                if (GetEnvironmentVariableW(L"ZXKB_TEST_FN", t, 16)) {
+                    std::wstring msg;
+                    bool ok = wcscmp(t, L"undo") == 0 ? fnkeys::undo(&msg) : fnkeys::set_up(&msg);
+                    std::string line = (ok ? "ok: " : "failed: ") + settings::narrow(msg) + "\r\n";
+                    HANDLE f = CreateFileW((settings::folder() + L"\\fnkeys.log").c_str(), FILE_APPEND_DATA, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, 0, nullptr);
+                    DWORD w;
+                    if (f != INVALID_HANDLE_VALUE) { WriteFile(f, line.data(), (DWORD)line.size(), &w, nullptr); CloseHandle(f); }
+                }
+            }
             update_capture();
             update_tray();
             window_refresh();
             return 0;
         case WM_ZX_DISCONNECTED:
+            fnkeys::stop_listening(hwnd);
             g_vu.stop();
             delete g_board;
             g_board = nullptr;
@@ -724,6 +798,10 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_save_pending = false;
             update_tray();
             window_refresh();
+            return 0;
+        case WM_HOTKEY: // F13-F22 from a plain VIA keyboard set up by fnkeys
+            if (!g_window_mode && wp >= (WPARAM)fnkeys::HOTKEY_BASE && wp < (WPARAM)fnkeys::HOTKEY_BASE + 10)
+                apply_slot((int)(wp - fnkeys::HOTKEY_BASE) + 1);
             return 0;
         case WM_ZX_SLOT:
             if (!g_window_mode) apply_slot((int)wp); // the tray copy answers Fn + number

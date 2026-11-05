@@ -160,6 +160,43 @@ int main(int argc, char **argv) {
             }
             if (!got) std::printf("no reply to VIA command 0x%02X\n", id);
         }
+    } else if (!std::strcmp(cmd, "fnplan")) { // probe fnplan: where Fn + 1..0 are, and what they send now (reads only)
+        if (!board->rows || !board->cols) { std::printf("matrix size not known (no definition)\n"); return 1; }
+        link.request_keymap(board->rows, board->cols);
+        std::vector<uint16_t> km;
+        DWORD start = GetTickCount();
+        MSG m;
+        while (km.empty() && GetTickCount() - start < 2000) {
+            if (PeekMessageW(&m, nullptr, WM_ZX_KEYMAP, WM_ZX_KEYMAP, PM_REMOVE)) {
+                auto *p = reinterpret_cast<std::vector<uint16_t> *>(m.lParam);
+                km = *p;
+                delete p;
+            } else MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+        }
+        int fn = -1, pos[10];
+        for (int &p : pos) p = -1;
+        for (size_t i = 0; i < km.size(); i++) {
+            if (km[i] >= 0x5220 && km[i] <= 0x523F && fn < 0) fn = km[i] - 0x5220;
+            if (km[i] >= 0x1E && km[i] < 0x28 && pos[km[i] - 0x1E] < 0) pos[km[i] - 0x1E] = (int)i;
+        }
+        std::printf("layer 0 read: %d keys; Fn key holds layer %d\n", (int)km.size(), fn);
+        link.raw_reports(true);
+        for (int n = 0; n < 10 && fn > 0; n++) {
+            if (pos[n] < 0) { std::printf("  %d: not on layer 0\n", (n + 1) % 10); continue; }
+            int row = pos[n] / board->cols, col = pos[n] % board->cols;
+            uint8_t q[4] = {0x04, (uint8_t)fn, (uint8_t)row, (uint8_t)col};
+            link.send(q, 4);
+            int kc = -1;
+            start = GetTickCount();
+            while (kc < 0 && GetTickCount() - start < 300) {
+                if (PeekMessageW(&m, nullptr, WM_ZX_RAW, WM_ZX_RAW, PM_REMOVE)) {
+                    uint8_t *r = reinterpret_cast<uint8_t *>(m.lParam);
+                    if (!std::memcmp(r, q, 4)) kc = r[4] << 8 | r[5];
+                    delete[] r;
+                } else MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+            }
+            std::printf("  Fn + %d: matrix %d,%d on layer %d now sends 0x%04X\n", (n + 1) % 10, row, col, fn, kc);
+        }
     } else if (!std::strcmp(cmd, "keyleds")) { // probe keyleds: each layout key's matrix position and LED, as the preview works them out
         for (size_t i = 0; i < board->keys.size(); i++) {
             const KeyRect &r = board->keys[i];

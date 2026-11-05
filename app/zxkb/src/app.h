@@ -71,4 +71,8 @@ CapsLight caps_light();
 void set_caps_light(const CapsLight &c);
 bool caps_start_keys_possible();               // firmware v25 on
 void caps_start_keys();                        // the light back on the keys it started on (the reply updates caps_light)
-int  caps_lock_led();                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown
+int  caps_lock_led();
+// Ask the keyboard something it answers with a report ZXKB does not otherwise use (e.g. VIA keymap commands) and
+// wait briefly for the reply whose first `match` bytes equal the question's. Main thread only.
+bool keyboard_ask(const uint8_t *q, int n, uint8_t *reply32, int match);
+bool read_keymap_now();                        // read layer 0 of the keymap and wait for it (needs the matrix size)                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown
