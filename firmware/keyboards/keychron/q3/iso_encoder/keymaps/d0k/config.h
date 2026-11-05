@@ -2,7 +2,7 @@
 
 /* Firmware version: raise it for every build handed to D0k. build.sh names the .bin after it and keeps each
  * released version (docs/VERSIONS.md). */
-#define ZXKB_FIRMWARE_VERSION 28
+#define ZXKB_FIRMWARE_VERSION 29
 /* Every QMK RGB matrix effect except the typing ones (SOLID_REACTIVE_*, *SPLASH): the ZXKB module has its own
  * versions of those with size and intensity settings */
 #define RGB_MATRIX_KEYPRESSES

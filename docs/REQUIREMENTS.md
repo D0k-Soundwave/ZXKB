@@ -86,11 +86,11 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
 - [~] Game-mode lock: blocks Alt+Tab, Alt+F4 and the Windows keys, each chosen in Keyboard settings; on / off there or by Fn+Win (v28, reassignable; replaced the Windows-key lock, D0k 2026-11-05) (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard)
 - [ ] App-only actions on any key: launch app or URL, paste text, timer (work only while ZXKB runs)
 - [~] Macros: record in the app, edit keys and delays, stored on the keyboard (work without the app; 0.36: editor,
-      recording, import/export, kept across firmware updates; play modes in v27 / 0.38: once, repeat while held, on / off, for the first 16 macros; on-the-fly recording still to come);
+      recording, import/export, kept across firmware updates; play modes in v27 / 0.38: once, repeat while held, on / off, for the first 16 macros; on-the-fly recording on the keyboard in v29 / 0.40 (record key Fn+M; the app offers it only when the firmware can, D0k 2026-11-05: choose between recording on the keyboard and in the app);
       on-the-fly recording by a key; play once / repeat while held / toggle / sequence (firmware work);
       library with import and export
 - [ ] Hold-a-key second layer (QMK layers; each extra layer uses 192 bytes of the keyboard's settings memory)
-- [ ] Profiles on the keyboard (work without the app): lighting profiles cheap; whole keymaps need the settings
+- [-] Not doing (D0k, 2026-11-05: profiles stay in the app only). Profiles on the keyboard (work without the app): lighting profiles cheap; whole keymaps need the settings
       memory enlarged (2,048 bytes now; flash is 77% free); profile-cycle key
 - [ ] Profile import, export and backup
 - [~] Indicator colours: active layer done in v27 (while Fn is held, its keys light in a chosen colour); Num Lock (the Q3 has no Num Lock key) and profile still to come (Caps Lock done)

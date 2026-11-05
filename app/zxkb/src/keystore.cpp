@@ -147,6 +147,18 @@ int reapply(int *failed) {
     return changed;
 }
 
+void keep_keyboard_macros() {
+    if (!g_board) return;
+    std::vector<std::wstring> now;
+    int size = 0;
+    if (!macros::read_all(&now, &size)) return;
+    bool any_kept, any_now = false;
+    std::vector<std::wstring> kept = kept_macros(&any_kept);
+    for (const std::wstring &t : now) any_now |= !t.empty();
+    kept.resize(now.size());
+    if ((any_now || any_kept) && kept != now) record_macros(now);
+}
+
 bool firmware_changed() {
     if (!g_board) return false;
     // the firmware this keyboard ran when last seen: ZXKB version, or VIA protocol for standard firmware

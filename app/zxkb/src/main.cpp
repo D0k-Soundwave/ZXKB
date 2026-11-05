@@ -874,7 +874,11 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (g_window_mode && g_board->kind == Board::ZXKB && g_board->protocol >= 11) g_board->shown_layer = g_st.base_layer;
             if (g_window_mode) request_keymap(); // labels for the preview (only the window shows them)
             else fnkeys::listen(hwnd);            // F13-F22 hotkeys, if set up for this keyboard
-            if (!g_window_mode && keystore::firmware_changed() && keystore::count() > 0) {
+            static bool fw_changed; // static: no initialisation for the later case labels to jump over
+            fw_changed = !g_window_mode && keystore::firmware_changed();
+            // macros recorded on the keyboard while ZXKB was not running become the ones kept
+            if (!g_window_mode && !fw_changed && kb_record_possible()) keystore::keep_keyboard_macros();
+            if (fw_changed && keystore::count() > 0) {
                 // a firmware update reset the keymap (VIA does so for every new build): ZXKB's key changes back
                 int failed = 0, n = keystore::reapply(&failed);
                 if (n || failed) {
@@ -919,6 +923,22 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (!g_window_mode && wp >= (WPARAM)fnkeys::HOTKEY_BASE && wp < (WPARAM)fnkeys::HOTKEY_BASE + 10)
                 apply_slot((int)(wp - fnkeys::HOTKEY_BASE) + 1);
             return 0;
+        case WM_ZX_RECORDED: { // a macro recorded on the keyboard: kept by ZXKB (tray), shown (window)
+            if (g_window_mode) {
+                macros_recorded_on_keyboard((int)wp);
+            } else {
+                if (lp) keystore::keep_keyboard_macros();
+                std::wstring t = lp ? L"Macro M" + std::to_wstring(wp) + L" recorded on the keyboard."
+                                    : L"Nothing was recorded into M" + std::to_wstring(wp) + L" (no keys, or not enough macro room).";
+                g_nid.uFlags |= NIF_INFO;
+                lstrcpynW(g_nid.szInfoTitle, L"ZXKB", ARRAYSIZE(g_nid.szInfoTitle));
+                lstrcpynW(g_nid.szInfo, t.c_str(), ARRAYSIZE(g_nid.szInfo));
+                g_nid.dwInfoFlags = NIIF_INFO;
+                Shell_NotifyIconW(NIM_MODIFY, &g_nid);
+                g_nid.uFlags &= ~NIF_INFO;
+            }
+            return 0;
+        }
         case WM_ZX_SLOT:
             if (!g_window_mode) apply_slot((int)wp); // the tray copy answers Fn + number
             window_refresh();

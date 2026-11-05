@@ -22,3 +22,4 @@ std::wstring key_token(uint16_t scancode, bool down); // a recorded key press or
 void macros_dialog(HWND owner); // the Macros window (not modal)
 HWND macros_window();
 bool macros_recording(); // keys go to the recording, not to the window's buttons
+void macros_recorded_on_keyboard(int macro); // read that macro again (the window copy, when it is open)

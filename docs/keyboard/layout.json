@@ -1274,11 +1274,11 @@
     "SPEC_BASE": "KC_M",
     "SPEC_FN": "_______",
     "WIN_BASE": "KC_M",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_MREC"
    },
    "windows": "M",
    "spectrum": "M",
-   "fn": ""
+   "fn": "Record a macro (start / stop)"
   },
   {
    "id": "com",

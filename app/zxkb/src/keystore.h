@@ -18,4 +18,7 @@ void forget_all();
 int  count();                                            // key changes kept for the connected keyboard
 int  reapply(int *failed);                               // set every kept change on the keyboard; returns how many changed
 bool firmware_changed();                                 // this keyboard's firmware differs from last time (then noted)
+// The keyboard's own macros become the ones kept, if they differ (a macro recorded on the keyboard, maybe without
+// ZXKB running). Only when the firmware has not changed: after a change the keyboard's macros were reset.
+void keep_keyboard_macros();
 } // namespace keystore

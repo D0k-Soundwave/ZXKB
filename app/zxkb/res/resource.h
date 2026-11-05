@@ -64,6 +64,8 @@
 #define IDC_KS_DELAY_VAL 287
 #define IDC_KS_RATE      288
 #define IDC_KS_RATE_VAL  289
+#define IDC_MC_KB_LABEL  290
+#define IDC_MC_KB_SLOT   291
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 39 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.39" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 40 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.40" // raise for every build installed for D0k (docs/VERSIONS.md)

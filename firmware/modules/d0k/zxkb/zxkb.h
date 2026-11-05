@@ -6,13 +6,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 12 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+#define ZXKB_PROTOCOL_VERSION 13 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
                                  * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
                                  * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD). 7: per-key effects (0xDD, 7 bytes a key).
                                  * 8: 8 bytes a key (speed 0-255); size down to 1, intensity down to 0.
                                  * 9: Caps Lock light (0xDE). 10: its starting keys back (0xDE 0x03).
                                  * 11: status bytes 18 / 19: base layer / top layer in use (sent on change).
-                                 * 12: keyboard settings (0xDF), ZK_GAME */
+                                 * 12: keyboard settings (0xDF), ZK_GAME.
+                                 * 13: macro recording on the keyboard (ZK_MREC, 0xD7; settings byte 14) */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -20,6 +21,8 @@
 #define ZXKB_CMD_VU_MODE   0xD1 /* [0xD1, 1 = VU on, 0 = VU off], no reply */
 #define ZXKB_CMD_FX_SET    0xD2 /* [0xD2, Spectrum effect 1-6] (saved), no reply. Kept for the old ZX VU app */
 /* 0xD3-0xD5 are board-specific and handled by zxkb_command_user() (e.g. LED driver current tune) */
+#define ZXKB_CMD_RECORDED  0xD7 /* keyboard -> app: [0xD7, macro, bytes lo, hi, 1 saved / 0 nothing recorded or too
+                                 * big to fit] after a recording made on the keyboard (ZK_MREC) ends */
 #define ZXKB_CMD_SLOT      0xD8 /* keyboard -> app: [0xD8, slot 1-10] when Fn + number is pressed */
 #define ZXKB_CMD_INFO      0xD9 /* [0xD9, sub, ...] queries, always replies (see zxkb.c) */
 #define ZXKB_INFO_STATUS   0x00
@@ -33,12 +36,12 @@
                                  * keyboard -> app: [0xDB, first LED, count (max 9), count x (r, g, b)], the colours
                                  * actually sent to the LEDs (after brightness and indicators). Needs the board to call
                                  * zxkb_mirror_set() from its LED driver; boards that do not just never send. */
-#define ZXKB_CMD_SETTINGS  0xDF /* keyboard settings, always replies [0xDF, sub, the 13 bytes]:
-                                 * [0xDF, 0x00] get; [0xDF, 0x01, 13 bytes] change (live); [0xDF, 0x02] save. Bytes:
+#define ZXKB_CMD_SETTINGS  0xDF /* keyboard settings, always replies [0xDF, sub, the 14 bytes]:
+                                 * [0xDF, 0x00] get; [0xDF, 0x01, 14 bytes] change (live); [0xDF, 0x02] save. Bytes:
                                  * game (bit 0 block Alt+Tab, 1 Alt+F4, 2 Windows keys, none = all three; 7 game mode on), SOCD (bit 0
                                  * A/D + W/S, 1 arrows), debounce ms (0 = 5), lights off after minutes (0 = never),
                                  * layer light on, r, g, b, NKRO, macro play modes (4 bytes, 2 bits a macro: 0 once,
-                                 * 1 repeat while held, 2 on / off) */
+                                 * 1 repeat while held, 2 on / off), the macro ZK_MREC records into (protocol 13) */
 #define ZXKB_SET_GET  0x00
 #define ZXKB_SET_SET  0x01
 #define ZXKB_SET_SAVE 0x02

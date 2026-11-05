@@ -48,7 +48,7 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
 - `firmware/keyboards/keychron/q3/iso_encoder/keymaps/d0k`: Q3 keymap using the module. Layers SPEC_BASE, SPEC_FN,
   WIN_BASE, WIN_FN. Spectrum layer maps for the MiSTer core (Shift = Caps Shift, Ctrl = Symbol Shift,
   ZX_EXT = Ctrl+LShift, ZX_LOAD types LOAD "" with 60 ms per key). Fn layers: media/brightness on F-row, RM_*
-  lighting keys, Fn+1..0 = hotkey slots, Fn+V = switch to/from the VU meter effect, Fn+N = NKRO, Fn+Win = game mode (v28).
+  lighting keys, Fn+1..0 = hotkey slots, Fn+V = switch to/from the VU meter effect, Fn+N = NKRO, Fn+Win = game mode (v28), Fn+M = record a macro on the keyboard (v29).
 - Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after). The VU meter is a
   normal effect fed by ZXKB (dark without it); PC direct mode is an overlay, only in Windows mode.
 - Caps Lock light: drawn by the module (v24), set from the app (Caps Lock light... window; 0xDE). Starts as flashing
@@ -61,7 +61,8 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   - `0xD9` 0x00 status (protocol 2: also sent unasked on changes; byte 15 VU possible, byte 16 firmware version),
     0x01 + mode -> name, 0x02 + first LED -> 9 x (x, y, flags).
   - `0xDA` size and intensity of the current effect: 0x00 get, 0x01 set, 0x02 save.
-  - `0xDF` keyboard settings (v27, protocol 12): 0x00 get, 0x01 set + 13 bytes, 0x02 save: game mode, SOCD, debounce,
+  - `0xD7` keyboard -> app: a macro was recorded on the keyboard (v29, protocol 13).
+  - `0xDF` keyboard settings (v27, protocol 12; byte 14 = macro the record key records into, protocol 13): 0x00 get, 0x01 set + 13 bytes, 0x02 save: game mode, SOCD, debounce,
     lights-off minutes, layer light, NKRO, macro play modes (zxkb.h). Custom debounce: keymap rules.mk DEBOUNCE_TYPE = custom.
   - SignalRGB 0x21-0x28 (protocol 1.0.6); 0x25 enable / 0x24 stream / 0x26 disable is also ZXKB's direct mode.
   - Standard VIA lighting (0x07/0x08/0x09, channel 3) for effect, brightness, speed, colour, save.

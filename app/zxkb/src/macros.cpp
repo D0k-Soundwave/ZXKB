@@ -7,6 +7,7 @@
 #include "macros.h"
 #include "app.h"
 #include "keystore.h"
+#include "kbsettings.h"
 #include "preview.h"
 #include "labels.h"
 #include "settings.h"
@@ -279,6 +280,18 @@ INT_PTR CALLBACK mproc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             fill_list();
             show_sel();
             CheckDlgButton(dlg, IDC_MC_WAITS, BST_CHECKED);
+            { // recording on the keyboard itself, if its firmware can
+                int  rec = 0;
+                bool kb  = kb_record_macro(&rec);
+                HWND cb  = GetDlgItem(dlg, IDC_MC_KB_SLOT);
+                for (size_t m = 0; m < g_texts.size(); m++)
+                    SendMessageW(cb, CB_ADDSTRING, 0, (LPARAM)(L"M" + std::to_wstring(m)).c_str());
+                SendMessageW(cb, CB_SETCURSEL, kb && rec < (int)g_texts.size() ? rec : 0, 0);
+                EnableWindow(cb, kb);
+                SetDlgItemTextW(dlg, IDC_MC_KB_LABEL, kb ? L"Recording on the keyboard: the record key (Fn+M as delivered) starts and stops it, into"
+                                                          : L"This keyboard cannot record macros by itself (that needs ZXKB firmware v29): use Record above.");
+                ShowWindow(cb, kb ? SW_SHOW : SW_HIDE);
+            }
             return TRUE;
         }
         case WM_INPUT: {
@@ -319,6 +332,13 @@ INT_PTR CALLBACK mproc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
                     }
                     return TRUE;
                 case IDC_MC_RECORD: record(!g_recording); return TRUE;
+                case IDC_MC_KB_SLOT:
+                    if (HIWORD(wp) == CBN_SELCHANGE) {
+                        int m = (int)SendDlgItemMessageW(dlg, IDC_MC_KB_SLOT, CB_GETCURSEL, 0, 0);
+                        if (m >= 0 && !kb_set_record_macro(m))
+                            MessageBoxW(dlg, L"The keyboard did not take the change.", L"ZXKB", MB_OK | MB_ICONWARNING);
+                    }
+                    return TRUE;
                 case IDC_MC_CLEARONE:
                     if (g_sel < (int)g_texts.size()) { g_texts[g_sel].clear(); show_sel(); fill_list(); }
                     return TRUE;
@@ -394,3 +414,13 @@ void macros_dialog(HWND owner) {
 
 HWND macros_window() { return g_mdlg; }
 bool macros_recording() { return g_mdlg && g_recording; }
+
+void macros_recorded_on_keyboard(int macro) {
+    if (!g_mdlg) return;
+    std::vector<std::wstring> now;
+    int size = 0;
+    if (!macros::read_all(&now, &size) || macro < 0 || macro >= (int)now.size() || macro >= (int)g_texts.size()) return;
+    g_texts[macro] = now[macro]; // only that one: changes not yet saved in the window stay
+    fill_list();
+    if (g_sel == macro) show_sel();
+}

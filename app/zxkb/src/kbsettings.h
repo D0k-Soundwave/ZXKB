@@ -8,3 +8,6 @@
 void kbsettings_dialog(HWND owner); // not modal; changes show live, OK keeps them, Cancel puts back what was there
 HWND kbsettings_window();
 bool kbsettings_possible(); // the keyboard has the settings (ZXKB protocol 12, firmware v27)
+bool kb_record_possible();  // the keyboard can record macros itself (ZXKB protocol 13, firmware v29)
+bool kb_record_macro(int *macro);   // the macro the record key records into
+bool kb_set_record_macro(int macro); // set and save it

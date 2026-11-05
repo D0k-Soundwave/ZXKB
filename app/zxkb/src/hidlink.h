@@ -17,6 +17,7 @@
 #define WM_ZX_TUNE         (WM_APP + 5) // lParam = Tune* (receiver deletes)
 #define WM_ZX_RAW          (WM_APP + 8) // test tools only (raw_reports(true)): lParam new uint8_t[32], any other report
 #define WM_ZX_KEYMAP       (WM_APP + 7) // lParam: new std::vector<uint16_t>, layer 0 keycodes by row * cols + col
+#define WM_ZX_RECORDED     (WM_APP + 9) // a macro was recorded on the keyboard: wParam = macro, lParam = saved
 #define WM_ZX_MIRROR       (WM_APP + 6) // a full set of LED colours arrived: read them with HidLink::mirror()
 
 struct Status {

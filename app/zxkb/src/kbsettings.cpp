@@ -270,6 +270,24 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
 } // namespace
 
 bool kbsettings_possible() { return zxkb_board() && g_board->protocol >= 12; }
+bool kb_record_possible() { return zxkb_board() && g_board->protocol >= 13; }
+
+bool kb_record_macro(int *macro) {
+    Set s;
+    if (!kb_record_possible() || !kb_get(&s)) return false;
+    *macro = s.b[13];
+    return true;
+}
+
+bool kb_set_record_macro(int macro) {
+    Set s;
+    if (!kb_record_possible() || !kb_get(&s)) return false;
+    s.b[13] = (uint8_t)macro;
+    kb_send(s);
+    kb_save();
+    if (g_dlg) { g_now.b[13] = g_before.b[13] = (uint8_t)macro; } // an open Keyboard settings window keeps it
+    return true;
+}
 
 void kbsettings_dialog(HWND owner) {
     if (g_dlg) { SetForegroundWindow(g_dlg); return; }

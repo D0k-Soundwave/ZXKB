@@ -80,7 +80,8 @@ typedef struct PACKED {
     uint8_t idle_min;       /* lights off after this many minutes without a key press; 0 = never */
     uint8_t layer_light[4]; /* on, r, g, b: keys that do something on a held layer light */
     uint8_t macro_mode[4];  /* 2 bits a macro: 0 play once, 1 repeat while held, 2 on / off */
-    uint8_t spare[20];      /* for later settings (no reset needed) */
+    uint8_t rec_macro;      /* v29: the macro ZK_MREC records into */
+    uint8_t spare[19];      /* for later settings (no reset needed) */
 } zxkb_config_t;
 _Static_assert(sizeof(zxkb_config_t) == EECONFIG_MODULE_ZXKB_DATA_SIZE, "update EECONFIG_MODULE_ZXKB_DATA_SIZE in config.h");
 static zxkb_config_t cfg;
@@ -95,6 +96,8 @@ static zxkb_config_t cfg;
 static int8_t   macro_repeating = -1; /* the macro being repeated, -1 none */
 static uint32_t macro_last;
 static bool     idle_off;             /* the lights were switched off by the lights-off timeout */
+static bool     rec_on;               /* recording a macro on the keyboard (ZK_MREC) */
+static uint8_t  rec_led = NO_LED;     /* the record key's light, flashing red while recording */
 
 /* Effects with their own size and intensity, and which of the two apply */
 #define SZ ZXKB_TUNE_SIZE
@@ -273,6 +276,11 @@ bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
         }
         for (uint8_t j = 0; j < 3; j++) c[j] = (uint8_t)((a[j] * mix + b[j] * (255 - mix)) / 255);
         rgb_matrix_set_color(i, c[0] * v / 255, c[1] * v / 255, c[2] * v / 255);
+    }
+    /* recording a macro: the record key flashes red (QMK's own flash rate for this is not used: [A] 4 a second) */
+    if (rec_on && rec_led != NO_LED && rec_led >= led_min && rec_led < led_max) {
+        bool lit = (timer_read32() / 125) & 1;
+        rgb_matrix_set_color(rec_led, lit ? 255 : 0, 0, 0);
     }
     /* layer light: while a layer is held over the base layer, the keys that do something on it light */
     if (cfg.layer_light[0]) {
@@ -458,7 +466,7 @@ void housekeeping_task_zxkb(void) {
 
 /* ---------- Keys: hotkey slots, VU toggle, typing ripple history ---------- */
 
-#define SETTINGS_BYTES 13
+#define SETTINGS_BYTES 14
 static void settings_command(uint8_t *data, uint8_t length) {
     uint8_t sub = data[1];
     if (sub == ZXKB_SET_SET) {
@@ -469,6 +477,7 @@ static void settings_command(uint8_t *data, uint8_t length) {
             keymap_config.nkro = data[10] != 0;
         }
         memcpy(cfg.macro_mode, &data[11], 4);
+        cfg.rec_macro = data[15];
         macro_repeating = -1; /* a macro left repeating stops when the settings change */
     } else if (sub == ZXKB_SET_SAVE) {
         eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg));
@@ -483,6 +492,7 @@ static void settings_command(uint8_t *data, uint8_t length) {
     memcpy(&data[6], cfg.layer_light, 4);
     data[10] = keymap_config.nkro;
     memcpy(&data[11], cfg.macro_mode, 4);
+    data[15] = cfg.rec_macro;
     raw_hid_send(data, length);
 }
 
@@ -531,10 +541,86 @@ static void socd_key(uint16_t keycode, bool pressed) {
     }
 }
 
+/* ---------- Macro recording on the keyboard (ZK_MREC): into a saved VIA macro, which the app can then edit ---------- */
+#ifndef ZXKB_REC_BUFFER
+#    define ZXKB_REC_BUFFER 1024 /* [A] RAM for the macro buffer copy and the recording; the Q3's buffer is 434 bytes (M) */
+#endif
+static uint16_t rec_len, rec_max;
+static uint8_t  rec_buf[ZXKB_REC_BUFFER];  /* what is recorded: QMK macro bytes (1, 2 down / 3 up, key) */
+static uint8_t  rec_all[ZXKB_REC_BUFFER];  /* the keyboard's macro buffer, while it is rebuilt */
+
+/* Where macro m starts and ends (its 0 at the end) in the buffer, and how much of the buffer the macros use */
+static uint16_t rec_layout(uint16_t size, uint8_t m, uint16_t *start, uint16_t *end) {
+    uint8_t  count = dynamic_keymap_macro_get_count();
+    uint16_t pos = 0;
+    *start = *end = size;
+    for (uint8_t i = 0; i < count && pos < size; i++) {
+        uint16_t s = pos;
+        while (pos < size && rec_all[pos]) pos++;
+        if (i == m) { *start = s; *end = pos; }
+        if (pos < size) pos++; /* past the 0 */
+    }
+    return pos;
+}
+
+static void rec_stop(void) {
+    rec_on = false;
+    uint16_t size = dynamic_keymap_macro_get_buffer_size();
+    uint8_t  m = cfg.rec_macro, ok = 0;
+    if (size <= sizeof(rec_all) && m < dynamic_keymap_macro_get_count() && rec_len) {
+        dynamic_keymap_macro_get_buffer(0, size, rec_all); /* read again: the app may have changed them meanwhile */
+        uint16_t start, end, used = rec_layout(size, m, &start, &end);
+        if (start < size && (uint32_t)used - (end - start) + rec_len <= size) {
+            uint16_t tail = used - end; /* this macro's 0 and the macros after it */
+            memmove(&rec_all[start + rec_len], &rec_all[end], tail);
+            memcpy(&rec_all[start], rec_buf, rec_len);
+            uint16_t total = start + rec_len + tail;
+            if (total < size) memset(&rec_all[total], 0, size - total);
+            dynamic_keymap_macro_set_buffer(0, size, rec_all);
+            ok = 1;
+        }
+    }
+    uint8_t msg[ZXKB_REPORT_SIZE] = {ZXKB_CMD_RECORDED, m, (uint8_t)rec_len, (uint8_t)(rec_len >> 8), ok};
+    raw_hid_send(msg, sizeof(msg));
+}
+
+static void rec_start(keyrecord_t *record) {
+    uint16_t size = dynamic_keymap_macro_get_buffer_size();
+    if (size > sizeof(rec_all) || cfg.rec_macro >= dynamic_keymap_macro_get_count()) return;
+    dynamic_keymap_macro_get_buffer(0, size, rec_all);
+    uint16_t start, end, used = rec_layout(size, cfg.rec_macro, &start, &end);
+    if (start >= size) return;
+    uint32_t room = (uint32_t)size - used + (end - start); /* the macro's old contents are replaced */
+    rec_max = room > sizeof(rec_buf) ? sizeof(rec_buf) : (uint16_t)room;
+    rec_len = 0;
+    rec_led = record->event.type == KEY_EVENT ? g_led_config.matrix_co[record->event.key.row][record->event.key.col] : NO_LED;
+    rec_on  = true;
+}
+
+static void rec_key(uint16_t keycode, bool pressed) {
+    if (keycode < KC_A || keycode > KC_RGUI || (keycode > KC_EXSEL && keycode < KC_LCTL)) return; /* plain keys only */
+    if (!pressed && rec_len >= 3 && rec_buf[rec_len - 2] == SS_DOWN_CODE && rec_buf[rec_len - 1] == (uint8_t)keycode) {
+        rec_buf[rec_len - 2] = SS_TAP_CODE; /* pressed and let go with nothing between: a tap (half the room) */
+        return;
+    }
+    if (rec_len + 3 > rec_max) { rec_stop(); return; } /* full: keep what fits */
+    rec_buf[rec_len++] = SS_QMK_PREFIX;
+    rec_buf[rec_len++] = pressed ? SS_DOWN_CODE : SS_UP_CODE;
+    rec_buf[rec_len++] = (uint8_t)keycode;
+}
+
 bool process_record_zxkb(uint16_t keycode, keyrecord_t *record) {
     if (!process_record_zxkb_kb(keycode, record)) return false;
     bool pressed = record->event.pressed;
 
+    if (keycode == ZXKB_MACRO_RECORD) { /* start / stop recording into the chosen macro */
+        if (pressed) {
+            if (rec_on) rec_stop();
+            else rec_start(record);
+        }
+        return false;
+    }
+    if (rec_on) rec_key(keycode, pressed); /* recorded and typed as usual */
     if (keycode == ZXKB_GAME_TOGGLE) { /* game mode on / off (what it blocks is set from the app) */
         if (pressed) cfg.game ^= 0x80;
         return false;

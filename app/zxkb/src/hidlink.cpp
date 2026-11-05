@@ -336,7 +336,9 @@ void HidLink::read_loop() {
     while (!broken_) {
         if (!read_report(dev_, buf, len, INFINITE)) return; // unplugged, cancelled or stopping
         const uint8_t *p = buf + 1;
-        if (p[0] == proto::SLOT && p[1] >= 1 && p[1] <= 10) {
+        if (p[0] == proto::RECORDED) {
+            PostMessageW(hwnd_, WM_ZX_RECORDED, p[1], p[4]);
+        } else if (p[0] == proto::SLOT && p[1] >= 1 && p[1] <= 10) {
             PostMessageW(hwnd_, WM_ZX_SLOT, p[1], 0);
         } else if (p[0] == proto::INFO && p[1] == proto::INFO_STATUS) {
             Status *s = new Status(parse_status(p));

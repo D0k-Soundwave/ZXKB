@@ -80,7 +80,7 @@ Knob turn: Spectrum `KC_LEFT, KC_RGHT`, Windows `KC_VOLD, KC_VOLU`, Fn `RM_VALD,
 | v | V / CLS | 68 | V | V |  | VU meter on/off |
 | b | B / BORDER | 69 | B | B |  |  |
 | n | N / NEXT | 70 | N | N |  | NKRO on/off |
-| m | M / PAUSE | 71 | M | M |  |  |
+| m | M / PAUSE | 71 | M | M |  | Record a macro (start / stop) |
 | com | , / < | 72 | , < | , < |  |  |
 | dot | . / > | 73 | . > | . > |  |  |
 | sl | / / ? | 74 | / ? | / ? |  |  |

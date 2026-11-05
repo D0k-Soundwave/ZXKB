@@ -34,7 +34,9 @@ constexpr uint8_t CAPS_GET = 0x00, CAPS_SET = 0x01, CAPS_SAVE = 0x02, CAPS_START
 // reply/set layout: [0xDE, sub, effect, speed, r, g, b, r2, g2, b2, full, n, n bytes of key bits (bit i = LED i)]
 constexpr uint8_t SETTINGS  = 0xDF; // keyboard settings (protocol 12): sub 0 get, 1 set + 13 bytes, 2 save; always replies
 constexpr uint8_t SETTINGS_GET = 0x00, SETTINGS_SET = 0x01, SETTINGS_SAVE = 0x02;
-constexpr int     SETTINGS_BYTES = 13; // game, SOCD, debounce ms, idle minutes, layer light on r g b, NKRO, 4 bytes macro modes
+constexpr int     SETTINGS_BYTES = 14; // game, SOCD, debounce ms, idle minutes, layer light on r g b, NKRO, 4 bytes macro
+                                       // modes, the macro the record key records into (protocol 13; older firmware: 13)
+constexpr uint8_t RECORDED  = 0xD7; // keyboard -> app (protocol 13): [0xD7, macro, bytes lo, hi, 1 saved / 0 not]
 constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
 constexpr uint8_t TUNE_GET  = 0x00;
 constexpr uint8_t TUNE_SET  = 0x01; // [0xDA, 0x01, size, intensity]
