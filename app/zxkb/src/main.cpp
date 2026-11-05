@@ -27,6 +27,7 @@
 #include "boards.h"
 #include "caps.h"
 #include "fnkeys.h"
+#include "remap.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -117,7 +118,7 @@ std::string current_name() {
 void keyboard_mirror(uint8_t *rgb, int leds) { g_link.mirror(rgb, leds); }
 void send(std::initializer_list<uint8_t> bytes);
 void request_keymap() {
-    if (g_board && g_board->via_protocol && g_board->rows && g_board->cols) g_link.request_keymap(g_board->rows, g_board->cols);
+    if (g_board && g_board->via_protocol && g_board->rows && g_board->cols) g_link.request_keymap(g_board->rows, g_board->cols, g_board->shown_layer);
 }
 bool per_key_possible() { return zxkb_board() && g_board->protocol >= 8; }
 
@@ -234,7 +235,8 @@ bool keyboard_ask(const uint8_t *q, int n, uint8_t *reply32, int match) {
 
 bool read_keymap_now() {
     if (!g_board || !g_board->via_protocol || !g_board->rows || !g_board->cols) return false;
-    g_link.request_keymap(g_board->rows, g_board->cols);
+    g_board->shown_layer = 0;
+    g_link.request_keymap(g_board->rows, g_board->cols, 0);
     DWORD start = GetTickCount();
     MSG   m;
     while (GetTickCount() - start < 2000) { // [A] the Q3's 192 bytes come in 7 replies, well under a second
@@ -247,6 +249,51 @@ bool read_keymap_now() {
         MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
     }
     return false;
+}
+
+int layer_count() {
+    if (!g_board || !g_board->via_protocol) return 1;
+    if (!g_board->layers) { // [P] VIA id_dynamic_keymap_get_layer_count 0x11 -> [0x11, count]
+        uint8_t q[1] = {0x11}, r[proto::REPORT];
+        g_board->layers = keyboard_ask(q, 1, r, 1) && r[1] ? r[1] : 1;
+    }
+    return g_board->layers;
+}
+
+int macro_count() {
+    if (!g_board || !g_board->via_protocol) return 0;
+    if (g_board->macros < 0) { // [P] VIA id_dynamic_keymap_macro_get_count 0x0C -> [0x0C, count]
+        uint8_t q[1] = {0x0C}, r[proto::REPORT];
+        g_board->macros = keyboard_ask(q, 1, r, 1) ? r[1] : 0;
+    }
+    return g_board->macros;
+}
+
+void show_layer(int layer) {
+    if (!g_board || !g_board->via_protocol || !g_board->rows || !g_board->cols) return;
+    g_board->shown_layer = layer;
+    g_link.request_keymap(g_board->rows, g_board->cols, layer);
+}
+
+bool key_function(int key, uint16_t *code) {
+    if (!g_board || key < 0 || key >= (int)g_board->keys.size()) return false;
+    const KeyRect &k = g_board->keys[key];
+    size_t at = (size_t)(k.row * g_board->cols + k.col);
+    if (k.row < 0 || k.col < 0 || at >= g_board->keymap.size()) return false;
+    *code = g_board->keymap[at];
+    return true;
+}
+
+bool set_key_function(int key, uint16_t code) {
+    if (!g_board || key < 0 || key >= (int)g_board->keys.size()) return false;
+    const KeyRect &k = g_board->keys[key];
+    if (k.row < 0 || k.col < 0) return false;
+    // [P] VIA id_dynamic_keymap_set_keycode 0x05 [layer, row, col, hi, lo], echoed back
+    uint8_t q[6] = {0x05, (uint8_t)g_board->shown_layer, (uint8_t)k.row, (uint8_t)k.col, (uint8_t)(code >> 8), (uint8_t)code}, r[proto::REPORT];
+    if (!keyboard_ask(q, 6, r, 4)) return false;
+    size_t at = (size_t)(k.row * g_board->cols + k.col);
+    if (at < g_board->keymap.size()) g_board->keymap[at] = code;
+    return true;
 }
 
 int caps_lock_led() { // KC_CAPS (0x39) in layer 0 of the keymap, through the firmware's key-to-LED map
@@ -855,9 +902,10 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_ZX_KEYMAP: {
             auto *km = reinterpret_cast<std::vector<uint16_t> *>(lp);
-            if (g_board) g_board->keymap = *km;
+            if (g_board && (int)wp == g_board->shown_layer) g_board->keymap = *km;
             delete km;
             preview_relabel();
+            remap_refresh();
             return 0;
         }
         case WM_ZX_MIRROR:
@@ -931,6 +979,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdline, int) {
         HWND win = window_handle();
         if (win && IsDialogMessageW(win, &msg)) continue; // Tab, arrows and Esc in the ZXKB window
         if (HWND caps = caps_window()) if (IsDialogMessageW(caps, &msg)) continue;
+        if (HWND rm = remap_window()) if (IsDialogMessageW(rm, &msg)) continue;
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }

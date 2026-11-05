@@ -9,6 +9,7 @@
 #include "preview.h"
 #include "flash.h"
 #include "caps.h"
+#include "remap.h"
 #include "boards.h"
 #include "keycaps.h"
 #include "sim.h"
@@ -29,7 +30,7 @@ namespace {
 enum : int {
     IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP, IDC_KEYCAPS,
     IDC_KEYS_INFO, IDC_KEYS_ALL, IDC_KEYS_NONE, IDC_KEYS_EFFECT, IDC_KEYS_OFF, IDC_KEYS_COLOUR,
-    IDC_CAPS_BTN, IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2,
+    IDC_CAPS_BTN, IDC_LAYER_LABEL, IDC_LAYER, IDC_REMAP_BTN, IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
     IDC_LABEL  = 240, // + slider index
@@ -99,7 +100,10 @@ void layout() {
         // second row: the selected keys' effect, its speed, and which of their two colours the colour boxes set
         int r2 = y + 34;
         MoveWindow(item(IDC_KEY_FX_LABEL), px(MARGIN), px(r2 + 4), px(70), px(20), FALSE);
-        MoveWindow(item(IDC_KEY_FX), px(MARGIN + 72), px(r2), px(150), px(200), FALSE);
+        MoveWindow(item(IDC_KEY_FX), px(MARGIN + 72), px(r2), px(120), px(200), FALSE);
+        MoveWindow(item(IDC_LAYER_LABEL), px(MARGIN + 202), px(r2 + 4), px(36), px(20), FALSE);
+        MoveWindow(item(IDC_LAYER), px(MARGIN + 240), px(r2), px(84), px(200), FALSE);
+        MoveWindow(item(IDC_REMAP_BTN), px(MARGIN + 332), px(r2), px(110), px(26), FALSE);
         MoveWindow(item(IDC_KEY_COLOURS_LABEL), px(W - MARGIN - 196), px(r2 + 4), px(110), px(20), FALSE);
         MoveWindow(item(IDC_KEY_C1), px(W - MARGIN - 82), px(r2), px(38), px(26), FALSE);
         MoveWindow(item(IDC_KEY_C2), px(W - MARGIN - 38), px(r2), px(38), px(26), FALSE);
@@ -263,6 +267,18 @@ void refresh() {
     ShowWindow(item(IDC_KEYCAPS), known ? SW_SHOW : SW_HIDE);
     if (known) fill_keycaps();
     refresh_keys();
+    // the layer list: one entry per keymap layer (asked once per keyboard)
+    bool keymap = on && g_board->via_protocol && !g_board->keys.empty();
+    HWND lc = item(IDC_LAYER);
+    int layers = keymap ? layer_count() : 0;
+    if ((int)SendMessageW(lc, CB_GETCOUNT, 0, 0) != layers) {
+        SendMessageW(lc, CB_RESETCONTENT, 0, 0);
+        for (int l = 0; l < layers; l++) SendMessageW(lc, CB_ADDSTRING, 0, (LPARAM)(L"Layer " + std::to_wstring(l)).c_str());
+    }
+    SendMessageW(lc, CB_SETCURSEL, keymap ? g_board->shown_layer : -1, 0);
+    EnableWindow(lc, keymap);
+    EnableWindow(item(IDC_LAYER_LABEL), keymap);
+    EnableWindow(item(IDC_REMAP_BTN), keymap);
     SetWindowTextW(item(IDC_VERSION), ver.c_str());
     g_updating = false;
 }
@@ -506,9 +522,17 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDCANCEL) { window_close(); return 0; }
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
             if (id == IDC_CAPS_BTN) { caps_dialog(g_win); return 0; }
+            if (id == IDC_REMAP_BTN) { remap_dialog(g_win); return 0; }
+            if (id == IDC_LAYER && HIWORD(wp) == CBN_SELCHANGE) {
+                int l = (int)SendMessageW(item(IDC_LAYER), CB_GETCURSEL, 0, 0);
+                if (l >= 0) show_layer(l);
+                refresh();
+                remap_refresh();
+                return 0;
+            }
             if (id == IDC_LOOKUP) { look_up(); return 0; }
             if (id == IDC_KEYCAPS && HIWORD(wp) == CBN_SELCHANGE) { on_keycaps(); return 0; }
-            if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh(); caps_selection_changed(); return 0; }
+            if (id == IDC_PREVIEW && HIWORD(wp) == PREVIEW_SELECTION) { refresh(); caps_selection_changed(); remap_refresh(); return 0; }
             if (id == IDC_KEYS_ALL) { preview_select_all(); refresh(); caps_selection_changed(); return 0; }
             if (id == IDC_KEYS_NONE) { // Clear: every key off (black), whatever is selected (D0k, 2026-11-03)
                 std::vector<int> all;
@@ -688,6 +712,9 @@ void window_show() {
     make(L"BUTTON", L"Clear", WS_TABSTOP, IDC_KEYS_NONE);
     make(L"BUTTON", L"Follow effect", WS_TABSTOP, IDC_KEYS_EFFECT);
     make(L"BUTTON", L"Off", WS_TABSTOP, IDC_KEYS_OFF);
+    make(L"STATIC", L"Layer", 0, IDC_LAYER_LABEL);
+    make(WC_COMBOBOXW, L"", WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST, IDC_LAYER);
+    make(L"BUTTON", L"Change keys...", WS_TABSTOP, IDC_REMAP_BTN);
     make(L"STATIC", L"Key effect", 0, IDC_KEY_FX_LABEL);
     HWND kfx = make(WC_COMBOBOXW, L"", WS_TABSTOP | CBS_DROPDOWNLIST, IDC_KEY_FX);
     for (const wchar_t *n : key_fx_names) SendMessageW(kfx, CB_ADDSTRING, 0, (LPARAM)n);

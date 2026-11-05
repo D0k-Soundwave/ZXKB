@@ -116,6 +116,9 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Simulated preview frame rate | 30 frames/s | C | 33 ms timer, as the LED mirror |
 | QMK LED space for simulated keys | key centres scaled to 224 x 64, centre 112, 32 | P / A | QMK k_rgb_matrix_center (P); boards' own LED points can differ (A) |
 | 0.30 ZXKB.exe size | 536,064 bytes | M | 2026-11-05 |
+| Remap through the window (0.31) | layer 3 S: Dimmer 0x784A -> A 0x0004 read back from the keyboard, then put back | M | Change keys window + probe getkey/setkey, 2026-11-05 |
+| Keymap layers on the Q3 (VIA) | 4 | M | VIA 0x11, 2026-11-05 |
+| 0.31 ZXKB.exe size | 549,376 bytes | M | 2026-11-05 |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

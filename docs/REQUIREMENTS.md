@@ -77,7 +77,11 @@ Rule: do not build until D0k confirms the list is complete.
 
 ## Keyboard functions beyond lighting (added 2026-11-03, from the commercial-suite feature list)
 Mechanical switches only. Most use QMK's VIA support already in the firmware; firmware work is marked.
-- [ ] Remap any key: key, shortcut, mouse action, media, brightness, layer or profile switch; disable a key
+- [~] Remap any key: key, shortcut, mouse action, media, brightness, layer or profile switch; disable a key (0.31: any
+      layer, through VIA; shortcuts with modifiers and profile switch still to come)
+- [ ] Keymap and macros kept across firmware updates: VIA resets them to the firmware's own whenever a different
+      firmware build starts (P: QMK quantum/via.c, the EEPROM magic is the build date), so the app saves them before
+      installing firmware and puts them back after (found 2026-11-05)
 - [ ] Game-mode lock: Win key (exists) plus blocking Alt+Tab / Alt+F4 (firmware work)
 - [ ] App-only actions on any key: launch app or URL, paste text, timer (work only while ZXKB runs)
 - [ ] Macros: record in the app, edit keys and delays, stored on the keyboard (work without the app);

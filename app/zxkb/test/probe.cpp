@@ -230,6 +230,24 @@ int main(int argc, char **argv) {
         link.send(q, 4);
         std::printf("mode %d\n", q[3]);
         pump(100, false);
+    } else if ((!std::strcmp(cmd, "getkey") && argc > 4) || (!std::strcmp(cmd, "setkey") && argc > 5)) {
+        // probe getkey LAYER ROW COL / probe setkey LAYER ROW COL CODE(hex): one key of the keymap through VIA
+        bool set = cmd[0] == 's';
+        uint8_t q[6] = {(uint8_t)(set ? 0x05 : 0x04), (uint8_t)std::atoi(argv[2]), (uint8_t)std::atoi(argv[3]), (uint8_t)std::atoi(argv[4])};
+        if (set) { unsigned c = (unsigned)std::strtoul(argv[5], nullptr, 16); q[4] = (uint8_t)(c >> 8); q[5] = (uint8_t)c; }
+        link.raw_reports(true);
+        link.send(q, set ? 6 : 4);
+        DWORD start = GetTickCount();
+        MSG m;
+        int kc = -1;
+        while (kc < 0 && GetTickCount() - start < 300) {
+            if (PeekMessageW(&m, nullptr, WM_ZX_RAW, WM_ZX_RAW, PM_REMOVE)) {
+                uint8_t *r = reinterpret_cast<uint8_t *>(m.lParam);
+                if (!std::memcmp(r, q, 4)) kc = r[4] << 8 | r[5];
+                delete[] r;
+            } else MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+        }
+        std::printf("layer %d, matrix %d,%d: 0x%04X\n", q[1], q[2], q[3], kc);
     } else if (!std::strcmp(cmd, "save")) { // probe save: keep the current lighting after unplugging
         uint8_t q[2] = {proto::VIA_SAVE, proto::VIA_RGB_MATRIX};
         link.send(q, 2);

@@ -1,0 +1,125 @@
+// The Change keys window. Copyright 2026 D0k
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "remap.h"
+#include "app.h"
+#include "keycodes.h"
+#include "labels.h"
+#include "preview.h"
+#include "../res/resource.h"
+#include <commctrl.h>
+#include <string>
+#include <vector>
+
+namespace {
+
+HWND g_dlg = nullptr;
+std::vector<keycodes::Choice> g_choices;
+
+void fill() {
+    HWND list = GetDlgItem(g_dlg, IDC_RM_LIST);
+    ListView_DeleteAllItems(list);
+    ListView_RemoveAllGroups(list);
+    ListView_EnableGroupView(list, TRUE);
+    const std::vector<std::wstring> &groups = keycodes::group_names();
+    for (size_t g = 0; g < groups.size(); g++) {
+        LVGROUP grp = {sizeof(grp)};
+        grp.mask      = LVGF_HEADER | LVGF_GROUPID | LVGF_STATE;
+        grp.pszHeader = const_cast<wchar_t *>(groups[g].c_str());
+        grp.iGroupId  = (int)g;
+        grp.stateMask = grp.state = LVGS_COLLAPSIBLE;
+        ListView_InsertGroup(list, -1, &grp);
+    }
+    g_choices = keycodes::choices(labels::current_layout(), layer_count(), macro_count(), g_board ? g_board->custom_names : std::vector<std::wstring>(),
+                                  g_board && g_board->kind == Board::ZXKB);
+    for (size_t i = 0; i < g_choices.size(); i++) {
+        LVITEMW it = {};
+        it.mask     = LVIF_TEXT | LVIF_PARAM | LVIF_GROUPID;
+        it.iItem    = (int)i;
+        it.pszText  = const_cast<wchar_t *>(g_choices[i].name.c_str());
+        it.lParam   = (LPARAM)i;
+        it.iGroupId = g_choices[i].group;
+        ListView_InsertItem(list, &it);
+    }
+}
+
+void show() {
+    if (!g_dlg) return;
+    std::vector<int> keys = preview_selected_keys();
+    std::wstring t = L"Layer " + std::to_wstring(g_board ? g_board->shown_layer : 0) + L": ";
+    if (keys.empty()) t += L"select keys in the preview (Ctrl+click for more), then choose what they do.";
+    else {
+        t += std::to_wstring(keys.size()) + (keys.size() == 1 ? L" key selected" : L" keys selected");
+        uint16_t kc;
+        if (key_function(keys[0], &kc)) t += L"; now: " + keycodes::describe(kc, labels::current_layout(), g_board->custom_names);
+    }
+    SetDlgItemTextW(g_dlg, IDC_RM_INFO, t.c_str());
+    EnableWindow(GetDlgItem(g_dlg, IDC_RM_ASSIGN), !keys.empty());
+}
+
+void assign() {
+    HWND list = GetDlgItem(g_dlg, IDC_RM_LIST);
+    int sel = ListView_GetNextItem(list, -1, LVNI_SELECTED);
+    if (sel < 0) return;
+    LVITEMW it = {};
+    it.mask  = LVIF_PARAM;
+    it.iItem = sel;
+    ListView_GetItem(list, &it);
+    if ((size_t)it.lParam >= g_choices.size()) return;
+    std::wstring failed;
+    int done = 0;
+    for (int k : preview_selected_keys()) done += set_key_function(k, g_choices[(size_t)it.lParam].code);
+    if (!done) MessageBoxW(g_dlg, L"The keyboard did not take the change.", L"ZXKB", MB_OK | MB_ICONWARNING);
+    preview_relabel();
+    show();
+}
+
+INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
+    switch (msg) {
+        case WM_INITDIALOG: {
+            g_dlg = dlg;
+            HWND list = GetDlgItem(dlg, IDC_RM_LIST);
+            ListView_SetExtendedListViewStyle(list, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+            RECT r;
+            GetClientRect(list, &r);
+            LVCOLUMNW col = {};
+            col.mask = LVCF_WIDTH;
+            col.cx   = r.right - GetSystemMetrics(SM_CXVSCROLL) - 4;
+            ListView_InsertColumn(list, 0, &col);
+            fill();
+            show();
+            return TRUE;
+        }
+        case WM_NOTIFY: {
+            auto *nm = reinterpret_cast<NMHDR *>(lp);
+            if (nm->idFrom == IDC_RM_LIST && nm->code == NM_DBLCLK) assign();
+            return TRUE;
+        }
+        case WM_ACTIVATE:
+            if (LOWORD(wp) != WA_INACTIVE) show();
+            return FALSE;
+        case WM_COMMAND:
+            if (LOWORD(wp) == IDC_RM_ASSIGN) { assign(); return TRUE; }
+            if (LOWORD(wp) == IDCANCEL || LOWORD(wp) == IDOK) { DestroyWindow(dlg); return TRUE; }
+            break;
+        case WM_DESTROY:
+            g_dlg = nullptr;
+            return TRUE;
+    }
+    return FALSE;
+}
+
+} // namespace
+
+void remap_dialog(HWND owner) {
+    if (!g_board || !g_board->via_protocol || g_board->keys.empty()) {
+        MessageBoxW(owner, L"Changing keys needs a keyboard with VIA whose layout ZXKB knows (look it up first).", L"ZXKB", MB_OK | MB_ICONINFORMATION);
+        return;
+    }
+    if (g_dlg) { SetForegroundWindow(g_dlg); return; }
+    g_dlg = CreateDialogParamW(g_inst, MAKEINTRESOURCEW(IDD_REMAP), owner, proc, 0);
+    if (g_dlg) ShowWindow(g_dlg, SW_SHOW);
+}
+
+void remap_refresh() { show(); }
+
+HWND remap_window() { return g_dlg; }

@@ -78,4 +78,11 @@ int  caps_lock_led();
 // Ask the keyboard something it answers with a report ZXKB does not otherwise use (e.g. VIA keymap commands) and
 // wait briefly for the reply whose first `match` bytes equal the question's. Main thread only.
 bool keyboard_ask(const uint8_t *q, int n, uint8_t *reply32, int match);
-bool read_keymap_now();                        // read layer 0 of the keymap and wait for it (needs the matrix size)                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown
+bool read_keymap_now();                        // read layer 0 of the keymap and wait for it (needs the matrix size)
+
+// Keymap (through VIA). Keys are indices into g_board->keys (the layout); changes are kept by the keyboard at once.
+int  layer_count();                            // VIA's dynamic keymap layers (asked once)
+int  macro_count();                            // VIA macros the keyboard holds
+void show_layer(int layer);                    // read that layer; labels and Change keys follow it
+bool key_function(int key, uint16_t *code);    // what the key does on the layer shown
+bool set_key_function(int key, uint16_t code); // set it, on the layer shown                          // the LED under the key that is Caps Lock in the keymap, -1 if unknown

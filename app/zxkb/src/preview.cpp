@@ -186,6 +186,7 @@ std::vector<BoardKey> board_keys() { // the keys to draw for the connected keybo
     // the chosen keycap set, if any
     // the choice: "" labels in the layout Windows is using, "layout:<HKL hex>" labels in that layout, or a keycap set
     std::wstring want = keycaps::chosen(g_board->vid, g_board->pid);
+    if (g_board->shown_layer != 0 && want.rfind(L"layout:", 0) != 0) want.clear(); // other layers: what the keys do
     HKL hkl = labels::current_layout();
     if (want.rfind(L"layout:", 0) == 0) {
         HKL h = (HKL)(UINT_PTR)wcstoull(want.c_str() + 7, nullptr, 16);
@@ -463,6 +464,14 @@ std::vector<int> preview_selected_leds() {
         if (g_sel[i] && g_keys_cache[i].led >= 0) leds.push_back(g_keys_cache[i].led);
     return leds;
 }
+std::vector<int> preview_selected_keys() {
+    std::vector<int> keys;
+    if (!g_board || g_board->keys.empty()) return keys; // keys drawn from LED positions have no matrix place
+    for (size_t i = 0; i < g_sel.size() && i < g_board->keys.size(); i++)
+        if (g_sel[i]) keys.push_back((int)i);
+    return keys;
+}
+
 int preview_selected_count() {
     int n = 0;
     for (bool s : g_sel) n += s;

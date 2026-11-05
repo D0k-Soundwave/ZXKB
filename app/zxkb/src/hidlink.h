@@ -45,7 +45,9 @@ struct Board {
     std::vector<KeyRect>     keys;              // physical layout (VIA definition), empty if not known
     int                      rows = 0, cols = 0;  // keyboard matrix (VIA definition)
     std::vector<std::wstring> custom_names;     // the keyboard's own key codes (QK_KB + i), from its VIA definition
-    std::vector<uint16_t>    keymap;            // layer 0 as the keyboard has it now (read through VIA), row * cols + col
+    std::vector<uint16_t>    keymap;            // the layer shown (read through VIA), row * cols + col
+    int                      shown_layer = 0;   // which layer `keymap` is
+    int                      layers = 0, macros = -1; // VIA layer and macro counts (0 / -1 = not asked yet)
     std::vector<uint8_t>     led_map;           // ZXKB firmware: LED under each matrix position (255 none), row * map_cols + col
     int                      map_rows = 0, map_cols = 0;
     std::vector<uint8_t>     key;               // ZXKB firmware (protocol 8): proto::KEY_BYTES per LED
@@ -67,7 +69,7 @@ public:
     bool connected() const { return dev_ != INVALID_HANDLE_VALUE && !broken_; }
     void mirror(uint8_t *rgb, int leds); // copy of the LED colours the keyboard last reported (r, g, b per LED)
     void request_via_status();           // VIA boards: ask for brightness, speed, effect and colour (posts WM_ZX_STATUS)
-    void request_keymap(int rows, int cols); // layer 0 of the keymap through VIA (posts WM_ZX_KEYMAP)
+    void request_keymap(int rows, int cols, int layer = 0); // one layer of the keymap through VIA (posts WM_ZX_KEYMAP, wParam layer)
     void raw_reports(bool on) { raw_ = on; }  // test tools: pass reports ZXKB does not use on as WM_ZX_RAW
 
 private:
@@ -93,6 +95,7 @@ private:
     Status           via_status_;                  // VIA boards: built up from the replies to request_via_status()
     std::vector<uint8_t> keymap_buf_;              // keymap bytes being read
     std::vector<bool>    keymap_got_;
+    int                  keymap_base_ = 0, keymap_layer_ = 0;
     uint8_t          mirror_[256 * 3] = {};
     volatile LONG    mirror_posted_ = 0; // a WM_ZX_MIRROR is waiting to be handled (do not queue another)
     volatile bool    broken_ = false;

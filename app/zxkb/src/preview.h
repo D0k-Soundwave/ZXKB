@@ -13,6 +13,7 @@ void preview_simulate(); // standard keyboards: work out the next frame of the e
 // Key selection: click a key, Ctrl+click to add or remove one. The parent gets WM_COMMAND (id, PREVIEW_SELECTION).
 constexpr WORD PREVIEW_SELECTION = 1;
 std::vector<int> preview_selected_leds();   // LED numbers of the selected keys
+std::vector<int> preview_selected_keys();   // the selected keys as indices into g_board->keys
 int  preview_selected_count();
 void preview_select_all();
 void preview_select_none();                  // height / width of the drawing for the connected keyboard

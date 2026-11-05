@@ -74,8 +74,8 @@ Label basic(uint16_t usage, HKL layout) {
             case 0xAC: l.main = L"Prev"; break;
             case 0xAD: l.main = L"Stop"; break;
             case 0xAE: l.main = L"Play"; break;
-            case 0xBD: l.main = L"Bri+"; break;
-            case 0xBE: l.main = L"Bri-"; break;
+            case 0xBD: l.main = L"Scrn+"; break; // the screen's brightness (the keyboard's is "Bri+")
+            case 0xBE: l.main = L"Scrn-"; break;
             default: if (usage >= 0xCD && usage <= 0xDF) l.main = L"Mouse";
         }
         return l;
@@ -160,10 +160,25 @@ Label for_keycode(uint16_t kc, HKL layout, const std::vector<std::wstring> &cust
     if (kc <= 0x1FFF) return basic(kc & 0xFF, layout);                 // with modifiers (e.g. Ctrl + key)
     if (kc >= 0x2000 && kc <= 0x3FFF) return basic(kc & 0xFF, layout); // mod-tap: the tapped key
     if (kc >= 0x4000 && kc <= 0x4FFF) return basic(kc & 0xFF, layout); // layer-tap: the tapped key
-    if (kc >= 0x5220 && kc <= 0x523F) { l.main = L"Fn"; return l; }    // momentary layer (MO)
-    if ((kc >= 0x5200 && kc <= 0x521F) || (kc >= 0x5240 && kc <= 0x52DF)) { l.main = L"Layer"; return l; }
+    // layers: MO (hold), TO (go to), DF (default), TG (toggle), OSL (next key only), with the layer number
+    if (kc >= 0x5220 && kc <= 0x523F) { l.main = L"Fn"; l.sub = std::to_wstring(kc & 0x1F); return l; }
+    if (kc >= 0x5200 && kc <= 0x521F) { l.main = L"TO " + std::to_wstring(kc & 0x1F); return l; }
+    if (kc >= 0x5240 && kc <= 0x525F) { l.main = L"DF " + std::to_wstring(kc & 0x1F); return l; }
+    if (kc >= 0x5260 && kc <= 0x527F) { l.main = L"TG " + std::to_wstring(kc & 0x1F); return l; }
+    if (kc >= 0x5280 && kc <= 0x529F) { l.main = L"OSL " + std::to_wstring(kc & 0x1F); return l; }
     if (kc >= 0x7700 && kc <= 0x777F) { l.main = L"M" + std::to_wstring(kc - 0x7700); return l; } // macro
+    if (kc >= 0x7840 && kc <= 0x784C) { // RGB matrix keys
+        static const wchar_t *rgb[13] = {L"RGB on", L"RGB off", L"RGB", L"Mode+", L"Mode-", L"Hue+", L"Hue-", L"Sat+", L"Sat-",
+                                         L"Bri+", L"Bri-", L"Spd+", L"Spd-"};
+        l.main = rgb[kc - 0x7840];
+        return l;
+    }
     if (kc >= 0x7800 && kc <= 0x78FF) { l.main = L"Light"; return l; }
+    if (kc >= 0x77C0 && kc <= 0x77C9) { l.main = L"Hot"; l.sub = std::to_wstring((kc - 0x77C0 + 1) % 10); return l; } // ZXKB hotkeys
+    if (kc == 0x77CA) { l.main = L"VU"; return l; }
+    if (kc == 0x7013) { l.main = L"NKRO"; return l; }
+    if (kc == 0x700B) { l.main = L"WinLk"; return l; }
+    if (kc == 0x7C00) { l.main = L"Boot"; return l; }
     if (kc >= 0x7E00 && kc <= 0x7E3F) { // the keyboard's own key codes
         size_t i = kc - 0x7E00;
         if (i < custom.size()) l.main = custom[i];
