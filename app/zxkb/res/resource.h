@@ -44,6 +44,26 @@
 #define IDC_MC_EXPORT    267
 #define IDC_MC_WAITS     268
 #define IDC_MC_CLEARONE  269
+#define IDD_KBSETTINGS   270
+#define IDC_KS_INFO      271
+#define IDC_KS_GAME      272
+#define IDC_KS_ALTTAB    273
+#define IDC_KS_ALTF4     274
+#define IDC_KS_WIN       275
+#define IDC_KS_SOCD_WASD 276
+#define IDC_KS_SOCD_ARROWS 277
+#define IDC_KS_DEBOUNCE  278
+#define IDC_KS_DEBOUNCE_VAL 279
+#define IDC_KS_IDLE      280
+#define IDC_KS_LAYER     281
+#define IDC_KS_LAYER_C   282
+#define IDC_KS_NKRO      283
+#define IDC_KS_MACRO     284
+#define IDC_KS_MACRO_MODE 285
+#define IDC_KS_DELAY     286
+#define IDC_KS_DELAY_VAL 287
+#define IDC_KS_RATE      288
+#define IDC_KS_RATE_VAL  289
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 36 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.36" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 38 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.38" // raise for every build installed for D0k (docs/VERSIONS.md)

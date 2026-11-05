@@ -32,6 +32,9 @@ int key_step_ms(int speed);              // 16 ms (255) to 5 s (0), as the firmw
 constexpr uint8_t CAPS      = 0xDE; // Caps Lock light (protocol 9): sub 0 get, 1 set, 2 save; always replies
 constexpr uint8_t CAPS_GET = 0x00, CAPS_SET = 0x01, CAPS_SAVE = 0x02, CAPS_START_KEYS = 0x03; // 3: protocol 10
 // reply/set layout: [0xDE, sub, effect, speed, r, g, b, r2, g2, b2, full, n, n bytes of key bits (bit i = LED i)]
+constexpr uint8_t SETTINGS  = 0xDF; // keyboard settings (protocol 12): sub 0 get, 1 set + 13 bytes, 2 save; always replies
+constexpr uint8_t SETTINGS_GET = 0x00, SETTINGS_SET = 0x01, SETTINGS_SAVE = 0x02;
+constexpr int     SETTINGS_BYTES = 13; // game, SOCD, debounce ms, idle minutes, layer light on r g b, NKRO, 4 bytes macro modes
 constexpr uint8_t TUNE      = 0xDA; // [0xDA, sub, ...] size and intensity of the current effect
 constexpr uint8_t TUNE_GET  = 0x00;
 constexpr uint8_t TUNE_SET  = 0x01; // [0xDA, 0x01, size, intensity]

@@ -22,6 +22,46 @@ BEGIN
     PUSHBUTTON      "Close", IDCANCEL, 223, 193, 50, 14
 END
 
+IDD_KBSETTINGS DIALOGEX 0, 0, 300, 286
+STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE
+CAPTION "ZXKB - keyboard settings"
+FONT 9, "Segoe UI"
+BEGIN
+    LTEXT           "", IDC_KS_INFO, 7, 7, 286, 18
+    GROUPBOX        "Game mode", -1, 7, 28, 286, 52
+    AUTOCHECKBOX    "Game mode on", IDC_KS_GAME, 14, 40, 274, 10
+    LTEXT           "While it is on, block:", -1, 14, 54, 70, 10
+    AUTOCHECKBOX    "Alt+Tab", IDC_KS_ALTTAB, 86, 53, 50, 10
+    AUTOCHECKBOX    "Alt+F4", IDC_KS_ALTF4, 140, 53, 50, 10
+    AUTOCHECKBOX    "Windows keys", IDC_KS_WIN, 194, 53, 70, 10
+    LTEXT           "A key can switch it too: Change keys, ZXKB, Game mode on / off.", -1, 14, 66, 274, 10
+    LTEXT           "SOCD: of two opposite keys held, the last one pressed counts.", -1, 7, 86, 286, 10
+    AUTOCHECKBOX    "A / D and W / S", IDC_KS_SOCD_WASD, 14, 98, 90, 10
+    AUTOCHECKBOX    "Arrow keys", IDC_KS_SOCD_ARROWS, 108, 98, 80, 10
+    LTEXT           "Debounce", -1, 7, 117, 50, 10
+    CONTROL         "", IDC_KS_DEBOUNCE, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, 56, 114, 160, 15
+    LTEXT           "", IDC_KS_DEBOUNCE_VAL, 218, 117, 75, 10
+    LTEXT           "Raise it if a key types twice; lower means a press counts sooner.", -1, 14, 130, 279, 10
+    LTEXT           "Lights off when idle for", -1, 7, 148, 80, 10
+    COMBOBOX        IDC_KS_IDLE, 88, 146, 70, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "(a key press puts them back)", -1, 162, 148, 131, 10
+    AUTOCHECKBOX    "While Fn is held, light the keys that do something on it", IDC_KS_LAYER, 7, 166, 220, 10
+    CONTROL         "", IDC_KS_LAYER_C, "Button", BS_OWNERDRAW | WS_TABSTOP, 233, 163, 30, 15
+    AUTOCHECKBOX    "N-key rollover (every key held counts)", IDC_KS_NKRO, 7, 184, 220, 10
+    LTEXT           "Macro play", -1, 7, 202, 40, 10
+    COMBOBOX        IDC_KS_MACRO, 50, 200, 60, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_KS_MACRO_MODE, 114, 200, 130, 80, CBS_DROPDOWNLIST | WS_TABSTOP
+    GROUPBOX        "Windows key repeat (all keyboards on this PC)", -1, 7, 220, 286, 44
+    LTEXT           "Delay", -1, 14, 234, 40, 10
+    CONTROL         "", IDC_KS_DELAY, "msctls_trackbar32", TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 50, 231, 70, 15
+    LTEXT           "", IDC_KS_DELAY_VAL, 122, 234, 40, 10
+    LTEXT           "Rate", -1, 164, 234, 20, 10
+    CONTROL         "", IDC_KS_RATE, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, 184, 231, 60, 15
+    LTEXT           "", IDC_KS_RATE_VAL, 246, 234, 45, 18
+    DEFPUSHBUTTON   "OK", IDOK, 189, 268, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 243, 268, 50, 14
+END
+
 IDD_MACROS DIALOGEX 0, 0, 300, 262
 STYLE DS_SHELLFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE
 CAPTION "ZXKB - macros"

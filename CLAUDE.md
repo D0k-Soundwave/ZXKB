@@ -61,6 +61,8 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   - `0xD9` 0x00 status (protocol 2: also sent unasked on changes; byte 15 VU possible, byte 16 firmware version),
     0x01 + mode -> name, 0x02 + first LED -> 9 x (x, y, flags).
   - `0xDA` size and intensity of the current effect: 0x00 get, 0x01 set, 0x02 save.
+  - `0xDF` keyboard settings (v27, protocol 12): 0x00 get, 0x01 set + 13 bytes, 0x02 save: game mode, SOCD, debounce,
+    lights-off minutes, layer light, NKRO, macro play modes (zxkb.h). Custom debounce: keymap rules.mk DEBOUNCE_TYPE = custom.
   - SignalRGB 0x21-0x28 (protocol 1.0.6); 0x25 enable / 0x24 stream / 0x26 disable is also ZXKB's direct mode.
   - Standard VIA lighting (0x07/0x08/0x09, channel 3) for effect, brightness, speed, colour, save.
   - Overlays drop back to the board's own effect after 5 s without data.
@@ -91,7 +93,7 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   `src/macros`: Macros window (VIA 0x0C-0x0F; QMK macro bytes <-> readable text); macros kept by keystore too.
   `src/sim`: simulated preview for standard VIA keyboards (QMK's effect maths ported; key presses by raw input while
   the window is open). `src/fnkeys`: Fn + 1..0 -> F13-F22 through VIA for standard keyboards (old keys in zxkb.ini [fnkeys]); test switch
-  ZXKB_TEST_FN=setup|undo runs it at connect (result in %APPDATA%\ZXKB\fnkeys.log). `src/caps`: Caps Lock light window.
+  ZXKB_TEST_FN=setup|undo runs it at connect (result in %APPDATA%\ZXKB\fnkeys.log). `src/caps`: Caps Lock light window. `src/kbsettings`: Keyboard settings window (0xDF + Windows key repeat).
   Keychron's own firmware source: %USERPROFILE%\keychron_qmk (branch 2025q3), `make keychron/q3/iso_encoder:keychron`.
   Build from PowerShell with TMP set to a writable folder (g++ otherwise tries C:\WINDOWS for temp files).
 - Installed copy: `Documents\Keyboard Layouts\ZXKB\ZXKB.exe`, started with Windows by a shortcut in the Startup

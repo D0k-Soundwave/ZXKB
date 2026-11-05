@@ -73,10 +73,28 @@ typedef struct PACKED {
     uint8_t key[RGB_MATRIX_LED_COUNT][ZXKB_KEY_BYTES]; /* per key: fx and speed, first colour, second colour */
     uint8_t caps_fx, caps_speed, caps_a[3], caps_b[3], caps_full; /* the Caps Lock light */
     uint8_t caps_keys[(RGB_MATRIX_LED_COUNT + 7) / 8];             /* bit per LED */
-    uint8_t spare[32];                                             /* for later settings (no reset needed) */
+    /* keyboard settings (v27), taken from the spare bytes, so nothing is reset: 0 = off / default */
+    uint8_t game;           /* bit 0 block Alt+Tab, 1 block Alt+F4, 2 block the Windows keys, 7 game mode on */
+    uint8_t socd;           /* bit 0 A/D and W/S, bit 1 arrows: the last of a pair pressed wins */
+    uint8_t debounce;       /* ms; 0 = ZXKB_DEBOUNCE_DEFAULT */
+    uint8_t idle_min;       /* lights off after this many minutes without a key press; 0 = never */
+    uint8_t layer_light[4]; /* on, r, g, b: keys that do something on a held layer light */
+    uint8_t macro_mode[4];  /* 2 bits a macro: 0 play once, 1 repeat while held, 2 on / off */
+    uint8_t spare[20];      /* for later settings (no reset needed) */
 } zxkb_config_t;
 _Static_assert(sizeof(zxkb_config_t) == EECONFIG_MODULE_ZXKB_DATA_SIZE, "update EECONFIG_MODULE_ZXKB_DATA_SIZE in config.h");
 static zxkb_config_t cfg;
+
+/* ---------- Keyboard settings: game mode, SOCD, debounce, lights-off timeout, layer light, macro modes ---------- */
+#ifndef ZXKB_DEBOUNCE_DEFAULT
+#    define ZXKB_DEBOUNCE_DEFAULT 5 /* [P] QMK's DEBOUNCE default (quantum/debounce/sym_defer_g.c) */
+#endif
+#ifndef ZXKB_MACRO_REPEAT_MS
+#    define ZXKB_MACRO_REPEAT_MS 100 /* [A] gap between repeats of a repeating macro */
+#endif
+static int8_t   macro_repeating = -1; /* the macro being repeated, -1 none */
+static uint32_t macro_last;
+static bool     idle_off;             /* the lights were switched off by the lights-off timeout */
 
 /* Effects with their own size and intensity, and which of the two apply */
 #define SZ ZXKB_TUNE_SIZE
@@ -256,6 +274,19 @@ bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
         for (uint8_t j = 0; j < 3; j++) c[j] = (uint8_t)((a[j] * mix + b[j] * (255 - mix)) / 255);
         rgb_matrix_set_color(i, c[0] * v / 255, c[1] * v / 255, c[2] * v / 255);
     }
+    /* layer light: while a layer is held over the base layer, the keys that do something on it light */
+    if (cfg.layer_light[0]) {
+        uint8_t top = get_highest_layer(layer_state | default_layer_state), base = get_highest_layer(default_layer_state);
+        if (top > base) {
+            for (uint8_t r = 0; r < MATRIX_ROWS; r++)
+                for (uint8_t c = 0; c < MATRIX_COLS; c++) {
+                    uint8_t i = g_led_config.matrix_co[r][c];
+                    if (i == NO_LED || i < led_min || i >= led_max) continue;
+                    uint16_t kc = keymap_key_to_keycode(top, (keypos_t){.row = r, .col = c});
+                    if (kc != KC_TRNS && kc != KC_NO) rgb_matrix_set_color(i, cfg.layer_light[1], cfg.layer_light[2], cfg.layer_light[3]);
+                }
+        }
+    }
     /* the Caps Lock light, over the effect and the key colours on its keys */
     if (host_keyboard_led_state().caps_lock && cfg.caps_fx != ZXKB_KEY_NONE) {
         uint32_t step = key_step_ms[cfg.caps_speed];
@@ -357,7 +388,27 @@ static bool vu_possible(void) {
 }
 static void info_status(uint8_t *data, uint8_t length);
 
+static void settings_housekeeping(void) {
+    /* lights off after the set minutes without a key press; back on at the next one */
+    if (cfg.idle_min) {
+        uint32_t idle = last_input_activity_elapsed();
+        if (!idle_off && rgb_matrix_is_enabled() && idle > (uint32_t)cfg.idle_min * 60000) {
+            rgb_matrix_disable_noeeprom();
+            idle_off = true;
+        }
+    }
+    if (idle_off && last_input_activity_elapsed() < 1000) {
+        rgb_matrix_enable_noeeprom();
+        idle_off = false;
+    }
+    if (macro_repeating >= 0 && timer_elapsed32(macro_last) >= ZXKB_MACRO_REPEAT_MS) {
+        dynamic_keymap_macro_send((uint8_t)macro_repeating);
+        macro_last = timer_read32();
+    }
+}
+
 void housekeeping_task_zxkb(void) {
+    settings_housekeeping();
     housekeeping_task_zxkb_kb();
     if (overlay != ZXKB_OVERLAY_NONE && rgb_matrix_get_mode() != overlay_mode(overlay)) {
         /* the effect was changed on the keyboard: it wins until the app asks again */
@@ -406,8 +457,110 @@ void housekeeping_task_zxkb(void) {
 }
 
 /* ---------- Keys: hotkey slots, VU toggle, typing ripple history ---------- */
+
+#define SETTINGS_BYTES 13
+static void settings_command(uint8_t *data, uint8_t length) {
+    uint8_t sub = data[1];
+    if (sub == ZXKB_SET_SET) {
+        cfg.game = data[2]; cfg.socd = data[3]; cfg.debounce = data[4]; cfg.idle_min = data[5];
+        memcpy(cfg.layer_light, &data[6], 4);
+        if (keymap_config.nkro != (data[10] != 0)) {
+            clear_keyboard(); /* no key may stay down across the switch */
+            keymap_config.nkro = data[10] != 0;
+        }
+        memcpy(cfg.macro_mode, &data[11], 4);
+        macro_repeating = -1; /* a macro left repeating stops when the settings change */
+    } else if (sub == ZXKB_SET_SAVE) {
+        eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg));
+        eeconfig_update_keymap(&keymap_config);
+    } else if (sub != ZXKB_SET_GET) {
+        memset(&data[2], 0xFF, length - 2);
+        raw_hid_send(data, length);
+        return;
+    }
+    memset(&data[2], 0, length - 2);
+    data[2] = cfg.game; data[3] = cfg.socd; data[4] = cfg.debounce; data[5] = cfg.idle_min;
+    memcpy(&data[6], cfg.layer_light, 4);
+    data[10] = keymap_config.nkro;
+    memcpy(&data[11], cfg.macro_mode, 4);
+    raw_hid_send(data, length);
+}
+
+#ifdef ZXKB_DEBOUNCE
+/* QMK's standard global debounce (quantum/debounce/sym_defer_g.c, GPL-2.0-or-later) with the time from the settings;
+ * the keymap's rules.mk sets DEBOUNCE_TYPE = custom and ZXKB_DEBOUNCE */
+#    include "debounce.h"
+#    include "timer.h"
+void debounce_init(void) {}
+bool debounce(matrix_row_t raw[], matrix_row_t cooked[], bool changed) {
+    static fast_timer_t debouncing_time;
+    static bool         debouncing     = false;
+    bool                cooked_changed = false;
+    uint8_t             ms             = cfg.debounce ? cfg.debounce : ZXKB_DEBOUNCE_DEFAULT;
+    if (changed) {
+        debouncing      = true;
+        debouncing_time = timer_read_fast();
+    } else if (debouncing && timer_elapsed_fast(debouncing_time) >= ms) {
+        size_t matrix_size = MATRIX_ROWS_PER_HAND * sizeof(matrix_row_t);
+        if (memcmp(cooked, raw, matrix_size) != 0) {
+            memcpy(cooked, raw, matrix_size);
+            cooked_changed = true;
+        }
+        debouncing = false;
+    }
+    return cooked_changed;
+}
+#endif
+
+/* SOCD: of two opposite keys held, the last pressed wins; letting it go brings the other back. Only the other key
+ * is sent here: the key itself goes on through QMK as usual (lighting reactions, Keychron's own code) */
+static const uint16_t socd_pairs[4][2] = {{KC_A, KC_D}, {KC_W, KC_S}, {KC_LEFT, KC_RIGHT}, {KC_UP, KC_DOWN}};
+static bool socd_held[4][2];
+static void socd_key(uint16_t keycode, bool pressed) {
+    for (uint8_t p = 0; p < 4; p++) {
+        if (!(cfg.socd & (p < 2 ? 1 : 2))) continue;
+        for (uint8_t s = 0; s < 2; s++) {
+            if (keycode != socd_pairs[p][s]) continue;
+            socd_held[p][s] = pressed;
+            if (socd_held[p][1 - s]) {
+                if (pressed) unregister_code(socd_pairs[p][1 - s]);
+                else register_code(socd_pairs[p][1 - s]);
+            }
+            return;
+        }
+    }
+}
+
 bool process_record_zxkb(uint16_t keycode, keyrecord_t *record) {
     if (!process_record_zxkb_kb(keycode, record)) return false;
+    bool pressed = record->event.pressed;
+
+    if (keycode == ZXKB_GAME_TOGGLE) { /* game mode on / off (what it blocks is set from the app) */
+        if (pressed) cfg.game ^= 0x80;
+        return false;
+    }
+    if (cfg.game & 0x80) { /* game mode: keys that would take the player out of the game */
+        uint8_t mods = get_mods() | get_oneshot_mods();
+        if ((cfg.game & 1) && keycode == KC_TAB && (mods & MOD_MASK_ALT)) return false;
+        if ((cfg.game & 2) && keycode == KC_F4 && (mods & MOD_MASK_ALT)) return false;
+        if ((cfg.game & 4) && (keycode == KC_LGUI || keycode == KC_RGUI)) return false;
+    }
+    if (cfg.socd) socd_key(keycode, pressed);
+    if (keycode >= QK_MACRO && keycode <= QK_MACRO_MAX) { /* macro play modes */
+        uint8_t m = keycode - QK_MACRO, mode = m < 16 ? (cfg.macro_mode[m / 4] >> (m % 4 * 2)) & 3 : 0;
+        if (mode == 1) { /* repeat while held */
+            if (pressed) { macro_repeating = m; macro_last = timer_read32(); dynamic_keymap_macro_send(m); }
+            else if (macro_repeating == m) macro_repeating = -1;
+            return false;
+        }
+        if (mode == 2) { /* on / off */
+            if (pressed) {
+                if (macro_repeating == m) macro_repeating = -1;
+                else { macro_repeating = m; macro_last = timer_read32(); dynamic_keymap_macro_send(m); }
+            }
+            return false;
+        }
+    }
 
     if (record->event.pressed && record->event.type == KEY_EVENT) {
         uint8_t led = g_led_config.matrix_co[record->event.key.row][record->event.key.col];
@@ -674,6 +827,9 @@ bool zxkb_raw_hid_receive(uint8_t *data, uint8_t length) {
             mirroring = data[1] != 0;
             mirror_until = timer_read32() + ZXKB_MIRROR_KEEPALIVE_MS;
             mirror_full  = (RGB_MATRIX_LED_COUNT + 8) / 9; /* one whole frame, for an app that has just opened */
+            return true;
+        case ZXKB_CMD_SETTINGS:
+            settings_command(data, length);
             return true;
         case ZXKB_CMD_CAPS:
             caps_command(data, length);

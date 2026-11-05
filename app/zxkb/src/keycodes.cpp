@@ -3,7 +3,7 @@
 // [P] QMK key code values: quantum/keycodes.h (master f5db962): basic 0x0000-0x00FF (USB HID usages), QK_TO 0x5200,
 // QK_MOMENTARY 0x5220, QK_DEF_LAYER 0x5240, QK_TOGGLE_LAYER 0x5260, QK_ONE_SHOT_LAYER 0x5280, QK_MACRO 0x7700,
 // QK_RGB_MATRIX_ON 0x7840.., QK_MAGIC_TOGGLE_GUI 0x700B, QK_MAGIC_TOGGLE_NKRO 0x7013, QK_BOOTLOADER 0x7C00,
-// QK_KB 0x7E00, QK_COMMUNITY_MODULE 0x77C0 (ZXKB: ZK_1..ZK_0 0x77C0-0x77C9, ZK_VU 0x77CA).
+// QK_KB 0x7E00, QK_COMMUNITY_MODULE 0x77C0 (ZXKB: ZK_1..ZK_0 0x77C0-0x77C9, ZK_VU 0x77CA, ZK_GAME 0x77CB).
 #include "keycodes.h"
 #include "labels.h"
 #include <cwchar>
@@ -73,6 +73,7 @@ std::vector<Choice> choices(HKL layout, int layers, int macros, const std::vecto
     if (zxkb) {
         for (int i = 0; i < 10; i++) add((uint16_t)(0x77C0 + i), L"ZXKB hotkey " + std::to_wstring((i + 1) % 10), ZXKB);
         add(0x77CA, L"VU meter on / off", ZXKB);
+        add(0x77CB, L"Game mode on / off", ZXKB); // firmware v27 on
     }
     for (int m = 0; m < macros && m < 128; m++) add((uint16_t)(0x7700 + m), L"Macro " + std::to_wstring(m), MACROS);
     for (size_t i = 0; i < custom.size() && i < 64; i++) add((uint16_t)(0x7E00 + i), custom[i] + L" (keyboard's own)", SPECIAL);

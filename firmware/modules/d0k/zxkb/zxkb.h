@@ -6,12 +6,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define ZXKB_PROTOCOL_VERSION 11 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
+#define ZXKB_PROTOCOL_VERSION 12 /* 2: status has "VU possible", sent unasked on changes. 3: LED mirror (0xDB).
                                  * 4: bootloader command (0xDC), status byte 17 = bootloader, mirror sends changes only.
                                  * 5: key matrix -> LED map (0xD9 0x03). 6: per-key colours (0xDD). 7: per-key effects (0xDD, 7 bytes a key).
                                  * 8: 8 bytes a key (speed 0-255); size down to 1, intensity down to 0.
                                  * 9: Caps Lock light (0xDE). 10: its starting keys back (0xDE 0x03).
-                                 * 11: status bytes 18 / 19: base layer / top layer in use (sent on change) */
+                                 * 11: status bytes 18 / 19: base layer / top layer in use (sent on change).
+                                 * 12: keyboard settings (0xDF), ZK_GAME */
 #define ZXKB_REPORT_SIZE      32 /* [P] QMK raw HID report size (RAW_EPSIZE, tmk_core usb_descriptor.h) */
 
 /* Raw HID commands (32-byte reports). 0xD0-0xD9 are ZXKB's own; 0x21-0x28 are the SignalRGB protocol. */
@@ -32,6 +33,15 @@
                                  * keyboard -> app: [0xDB, first LED, count (max 9), count x (r, g, b)], the colours
                                  * actually sent to the LEDs (after brightness and indicators). Needs the board to call
                                  * zxkb_mirror_set() from its LED driver; boards that do not just never send. */
+#define ZXKB_CMD_SETTINGS  0xDF /* keyboard settings, always replies [0xDF, sub, the 13 bytes]:
+                                 * [0xDF, 0x00] get; [0xDF, 0x01, 13 bytes] change (live); [0xDF, 0x02] save. Bytes:
+                                 * game (bit 0 block Alt+Tab, 1 Alt+F4, 2 Windows keys, 7 game mode on), SOCD (bit 0
+                                 * A/D + W/S, 1 arrows), debounce ms (0 = 5), lights off after minutes (0 = never),
+                                 * layer light on, r, g, b, NKRO, macro play modes (4 bytes, 2 bits a macro: 0 once,
+                                 * 1 repeat while held, 2 on / off) */
+#define ZXKB_SET_GET  0x00
+#define ZXKB_SET_SET  0x01
+#define ZXKB_SET_SAVE 0x02
 #define ZXKB_CMD_CAPS      0xDE /* the Caps Lock light: drawn over everything on its keys while Caps Lock is on.
                                  * Always replies [0xDE, sub, ...]:
                                  * [0xDE, 0x00] get -> [0xDE, 0x00, effect, speed, r, g, b, r2, g2, b2, full, n, n bytes of

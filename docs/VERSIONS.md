@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v27 | 2026-11-05 | 63,408 bytes | Keyboard settings (0xDF, protocol 12), in the 32 spare bytes, so nothing is reset: game mode (block Alt+Tab, Alt+F4, Windows keys; key ZK_GAME), SOCD (A/D + W/S, arrows), debounce 1-50 ms, lights off when idle, Fn layer light, NKRO, macro play modes (once / repeat while held / on / off). |
 | v26 | 2026-11-05 | 62,504 bytes | Status reports the layers in use: base layer (the side switch) and top layer (Fn held), sent when they change (protocol 11). |
 | v25 | 2026-11-05 | 62,432 bytes | Caps Lock light: command to put it back on the keys it started on (0xDE 0x03, protocol 10). Same settings layout: nothing is reset. |
 | v24 | 2026-11-05 | 62,408 bytes | Caps Lock light set from the app (0xDE, protocol 9): effect (off / steady / flash / breathe), two colours, speed, full brightness or not, which keys; starts as v23 (magenta / white, 320 ms, full brightness, Tab Q Caps A Caps-Shift \). 32 spare bytes for later settings. Module block version 6 (785 bytes): the first start resets keymap, macros and key colours. |
@@ -46,6 +47,8 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.38 | 2026-11-05 | 583,680 bytes | Keyboard settings... window for the v27 settings (greyed with a note on older firmware) plus Windows key repeat delay and rate (any keyboard); Game mode on / off in Change keys (ZXKB). |
+| 0.37 | 2026-11-05 | - | Kept but not handed over: first build of 0.38, some labels clipped. |
 | 0.36 | 2026-11-05 | 576,000 bytes | Macros... window: the keyboard's macros (VIA, stored on the keyboard) as readable text ({Enter}, {Ctrl+C}, {Shift down}/{Shift up}, {wait 250}), Record with or without waits, Clear, Save to keyboard (size checked), Import/Export as a text file; macros kept by ZXKB and put back after firmware updates; give them to keys in Change keys (Macros). |
 | 0.35 | 2026-11-05 | 557,568 bytes | The knob in Change keys: select it in the preview, then Press, Turn left or Turn right; shows all three; knob changes kept and put back after firmware updates like key changes (VIA 0x14 / 0x15). |
 | 0.34 | 2026-11-05 | 554,496 bytes | The window opens on the layer the keyboard types from and marks it "(in use)" in the Layer list; Change keys says when the layer being changed is not the one in use (D0k set Y on layer 0, the Spectrum base, while typing in Windows mode, layer 2). Needs firmware v26. |

@@ -18,6 +18,7 @@
         {"key": "ZXKB_SLOT_8", "aliases": ["ZK_8"]},
         {"key": "ZXKB_SLOT_9", "aliases": ["ZK_9"]},
         {"key": "ZXKB_SLOT_10", "aliases": ["ZK_0"]},
-        {"key": "ZXKB_VU_TOGGLE", "aliases": ["ZK_VU"]}
+        {"key": "ZXKB_VU_TOGGLE", "aliases": ["ZK_VU"]},
+        {"key": "ZXKB_GAME_TOGGLE", "aliases": ["ZK_GAME"]}
     ]
 }

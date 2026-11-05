@@ -83,25 +83,25 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       firmware change, or by hand; macros still to come): VIA resets them to the firmware's own whenever a different
       firmware build starts (P: QMK quantum/via.c, the EEPROM magic is the build date), so the app saves them before
       installing firmware and puts them back after (found 2026-11-05)
-- [ ] Game-mode lock: Win key (exists) plus blocking Alt+Tab / Alt+F4 (firmware work)
+- [~] Game-mode lock: blocks Alt+Tab, Alt+F4 and the Windows keys, each chosen in Keyboard settings; on / off there or by a key (ZK_GAME) (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard)
 - [ ] App-only actions on any key: launch app or URL, paste text, timer (work only while ZXKB runs)
 - [~] Macros: record in the app, edit keys and delays, stored on the keyboard (work without the app; 0.36: editor,
-      recording, import/export, kept across firmware updates; play modes and on-the-fly recording still to come);
+      recording, import/export, kept across firmware updates; play modes in v27 / 0.38: once, repeat while held, on / off, for the first 16 macros; on-the-fly recording still to come);
       on-the-fly recording by a key; play once / repeat while held / toggle / sequence (firmware work);
       library with import and export
 - [ ] Hold-a-key second layer (QMK layers; each extra layer uses 192 bytes of the keyboard's settings memory)
 - [ ] Profiles on the keyboard (work without the app): lighting profiles cheap; whole keymaps need the settings
       memory enlarged (2,048 bytes now; flash is 77% free); profile-cycle key
 - [ ] Profile import, export and backup
-- [ ] Indicator colours: Num Lock, active layer or profile (Caps Lock done)
-- [ ] Lights-off after N minutes without a key press, set from the app
+- [~] Indicator colours: active layer done in v27 (while Fn is held, its keys light in a chosen colour); Num Lock (the Q3 has no Num Lock key) and profile still to come (Caps Lock done)
+- [~] Lights-off after N minutes without a key press, set from the app (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard). Downside: a VU meter or PC effect with no typing also goes dark
 - [ ] GPU temperature lighting via NVIDIA / AMD libraries (CPU temperature not done: needs a kernel driver that
       Defender flags)
 - [ ] Game event reactions, per game, for games that publish their state (e.g. CS2, Dota 2): later
 - [ ] Sync with Hue and Nanoleaf (their local network APIs): later
-- [ ] SOCD (last opposing key wins): QMK community module (port of getreuer's SOCD Cleaner)
-- [ ] Debounce time adjustable from the app (QMK fixes it at 5 ms; firmware work)
-- [ ] NKRO toggle and Windows key repeat delay / rate in the app
+- [~] SOCD (last opposing key wins) for A/D + W/S and the arrows, in the ZXKB module (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard)
+- [~] Debounce time adjustable from the app, 1-50 ms (QMK's global debounce with the time from the settings) (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard)
+- [~] NKRO toggle and Windows key repeat delay / rate in the app (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard); key repeat works with any keyboard
 - [~] Firmware updates from the app: keyboard enters its bootloader on command, flashed with dfu-util from the
       kept versions (replaces QMK Toolbox and holding Esc). Built in 0.11 + v17 (STM32 bootloader only so far); tested
       by D0k 2026-11-03: both installs written, one needed a replug to start
