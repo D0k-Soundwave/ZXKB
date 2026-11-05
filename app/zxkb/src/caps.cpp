@@ -4,6 +4,7 @@
 #include "app.h"
 #include "preview.h"
 #include "protocol.h"
+#include "numbox.h"
 #include "../res/resource.h"
 #include <commctrl.h>
 #include <commdlg.h>
@@ -24,6 +25,23 @@ int key_count(const CapsLight &c) {
     return n;
 }
 
+std::wstring speed_text(int speed) {
+    int ms = proto::key_step_ms(speed);
+    return ms >= 1000 ? std::to_wstring(ms / 1000) + L"." + std::to_wstring(ms % 1000 / 100) + L" s" : std::to_wstring(ms) + L" ms";
+}
+
+void show();
+void send();
+
+void speed_typed() { // a speed typed into the box: the nearest step
+    wchar_t typed[64] = {0};
+    GetDlgItemTextW(g_dlg, IDC_CAPS_SPEED_VAL, typed, 64);
+    int pos = numbox::nearest(typed, speed_text(g_now.speed), 0, 255, speed_text);
+    if (pos >= 0 && pos != g_now.speed) { g_now.speed = (uint8_t)pos; send(); }
+    SetDlgItemTextW(g_dlg, IDC_CAPS_SPEED_VAL, speed_text(g_now.speed).c_str());
+    show();
+}
+
 void show() {
     g_filling = true;
     int sel = 0;
@@ -31,14 +49,13 @@ void show() {
         if (fx_values[i] == g_now.fx) sel = i;
     SendDlgItemMessageW(g_dlg, IDC_CAPS_FX, CB_SETCURSEL, sel, 0);
     SendDlgItemMessageW(g_dlg, IDC_CAPS_SPEED, TBM_SETPOS, TRUE, g_now.speed);
-    int ms = proto::key_step_ms(g_now.speed);
-    std::wstring t = ms >= 1000 ? std::to_wstring(ms / 1000) + L"." + std::to_wstring(ms % 1000 / 100) + L" s" : std::to_wstring(ms) + L" ms";
-    SetDlgItemTextW(g_dlg, IDC_CAPS_SPEED_VAL, t.c_str());
+    if (GetFocus() != GetDlgItem(g_dlg, IDC_CAPS_SPEED_VAL)) SetDlgItemTextW(g_dlg, IDC_CAPS_SPEED_VAL, speed_text(g_now.speed).c_str());
     CheckDlgButton(g_dlg, IDC_CAPS_FULL, g_now.full ? BST_CHECKED : BST_UNCHECKED);
     int n = key_count(g_now);
     SetDlgItemTextW(g_dlg, IDC_CAPS_KEYS, (L"Lights " + std::to_wstring(n) + (n == 1 ? L" key" : L" keys")).c_str());
     bool moving = g_now.fx == proto::KEY_FLASH || g_now.fx == proto::KEY_BREATHE;
     EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_SPEED), moving);
+    EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_SPEED_VAL), moving);
     EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_C2), moving);
     EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_USE_SEL), preview_selected_count() > 0);
     EnableWindow(GetDlgItem(g_dlg, IDC_CAPS_ONLY), caps_lock_led() >= 0);
@@ -149,7 +166,15 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
                     show();
                     return TRUE;
                 }
+                case IDC_CAPS_SPEED_VAL:
+                    if (HIWORD(wp) == EN_KILLFOCUS) speed_typed();
+                    return TRUE;
                 case IDOK:
+                    if (GetFocus() == GetDlgItem(dlg, IDC_CAPS_SPEED_VAL)) { // Enter in the box: take the value
+                        speed_typed();
+                        SendDlgItemMessageW(dlg, IDC_CAPS_SPEED_VAL, EM_SETSEL, 0, -1);
+                        return TRUE;
+                    }
                     DestroyWindow(dlg);
                     return TRUE;
                 case IDCANCEL: // put back what the keyboard had

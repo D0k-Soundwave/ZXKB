@@ -89,6 +89,7 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       recording, import/export, kept across firmware updates; play modes in v27 / 0.38: once, repeat while held, on / off, for the first 16 macros; on-the-fly recording on the keyboard in v29 / 0.40 (record key Fn+M; the app offers it only when the firmware can, D0k 2026-11-05: choose between recording on the keyboard and in the app);
       on-the-fly recording by a key; play once / repeat while held / toggle / sequence (firmware work);
       library with import and export
+- [~] Number boxes beside sliders for exact values (0.41); macro waits that vary at random between two values each run (v30 / 0.41) (D0k, 2026-11-05)
 - [ ] Hold-a-key second layer (QMK layers; each extra layer uses 192 bytes of the keyboard's settings memory)
 - [-] Not doing (D0k, 2026-11-05: profiles stay in the app only). Profiles on the keyboard (work without the app): lighting profiles cheap; whole keymaps need the settings
       memory enlarged (2,048 bytes now; flash is 77% free); profile-cycle key

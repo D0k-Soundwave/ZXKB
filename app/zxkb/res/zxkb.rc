@@ -40,7 +40,7 @@ BEGIN
     AUTOCHECKBOX    "Arrow keys", IDC_KS_SOCD_ARROWS, 108, 98, 80, 10
     LTEXT           "Debounce", -1, 7, 117, 50, 10
     CONTROL         "", IDC_KS_DEBOUNCE, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, 56, 114, 160, 15
-    LTEXT           "", IDC_KS_DEBOUNCE_VAL, 218, 117, 75, 10
+    EDITTEXT        IDC_KS_DEBOUNCE_VAL, 218, 115, 75, 13, ES_AUTOHSCROLL | WS_TABSTOP
     LTEXT           "Raise it if a key types twice; lower means a press counts sooner.", -1, 14, 130, 279, 10
     LTEXT           "Lights off when idle for", -1, 7, 148, 80, 10
     COMBOBOX        IDC_KS_IDLE, 88, 146, 70, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -54,15 +54,15 @@ BEGIN
     GROUPBOX        "Windows key repeat (all keyboards on this PC)", -1, 7, 220, 286, 44
     LTEXT           "Delay", -1, 14, 234, 40, 10
     CONTROL         "", IDC_KS_DELAY, "msctls_trackbar32", TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 50, 231, 70, 15
-    LTEXT           "", IDC_KS_DELAY_VAL, 122, 234, 40, 10
+    EDITTEXT        IDC_KS_DELAY_VAL, 122, 232, 38, 13, ES_RIGHT | ES_AUTOHSCROLL | WS_TABSTOP
     LTEXT           "Rate", -1, 164, 234, 20, 10
     CONTROL         "", IDC_KS_RATE, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, 184, 231, 60, 15
-    LTEXT           "", IDC_KS_RATE_VAL, 246, 234, 45, 18
+    EDITTEXT        IDC_KS_RATE_VAL, 246, 232, 45, 13, ES_AUTOHSCROLL | WS_TABSTOP
     DEFPUSHBUTTON   "OK", IDOK, 189, 268, 50, 14
     PUSHBUTTON      "Cancel", IDCANCEL, 243, 268, 50, 14
 END
 
-IDD_MACROS DIALOGEX 0, 0, 300, 284
+IDD_MACROS DIALOGEX 0, 0, 300, 302
 STYLE DS_SHELLFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE
 CAPTION "ZXKB - macros"
 FONT 9, "Segoe UI"
@@ -71,16 +71,19 @@ BEGIN
     LISTBOX         IDC_MC_LIST, 7, 28, 286, 110, LBS_NOTIFY | WS_VSCROLL | WS_TABSTOP | WS_BORDER
     LTEXT           "The macro selected:", -1, 7, 144, 120, 10
     EDITTEXT        IDC_MC_EDIT, 7, 156, 286, 36, ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Text is typed; {Enter} taps a key; {Ctrl+C} a key with Ctrl; {Shift down} / {Shift up} hold and let go; {wait 250} waits 250 ms; {{ types {. Typed text uses US key positions (QMK).", -1, 7, 196, 286, 26
+    LTEXT           "Text is typed; {Enter} taps a key; {Ctrl+C} a key with Ctrl; {Shift down} / {Shift up} hold and let go; {wait 250} waits 250 ms; {wait 200-300} a different time each run; {{ types {. US key positions (QMK).", -1, 7, 196, 286, 26
     PUSHBUTTON      "Record", IDC_MC_RECORD, 7, 226, 60, 14
     AUTOCHECKBOX    "Record waits", IDC_MC_WAITS, 71, 228, 60, 10
     PUSHBUTTON      "Clear", IDC_MC_CLEARONE, 133, 226, 40, 14
     DEFPUSHBUTTON   "Save to keyboard", IDC_MC_SAVE, 213, 226, 80, 14
-    LTEXT           "", IDC_MC_KB_LABEL, 7, 244, 240, 18
-    COMBOBOX        IDC_MC_KB_SLOT, 250, 244, 43, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Import...", IDC_MC_IMPORT, 7, 266, 50, 14
-    PUSHBUTTON      "Export...", IDC_MC_EXPORT, 61, 266, 50, 14
-    PUSHBUTTON      "Close", IDCANCEL, 243, 266, 50, 14
+    LTEXT           "Recorded waits vary by +/-", -1, 7, 246, 92, 10
+    EDITTEXT        IDC_MC_VARY, 100, 244, 30, 13, ES_NUMBER | ES_RIGHT | WS_TABSTOP
+    LTEXT           "", IDC_MC_VARY_NOTE, 134, 246, 159, 10
+    LTEXT           "", IDC_MC_KB_LABEL, 7, 262, 240, 18
+    COMBOBOX        IDC_MC_KB_SLOT, 250, 262, 43, 120, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Import...", IDC_MC_IMPORT, 7, 284, 50, 14
+    PUSHBUTTON      "Export...", IDC_MC_EXPORT, 61, 284, 50, 14
+    PUSHBUTTON      "Close", IDCANCEL, 243, 284, 50, 14
 END
 
 IDD_REMAP DIALOGEX 0, 0, 250, 286
@@ -113,7 +116,7 @@ BEGIN
     CONTROL         "2", IDC_CAPS_C2, "Button", BS_OWNERDRAW | WS_TABSTOP, 96, 49, 30, 15
     LTEXT           "Speed", -1, 7, 72, 50, 10
     CONTROL         "", IDC_CAPS_SPEED, "msctls_trackbar32", TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, 56, 69, 150, 15
-    LTEXT           "", IDC_CAPS_SPEED_VAL, 208, 72, 45, 10
+    EDITTEXT        IDC_CAPS_SPEED_VAL, 208, 70, 45, 13, ES_RIGHT | ES_AUTOHSCROLL | WS_TABSTOP
     AUTOCHECKBOX    "Full brightness (whatever the brightness setting)", IDC_CAPS_FULL, 7, 90, 246, 12
     LTEXT           "", IDC_CAPS_KEYS, 7, 110, 60, 10
     PUSHBUTTON      "Use the keys selected in the preview", IDC_CAPS_USE_SEL, 68, 107, 130, 14

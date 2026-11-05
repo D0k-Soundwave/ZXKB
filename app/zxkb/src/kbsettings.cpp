@@ -3,6 +3,7 @@
 #include "kbsettings.h"
 #include "app.h"
 #include "protocol.h"
+#include "numbox.h"
 #include "../res/resource.h"
 #include <commctrl.h>
 #include <commdlg.h>
@@ -67,6 +68,8 @@ std::wstring repeat_rate_text(int s) { // [P] 0-31: ~2.5 to ~30 a second (Micros
     return std::to_wstring(tenths / 10) + L"." + std::to_wstring(tenths % 10) + L" a second";
 }
 
+std::wstring debounce_text(int ms) { return std::to_wstring(ms) + L" ms" + (ms == DEBOUNCE_DEFAULT ? L" (usual)" : L""); }
+
 int selected_macro() {
     int m = (int)SendDlgItemMessageW(g_dlg, IDC_KS_MACRO, CB_GETCURSEL, 0, 0);
     return m < 0 ? 0 : m;
@@ -84,7 +87,9 @@ void show() {
     check(IDC_KS_SOCD_ARROWS, g_now.socd() & 2);
     int db = g_now.debounce() ? g_now.debounce() : DEBOUNCE_DEFAULT;
     SendDlgItemMessageW(d, IDC_KS_DEBOUNCE, TBM_SETPOS, TRUE, db);
-    SetDlgItemTextW(d, IDC_KS_DEBOUNCE_VAL, (std::to_wstring(db) + L" ms" + (db == DEBOUNCE_DEFAULT ? L" (usual)" : L"")).c_str());
+    auto text = [d](int id, const std::wstring &t) { if (GetFocus() != GetDlgItem(d, id)) SetDlgItemTextW(d, id, t.c_str()); };
+    text(IDC_KS_DEBOUNCE_VAL, debounce_text(db));
+    EnableWindow(GetDlgItem(d, IDC_KS_DEBOUNCE_VAL), g_kb);
     int idle_sel = -1;
     for (int i = 0; i < (int)(sizeof(idle_choices) / sizeof(idle_choices[0])); i++)
         if (idle_choices[i] == g_now.idle()) idle_sel = i;
@@ -112,8 +117,8 @@ void show() {
     SystemParametersInfoW(SPI_GETKEYBOARDSPEED, 0, &speed, 0);
     SendDlgItemMessageW(d, IDC_KS_DELAY, TBM_SETPOS, TRUE, delay);
     SendDlgItemMessageW(d, IDC_KS_RATE, TBM_SETPOS, TRUE, speed);
-    SetDlgItemTextW(d, IDC_KS_DELAY_VAL, repeat_delay_text(delay).c_str());
-    SetDlgItemTextW(d, IDC_KS_RATE_VAL, repeat_rate_text(speed).c_str());
+    text(IDC_KS_DELAY_VAL, repeat_delay_text(delay));
+    text(IDC_KS_RATE_VAL, repeat_rate_text(speed));
     g_filling = false;
 }
 
@@ -154,6 +159,36 @@ void set_repeat(UINT delay, UINT speed, bool keep) {
     UINT flags = SPIF_SENDCHANGE | (keep ? SPIF_UPDATEINIFILE : 0);
     SystemParametersInfoW(SPI_SETKEYBOARDDELAY, delay, nullptr, flags);
     SystemParametersInfoW(SPI_SETKEYBOARDSPEED, speed, nullptr, flags);
+}
+
+// A value typed into one of the number boxes: the nearest step of its slider
+bool value_typed(int id) {
+    wchar_t typed[64] = {0};
+    GetDlgItemTextW(g_dlg, id, typed, 64);
+    if (id == IDC_KS_DEBOUNCE_VAL && g_kb) {
+        int now = g_now.debounce() ? g_now.debounce() : DEBOUNCE_DEFAULT;
+        int v = numbox::nearest(typed, debounce_text(now), 1, DEBOUNCE_MAX, debounce_text);
+        if (v >= 0 && v != now) { g_now.debounce() = (uint8_t)(v == DEBOUNCE_DEFAULT ? 0 : v); changed(); }
+        SetDlgItemTextW(g_dlg, id, debounce_text(v >= 0 ? v : now).c_str());
+        return true;
+    }
+    if (id == IDC_KS_DELAY_VAL || id == IDC_KS_RATE_VAL) {
+        UINT delay = 1, speed = 31;
+        SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, &delay, 0);
+        SystemParametersInfoW(SPI_GETKEYBOARDSPEED, 0, &speed, 0);
+        if (id == IDC_KS_DELAY_VAL) {
+            int v = numbox::nearest(typed, repeat_delay_text(delay), 0, 3, repeat_delay_text);
+            if (v >= 0) delay = (UINT)v;
+        } else {
+            int v = numbox::nearest(typed, repeat_rate_text(speed), 0, 31, repeat_rate_text);
+            if (v >= 0) speed = (UINT)v;
+        }
+        set_repeat(delay, speed, false);
+        SetDlgItemTextW(g_dlg, id, (id == IDC_KS_DELAY_VAL ? repeat_delay_text(delay) : repeat_rate_text(speed)).c_str());
+        show();
+        return true;
+    }
+    return false;
 }
 
 INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
@@ -246,7 +281,17 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
                         if (s >= 0 && s < 3) { g_now.set_macro_mode(selected_macro(), s); changed(); }
                     }
                     return TRUE;
+                case IDC_KS_DEBOUNCE_VAL: case IDC_KS_DELAY_VAL: case IDC_KS_RATE_VAL:
+                    if (HIWORD(wp) == EN_KILLFOCUS) value_typed(id);
+                    return TRUE;
                 case IDOK: {
+                    HWND f = GetFocus();
+                    for (int box : {IDC_KS_DEBOUNCE_VAL, IDC_KS_DELAY_VAL, IDC_KS_RATE_VAL})
+                        if (f == GetDlgItem(dlg, box)) { // Enter in a number box: take the value, stay open
+                            value_typed(box);
+                            SendDlgItemMessageW(dlg, box, EM_SETSEL, 0, -1);
+                            return TRUE;
+                        }
                     if (g_kb) kb_save();
                     UINT delay = 1, speed = 31;
                     SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, &delay, 0);

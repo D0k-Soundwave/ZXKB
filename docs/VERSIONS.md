@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v30 | 2026-11-05 | 64,536 bytes | Macros played by ZXKB's own player (protocol 14): waits that vary, picked at random each run between two values (1, 5, min-max\|). Not yet tried on the keyboard. |
 | v29 | 2026-11-05 | 64,176 bytes | Macro recording on the keyboard (protocol 13): the record key (ZK_MREC, Fn+M as delivered, reassignable) starts and stops it; keys are typed as usual and saved into the macro chosen in the app (settings byte 14); the key flashes red while recording; stops by itself when the macro room is full; tells the app (0xD7). Plain keys and modifiers only, no waits. 2 KB more RAM. |
 | v28 | 2026-11-05 | 63,416 bytes | Fn+Win switches game mode on / off (was the Windows-key lock; D0k), reassignable in Change keys. Game mode with nothing chosen blocks all three (Alt+Tab, Alt+F4, Windows keys). |
 | v27 | 2026-11-05 | 63,408 bytes | Keyboard settings (0xDF, protocol 12), in the 32 spare bytes, so nothing is reset: game mode (block Alt+Tab, Alt+F4, Windows keys; key ZK_GAME), SOCD (A/D + W/S, arrows), debounce 1-50 ms, lights off when idle, Fn layer light, NKRO, macro play modes (once / repeat while held / on / off). |
@@ -49,6 +50,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.41 | 2026-11-05 | - | Number boxes beside every slider (main window, Caps Lock light, Keyboard settings): type an exact value. Macros: {wait 200-300} waits a different time each run (v30 on); recorded waits can vary by +/- N ms. Not yet tested by hand. |
 | 0.40 | 2026-11-05 | 586,240 bytes | Macros window: which macro the keyboard records into, or a note when the firmware cannot record; macros recorded on the keyboard are kept by ZXKB (at once, or at the next connect if ZXKB was not running) and shown in an open Macros window; tray notice after each recording. "Record a macro" in Change keys (ZXKB). |
 | 0.39 | 2026-11-05 | 583,680 bytes | Keyboard settings: game mode blocks all three until chosen otherwise, and at least one stays ticked; says Fn+Win switches it. |
 | 0.38 | 2026-11-05 | 583,680 bytes | Keyboard settings... window for the v27 settings (greyed with a note on older firmware) plus Windows key repeat delay and rate (any keyboard); Game mode on / off in Change keys (ZXKB). |

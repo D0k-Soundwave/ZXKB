@@ -12,6 +12,7 @@
 #include "remap.h"
 #include "macros.h"
 #include "kbsettings.h"
+#include "numbox.h"
 #include "boards.h"
 #include "keycaps.h"
 #include "sim.h"
@@ -181,7 +182,17 @@ void fill_list() {
     }
 }
 
-void set_slider(int s, int lo, int hi, int pos, bool enabled, const std::wstring &value) {
+void on_slider(int s);
+
+// What each slider's number box shows for a position, and the range (for typed values)
+numbox::Format g_fmt[SLIDERS];
+int            g_lo[SLIDERS], g_hi[SLIDERS];
+
+void set_slider(int s, int lo, int hi, int pos, bool enabled, const numbox::Format &fmt) {
+    g_fmt[s] = fmt;
+    g_lo[s]  = lo;
+    g_hi[s]  = hi;
+    std::wstring value = fmt(pos);
     HWND tb = item(IDC_SLIDER + s);
     if (GetCapture() != tb) { // never move a slider under the user's mouse
         SendMessageW(tb, TBM_SETRANGEMIN, FALSE, lo);
@@ -193,7 +204,29 @@ void set_slider(int s, int lo, int hi, int pos, bool enabled, const std::wstring
     }
     EnableWindow(tb, enabled);
     EnableWindow(item(IDC_LABEL + s), enabled);
-    SetWindowTextW(item(IDC_VALUE + s), enabled ? value.c_str() : L"");
+    HWND box = item(IDC_VALUE + s);
+    EnableWindow(box, enabled);
+    if (GetFocus() != box) SetWindowTextW(box, enabled ? value.c_str() : L""); // not while being typed in
+}
+
+std::wstring ms_text(int ms) {
+    return ms >= 1000 ? std::to_wstring(ms / 1000) + L"." + std::to_wstring(ms % 1000 / 100) + L" s" : std::to_wstring(ms) + L" ms";
+}
+
+// A value typed into a slider's box: the slider moves to the nearest step and the change is made
+void on_value_typed(int s) {
+    HWND box = item(IDC_VALUE + s);
+    if (!IsWindowEnabled(box) || !g_fmt[s]) return;
+    wchar_t typed[64] = {0};
+    GetWindowTextW(box, typed, 64);
+    HWND tb = item(IDC_SLIDER + s);
+    int now = (int)SendMessageW(tb, TBM_GETPOS, 0, 0);
+    int pos = numbox::nearest(typed, g_fmt[s](now), g_lo[s], g_hi[s], g_fmt[s]);
+    if (pos >= 0 && pos != now) {
+        SendMessageW(tb, TBM_SETPOS, TRUE, pos);
+        on_slider(s);
+    }
+    SetWindowTextW(box, g_fmt[s]((int)SendMessageW(tb, TBM_GETPOS, 0, 0)).c_str());
 }
 
 std::wstring pct(int v, int of) { return std::to_wstring(of ? (v * 100 + of / 2) / of : 0) + L"%"; }
@@ -235,23 +268,22 @@ void refresh() {
 
     bool fx = on && g_st.enabled && !vu_showing();
     bool tuned = fx && g_tune.mode == g_st.mode;
-    set_slider(BRIGHTNESS, 0, g_st.max_val, g_st.val, on, pct(g_st.val, g_st.max_val));
+    int max_val = g_st.max_val;
+    set_slider(BRIGHTNESS, 0, max_val, g_st.val, on, [max_val](int v) { return pct(v, max_val); });
     // with keys selected, Speed is theirs (0-15, D0k 2026-11-03: the effect's speed did nothing visible for them)
     if (keys_mode()) {
         std::vector<int> sel = preview_selected_leds();
         const uint8_t *k = sel.empty() ? nullptr : key_state(sel[0]);
         int ks = k && k[0] ? k[1] : proto::KEY_SPEED_DEFAULT;
-        int ms = proto::key_step_ms(ks);
-        set_slider(SPEED, 0, 255, ks, true, ms >= 1000 ? std::to_wstring(ms / 1000) + L"." + std::to_wstring(ms % 1000 / 100) + L" s"
-                                                      : std::to_wstring(ms) + L" ms");
+        set_slider(SPEED, 0, 255, ks, true, [](int v) { return ms_text(proto::key_step_ms(v)); });
         SetWindowTextW(item(IDC_LABEL + SPEED), L"Key speed");
     } else {
-        set_slider(SPEED, 0, 255, g_st.speed, fx, pct(g_st.speed, 255));
+        set_slider(SPEED, 0, 255, g_st.speed, fx, [](int v) { return pct(v, 255); });
         SetWindowTextW(item(IDC_LABEL + SPEED), L"Speed");
     }
     // size: 128 = the effect's normal size, shown as 100%
-    set_slider(SIZE, SIZE_MIN, 255, g_tune.size, tuned && (g_tune.flags & 1), pct(g_tune.size, 128));
-    set_slider(INTENSITY, INTENSITY_MIN, 255, g_tune.intensity, tuned && (g_tune.flags & 2), pct(g_tune.intensity, 255));
+    set_slider(SIZE, SIZE_MIN, 255, g_tune.size, tuned && (g_tune.flags & 1), [](int v) { return pct(v, 128); });
+    set_slider(INTENSITY, INTENSITY_MIN, 255, g_tune.intensity, tuned && (g_tune.flags & 2), [](int v) { return pct(v, 255); });
 
     // with keys selected in the preview the colours below colour those keys; otherwise the effect (D0k, 2026-11-03)
     bool keys = keys_mode();
@@ -530,6 +562,12 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_COMMAND: {
             int id = LOWORD(wp);
             if (id == IDCANCEL) { window_close(); return 0; }
+            if (id >= IDC_VALUE && id < IDC_VALUE + SLIDERS && HIWORD(wp) == EN_KILLFOCUS) { on_value_typed(id - IDC_VALUE); return 0; }
+            if (id == IDOK) { // Enter: in a number box, take the value
+                for (int s = 0; s < SLIDERS; s++)
+                    if (GetFocus() == item(IDC_VALUE + s)) { on_value_typed(s); SendMessageW(item(IDC_VALUE + s), EM_SETSEL, 0, -1); }
+                return 0;
+            }
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
             if (id == IDC_CAPS_BTN) { caps_dialog(g_win); return 0; }
             if (id == IDC_MACROS_BTN) { macros_dialog(g_win); return 0; }
@@ -710,7 +748,7 @@ void window_show() {
     for (int s = 0; s < SLIDERS; s++) {
         make(L"STATIC", slider_names[s], 0, IDC_LABEL + s);
         make(TRACKBAR_CLASSW, L"", WS_TABSTOP | TBS_HORZ | TBS_NOTICKS, IDC_SLIDER + s);
-        make(L"STATIC", L"", SS_RIGHT, IDC_VALUE + s);
+        make(L"EDIT", L"", WS_TABSTOP | WS_BORDER | ES_RIGHT | ES_AUTOHSCROLL, IDC_VALUE + s); // type an exact value
     }
     for (int c = 0; c < SWATCHES; c++) make(L"BUTTON", c == BLACK ? L"Black" : colours[c].name, WS_TABSTOP | BS_OWNERDRAW, IDC_SWATCH + c);
     make(L"BUTTON", L"More colours...", WS_TABSTOP, IDC_PICK);

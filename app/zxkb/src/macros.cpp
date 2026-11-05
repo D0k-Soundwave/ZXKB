@@ -19,6 +19,8 @@
 #include <cwchar>
 #include <cwctype>
 
+bool zxkb_board(); // main.cpp
+
 namespace macros {
 namespace {
 
@@ -66,6 +68,8 @@ void put(std::string &out, uint8_t code, uint8_t usage) { out += '\x01'; out += 
 
 } // namespace
 
+bool ranges_possible() { return zxkb_board() && g_board->protocol >= 14; }
+
 std::string to_bytes(const std::wstring &text, std::wstring *error) {
     std::string out;
     for (size_t i = 0; i < text.size(); i++) {
@@ -77,9 +81,23 @@ std::string to_bytes(const std::wstring &text, std::wstring *error) {
             std::wstring tok = text.substr(i + 1, e - i - 1);
             i = e;
             if (!_wcsnicmp(tok.c_str(), L"wait ", 5)) {
-                int ms = _wtoi(tok.c_str() + 5);
-                if (ms <= 0 || ms > 60000) { *error = L"{wait N} needs N from 1 to 60000 ms."; return ""; }
-                out += "\x01\x04" + std::to_string(ms) + "|";
+                const wchar_t *p = tok.c_str() + 5;
+                int lo = _wtoi(p), hi = lo;
+                if (const wchar_t *dash = wcschr(p, L'-')) hi = _wtoi(dash + 1);
+                if (hi < lo) { int t = lo; lo = hi; hi = t; }
+                if (lo == hi) {
+                    if (lo <= 0 || lo > 60000) { *error = L"{wait N} needs N from 1 to 60000 ms."; return ""; }
+                    out += "\x01\x04" + std::to_string(lo) + "|";
+                } else {
+                    if (lo < 0 || hi > 60000) { *error = L"{wait A-B} needs A and B from 0 to 60000 ms."; return ""; }
+                    if (!ranges_possible()) {
+                        *error = L"Waits that vary, such as {wait " + std::to_wstring(lo) + L"-" + std::to_wstring(hi) +
+                                 L"}, need ZXKB firmware v30 on the keyboard; use a fixed wait.";
+                        return "";
+                    }
+                    // ZXKB's own code (firmware v30 on): a wait picked at random between the two each time it plays
+                    out += "\x01\x05" + std::to_string(lo) + "-" + std::to_string(hi) + "|";
+                }
                 continue;
             }
             bool down = false, up = false;
@@ -147,6 +165,15 @@ std::wstring to_text(const std::string &b) {
                 while (i + 1 < b.size() && isdigit((unsigned char)b[i + 1])) ms = ms * 10 + (b[++i] - '0');
                 if (i + 1 < b.size() && b[i + 1] == '|') i++;
                 t += L"{wait " + std::to_wstring(ms) + L"}";
+            } else if (op == 5) { // ZXKB: a wait that varies, min '-' max '|'
+                int lo = 0, hi = 0;
+                while (i + 1 < b.size() && isdigit((unsigned char)b[i + 1])) lo = lo * 10 + (b[++i] - '0');
+                if (i + 1 < b.size() && b[i + 1] == '-') {
+                    i++;
+                    while (i + 1 < b.size() && isdigit((unsigned char)b[i + 1])) hi = hi * 10 + (b[++i] - '0');
+                }
+                if (i + 1 < b.size() && b[i + 1] == '|') i++;
+                t += L"{wait " + std::to_wstring(lo) + L"-" + std::to_wstring(hi) + L"}";
             } else if ((op == 1 || op == 2 || op == 3) && i + 1 < b.size()) {
                 std::wstring n = name_of((uint8_t)b[++i]);
                 t += L"{" + n + (op == 2 ? L" down" : op == 3 ? L" up" : L"") + L"}";
@@ -280,6 +307,10 @@ INT_PTR CALLBACK mproc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             fill_list();
             show_sel();
             CheckDlgButton(dlg, IDC_MC_WAITS, BST_CHECKED);
+            SetDlgItemInt(dlg, IDC_MC_VARY, 0, FALSE);
+            EnableWindow(GetDlgItem(dlg, IDC_MC_VARY), macros::ranges_possible());
+            SetDlgItemTextW(dlg, IDC_MC_VARY_NOTE, macros::ranges_possible() ? L"ms each time it plays (0 = exact)"
+                                                                             : L"(waits that vary need ZXKB firmware v30)");
             { // recording on the keyboard itself, if its firmware can
                 int  rec = 0;
                 bool kb  = kb_record_macro(&rec);
@@ -306,8 +337,11 @@ INT_PTR CALLBACK mproc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             DWORD now = GetTickCount(), gap = now - g_last_key;
             g_last_key = now;
             // [A] waits shorter than 30 ms are typing rhythm, not intended pauses; kept to 10 ms steps
-            if (IsDlgButtonChecked(dlg, IDC_MC_WAITS) == BST_CHECKED && gap >= 30 && g_texts[g_sel].size())
-                g_texts[g_sel] += L"{wait " + std::to_wstring(gap / 10 * 10) + L"}";
+            if (IsDlgButtonChecked(dlg, IDC_MC_WAITS) == BST_CHECKED && gap >= 30 && g_texts[g_sel].size()) {
+                int ms = (int)(gap / 10 * 10), vary = macros::ranges_possible() ? (int)GetDlgItemInt(dlg, IDC_MC_VARY, nullptr, FALSE) : 0;
+                g_texts[g_sel] += vary > 0 ? L"{wait " + std::to_wstring(ms > vary ? ms - vary : 0) + L"-" + std::to_wstring(ms + vary) + L"}"
+                                           : L"{wait " + std::to_wstring(ms) + L"}";
+            }
             g_texts[g_sel] += tok;
             show_sel();
             fill_list();

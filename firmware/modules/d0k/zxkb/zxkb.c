@@ -99,6 +99,60 @@ static bool     idle_off;             /* the lights were switched off by the lig
 static bool     rec_on;               /* recording a macro on the keyboard (ZK_MREC) */
 static uint8_t  rec_led = NO_LED;     /* the record key's light, flashing red while recording */
 
+/* ---------- Macro player: QMK's macro bytes, plus waits that vary each time (v30) ----------
+ * QMK's own player (quantum/send_string/send_string.c) reads 1,1,k tap / 1,2,k down / 1,3,k up / 1,4,digits,end wait
+ * and types other bytes as text. ZXKB adds 1,5,min digits,'-',max digits,'|': a wait picked at random between the two
+ * each time. QMK's player would type "-max|", so the app writes these only to ZXKB firmware v30 on. */
+#define ZXKB_SS_RANDOM_DELAY 5
+static uint32_t rng_state;
+static uint32_t rng_next(void) { /* xorshift32, mixed with the time of each use */
+    if (!rng_state) rng_state = 0x9E3779B9u;
+    rng_state ^= timer_read32();
+    rng_state ^= rng_state << 13;
+    rng_state ^= rng_state >> 17;
+    rng_state ^= rng_state << 5;
+    return rng_state;
+}
+static uint16_t play_pos, play_size;
+static uint8_t play_byte(void) {
+    uint8_t b = 0;
+    if (play_pos < play_size) dynamic_keymap_macro_get_buffer(play_pos++, 1, &b);
+    return b;
+}
+static uint32_t play_number(uint8_t *next) { /* digits; *next = the byte after them */
+    uint32_t v = 0;
+    uint8_t  c = play_byte();
+    while (c >= '0' && c <= '9') { v = v * 10 + (c - '0'); if (v > 600000) v = 600000; c = play_byte(); }
+    *next = c;
+    return v;
+}
+static void zxkb_macro_play(uint8_t m) {
+    play_size = dynamic_keymap_macro_get_buffer_size();
+    play_pos  = 0;
+    for (uint8_t i = 0; i < m && play_pos < play_size; i++) /* skip the macros before it */
+        while (play_pos < play_size && play_byte()) {}
+    for (;;) {
+        uint8_t c = play_byte();
+        if (!c) return;
+        if (c != SS_QMK_PREFIX) { send_char(c); continue; }
+        uint8_t code = play_byte(), end = 1;
+        if (code == SS_TAP_CODE) tap_code(play_byte());
+        else if (code == SS_DOWN_CODE) register_code(play_byte());
+        else if (code == SS_UP_CODE) unregister_code(play_byte());
+        else if (code == SS_DELAY_CODE) {
+            uint32_t ms = play_number(&end);
+            while (ms--) wait_ms(1);
+        } else if (code == ZXKB_SS_RANDOM_DELAY) {
+            uint32_t lo = play_number(&end), hi = lo;
+            if (end == '-') hi = play_number(&end);
+            if (hi < lo) { uint32_t t = lo; lo = hi; hi = t; }
+            uint32_t ms = lo + rng_next() % (hi - lo + 1);
+            while (ms--) wait_ms(1);
+        }
+        if (!end) return; /* a wait that ran into the end of the macro */
+    }
+}
+
 /* Effects with their own size and intensity, and which of the two apply */
 #define SZ ZXKB_TUNE_SIZE
 #define IN ZXKB_TUNE_INTENSITY
@@ -410,7 +464,7 @@ static void settings_housekeeping(void) {
         idle_off = false;
     }
     if (macro_repeating >= 0 && timer_elapsed32(macro_last) >= ZXKB_MACRO_REPEAT_MS) {
-        dynamic_keymap_macro_send((uint8_t)macro_repeating);
+        zxkb_macro_play((uint8_t)macro_repeating);
         macro_last = timer_read32();
     }
 }
@@ -636,17 +690,19 @@ bool process_record_zxkb(uint16_t keycode, keyrecord_t *record) {
     if (keycode >= QK_MACRO && keycode <= QK_MACRO_MAX) { /* macro play modes */
         uint8_t m = keycode - QK_MACRO, mode = m < 16 ? (cfg.macro_mode[m / 4] >> (m % 4 * 2)) & 3 : 0;
         if (mode == 1) { /* repeat while held */
-            if (pressed) { macro_repeating = m; macro_last = timer_read32(); dynamic_keymap_macro_send(m); }
+            if (pressed) { macro_repeating = m; macro_last = timer_read32(); zxkb_macro_play(m); }
             else if (macro_repeating == m) macro_repeating = -1;
             return false;
         }
         if (mode == 2) { /* on / off */
             if (pressed) {
                 if (macro_repeating == m) macro_repeating = -1;
-                else { macro_repeating = m; macro_last = timer_read32(); dynamic_keymap_macro_send(m); }
+                else { macro_repeating = m; macro_last = timer_read32(); zxkb_macro_play(m); }
             }
             return false;
         }
+        if (pressed) zxkb_macro_play(m); /* once, by ZXKB's player (it knows waits that vary) */
+        return false;
     }
 
     if (record->event.pressed && record->event.type == KEY_EVENT) {
