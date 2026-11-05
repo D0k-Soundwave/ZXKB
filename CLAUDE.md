@@ -88,6 +88,7 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   app/zxkb/keycaps/*.json, written by `python tools/gen_wraith_kle.py` (matrix positions from QMK's Q3 keyboard.json).
   `src/keystore`: key changes made in ZXKB, per keyboard in %APPDATA%\ZXKB\keymaps\<USB ID>.ini, put back when the
   firmware changes (tray, at connect). `src/keycodes` + `src/remap`: key remapping (Change keys window, layer list; VIA 0x04/0x05/0x11/0x0C).
+  `src/macros`: Macros window (VIA 0x0C-0x0F; QMK macro bytes <-> readable text); macros kept by keystore too.
   `src/sim`: simulated preview for standard VIA keyboards (QMK's effect maths ported; key presses by raw input while
   the window is open). `src/fnkeys`: Fn + 1..0 -> F13-F22 through VIA for standard keyboards (old keys in zxkb.ini [fnkeys]); test switch
   ZXKB_TEST_FN=setup|undo runs it at connect (result in %APPDATA%\ZXKB\fnkeys.log). `src/caps`: Caps Lock light window.
