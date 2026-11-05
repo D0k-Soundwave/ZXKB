@@ -83,7 +83,7 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       firmware change, or by hand; macros still to come): VIA resets them to the firmware's own whenever a different
       firmware build starts (P: QMK quantum/via.c, the EEPROM magic is the build date), so the app saves them before
       installing firmware and puts them back after (found 2026-11-05)
-- [~] Game-mode lock: blocks Alt+Tab, Alt+F4 and the Windows keys, each chosen in Keyboard settings; on / off there or by a key (ZK_GAME) (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard)
+- [~] Game-mode lock: blocks Alt+Tab, Alt+F4 and the Windows keys, each chosen in Keyboard settings; on / off there or by Fn+Win (v28, reassignable; replaced the Windows-key lock, D0k 2026-11-05) (v27 / 0.38, built 2026-11-05; not yet tried on the keyboard)
 - [ ] App-only actions on any key: launch app or URL, paste text, timer (work only while ZXKB runs)
 - [~] Macros: record in the app, edit keys and delays, stored on the keyboard (work without the app; 0.36: editor,
       recording, import/export, kept across firmware updates; play modes in v27 / 0.38: once, repeat while held, on / off, for the first 16 macros; on-the-fly recording still to come);

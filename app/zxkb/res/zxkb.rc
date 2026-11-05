@@ -34,7 +34,7 @@ BEGIN
     AUTOCHECKBOX    "Alt+Tab", IDC_KS_ALTTAB, 86, 53, 50, 10
     AUTOCHECKBOX    "Alt+F4", IDC_KS_ALTF4, 140, 53, 50, 10
     AUTOCHECKBOX    "Windows keys", IDC_KS_WIN, 194, 53, 70, 10
-    LTEXT           "A key can switch it too: Change keys, ZXKB, Game mode on / off.", -1, 14, 66, 274, 10
+    LTEXT           "Fn+Win switches it (or any key given ZXKB, Game mode on / off in Change keys).", -1, 14, 66, 274, 10
     LTEXT           "SOCD: of two opposite keys held, the last one pressed counts.", -1, 7, 86, 286, 10
     AUTOCHECKBOX    "A / D and W / S", IDC_KS_SOCD_WASD, 14, 98, 90, 10
     AUTOCHECKBOX    "Arrow keys", IDC_KS_SOCD_ARROWS, 108, 98, 80, 10

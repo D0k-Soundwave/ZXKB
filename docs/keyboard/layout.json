@@ -346,13 +346,13 @@
    "led": 17,
    "keycodes": {
     "SPEC_BASE": "KC_1",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_1",
     "WIN_BASE": "KC_1",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_1"
    },
    "windows": "1",
    "spectrum": "1",
-   "fn": ""
+   "fn": "ZK_1"
   },
   {
    "id": "n2",
@@ -363,13 +363,13 @@
    "led": 18,
    "keycodes": {
     "SPEC_BASE": "KC_2",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_2",
     "WIN_BASE": "KC_2",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_2"
    },
    "windows": "2",
    "spectrum": "2",
-   "fn": ""
+   "fn": "ZK_2"
   },
   {
    "id": "n3",
@@ -380,13 +380,13 @@
    "led": 19,
    "keycodes": {
     "SPEC_BASE": "KC_3",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_3",
     "WIN_BASE": "KC_3",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_3"
    },
    "windows": "3",
    "spectrum": "3",
-   "fn": ""
+   "fn": "ZK_3"
   },
   {
    "id": "n4",
@@ -397,13 +397,13 @@
    "led": 20,
    "keycodes": {
     "SPEC_BASE": "KC_4",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_4",
     "WIN_BASE": "KC_4",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_4"
    },
    "windows": "4",
    "spectrum": "4",
-   "fn": ""
+   "fn": "ZK_4"
   },
   {
    "id": "n5",
@@ -414,13 +414,13 @@
    "led": 21,
    "keycodes": {
     "SPEC_BASE": "KC_5",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_5",
     "WIN_BASE": "KC_5",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_5"
    },
    "windows": "5",
    "spectrum": "5",
-   "fn": ""
+   "fn": "ZK_5"
   },
   {
    "id": "n6",
@@ -431,13 +431,13 @@
    "led": 22,
    "keycodes": {
     "SPEC_BASE": "KC_6",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_6",
     "WIN_BASE": "KC_6",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_6"
    },
    "windows": "6",
    "spectrum": "6",
-   "fn": ""
+   "fn": "ZK_6"
   },
   {
    "id": "n7",
@@ -448,13 +448,13 @@
    "led": 23,
    "keycodes": {
     "SPEC_BASE": "KC_7",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_7",
     "WIN_BASE": "KC_7",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_7"
    },
    "windows": "7",
    "spectrum": "7",
-   "fn": ""
+   "fn": "ZK_7"
   },
   {
    "id": "n8",
@@ -465,13 +465,13 @@
    "led": 24,
    "keycodes": {
     "SPEC_BASE": "KC_8",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_8",
     "WIN_BASE": "KC_8",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_8"
    },
    "windows": "8",
    "spectrum": "8",
-   "fn": ""
+   "fn": "ZK_8"
   },
   {
    "id": "n9",
@@ -482,13 +482,13 @@
    "led": 25,
    "keycodes": {
     "SPEC_BASE": "KC_9",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_9",
     "WIN_BASE": "KC_9",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_9"
    },
    "windows": "9",
    "spectrum": "9",
-   "fn": ""
+   "fn": "ZK_9"
   },
   {
    "id": "n0",
@@ -499,13 +499,13 @@
    "led": 26,
    "keycodes": {
     "SPEC_BASE": "KC_0",
-    "SPEC_FN": "_______",
+    "SPEC_FN": "ZK_0",
     "WIN_BASE": "KC_0",
-    "WIN_FN": "_______"
+    "WIN_FN": "ZK_0"
    },
    "windows": "0",
    "spectrum": "0",
-   "fn": ""
+   "fn": "ZK_0"
   },
   {
    "id": "min",
@@ -1221,9 +1221,9 @@
    "led": 68,
    "keycodes": {
     "SPEC_BASE": "KC_V",
-    "SPEC_FN": "VU_TOGG",
+    "SPEC_FN": "ZK_VU",
     "WIN_BASE": "KC_V",
-    "WIN_FN": "VU_TOGG"
+    "WIN_FN": "ZK_VU"
    },
    "windows": "V",
    "spectrum": "V",
@@ -1396,11 +1396,11 @@
     "SPEC_BASE": "ZX_EXT",
     "SPEC_FN": "GU_TOGG",
     "WIN_BASE": "KC_LWIN",
-    "WIN_FN": "GU_TOGG"
+    "WIN_FN": "ZK_GAME"
    },
    "windows": "Windows",
    "spectrum": "EXTENDED MODE (Ctrl + Left Shift)",
-   "fn": "Windows key lock"
+   "fn": "Game mode on/off"
   },
   {
    "id": "lal",
@@ -1464,11 +1464,11 @@
     "SPEC_BASE": "ZX_LOAD",
     "SPEC_FN": "GU_TOGG",
     "WIN_BASE": "KC_RWIN",
-    "WIN_FN": "GU_TOGG"
+    "WIN_FN": "ZK_GAME"
    },
    "windows": "Windows",
    "spectrum": "Types LOAD \"\" + Enter (60 ms per key)",
-   "fn": "Windows key lock"
+   "fn": "Game mode on/off"
   },
   {
    "id": "fn",

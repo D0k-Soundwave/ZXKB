@@ -37,6 +37,7 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | Effects on the Q3 | 59: v12 50 QMK + 9 ZXKB; from v13 38 QMK + 21 ZXKB | M | probe.exe, 2026-11-02 |
 | Effect limit | 63 | P | QMK rgb_config_t mode field is 6 bits (quantum/rgb_matrix/rgb_matrix_types.h, master f5db962) |
 | v27 size | 63,408 bytes (.text 55,964) | M | build.sh, arm-none-eabi-size -A, 2026-11-05 |
+| v28 size | 63,416 bytes (.text 55,972) | M | build.sh, arm-none-eabi-size -A, 2026-11-05 |
 | Debounce default | 5 ms | P | QMK DEBOUNCE default, quantum/debounce (master f5db962) |
 | Debounce slider range | 1-50 ms | A | a range for the slider only; the firmware takes 1-255 |
 | Macro repeat gap (repeat while held / on-off) | 100 ms | A | ZXKB_MACRO_REPEAT_MS; D0k to judge in use |

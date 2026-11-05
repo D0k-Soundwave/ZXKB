@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v28 | 2026-11-05 | 63,416 bytes | Fn+Win switches game mode on / off (was the Windows-key lock; D0k), reassignable in Change keys. Game mode with nothing chosen blocks all three (Alt+Tab, Alt+F4, Windows keys). |
 | v27 | 2026-11-05 | 63,408 bytes | Keyboard settings (0xDF, protocol 12), in the 32 spare bytes, so nothing is reset: game mode (block Alt+Tab, Alt+F4, Windows keys; key ZK_GAME), SOCD (A/D + W/S, arrows), debounce 1-50 ms, lights off when idle, Fn layer light, NKRO, macro play modes (once / repeat while held / on / off). |
 | v26 | 2026-11-05 | 62,504 bytes | Status reports the layers in use: base layer (the side switch) and top layer (Fn held), sent when they change (protocol 11). |
 | v25 | 2026-11-05 | 62,432 bytes | Caps Lock light: command to put it back on the keys it started on (0xDE 0x03, protocol 10). Same settings layout: nothing is reset. |
@@ -47,6 +48,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.39 | 2026-11-05 | 583,680 bytes | Keyboard settings: game mode blocks all three until chosen otherwise, and at least one stays ticked; says Fn+Win switches it. |
 | 0.38 | 2026-11-05 | 583,680 bytes | Keyboard settings... window for the v27 settings (greyed with a note on older firmware) plus Windows key repeat delay and rate (any keyboard); Game mode on / off in Change keys (ZXKB). |
 | 0.37 | 2026-11-05 | - | Kept but not handed over: first build of 0.38, some labels clipped. |
 | 0.36 | 2026-11-05 | 576,000 bytes | Macros... window: the keyboard's macros (VIA, stored on the keyboard) as readable text ({Enter}, {Ctrl+C}, {Shift down}/{Shift up}, {wait 250}), Record with or without waits, Clear, Save to keyboard (size checked), Import/Export as a text file; macros kept by ZXKB and put back after firmware updates; give them to keys in Change keys (Macros). |

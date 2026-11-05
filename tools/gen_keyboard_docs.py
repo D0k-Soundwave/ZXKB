@@ -57,7 +57,7 @@ NAMES = {
     "RM_TOGG": "Lights on/off", "RM_NEXT": "Next effect", "RM_PREV": "Previous effect", "RM_VALU": "Lights brighter",
     "RM_VALD": "Lights dimmer", "RM_HUEU": "Hue +", "RM_HUED": "Hue -", "RM_SATU": "Saturation +", "RM_SATD": "Saturation -",
     "RM_SPDU": "Effect speed +", "RM_SPDD": "Effect speed -", "NK_TOGG": "NKRO on/off", "GU_TOGG": "Windows key lock",
-    "VU_TOGG": "VU meter on/off", "ZX_LOAD": 'Types LOAD "" + Enter (60 ms per key)',
+    "VU_TOGG": "VU meter on/off", "ZK_VU": "VU meter on/off", "ZK_GAME": "Game mode on/off", "ZX_LOAD": 'Types LOAD "" + Enter (60 ms per key)',
     "ZX_EXT": "EXTENDED MODE (Ctrl + Left Shift)", "C(KC_LSFT)": "EXTENDED MODE (Ctrl + Left Shift)",
     "S(KC_1)": "Shift+1 (Spectrum EDIT)", "S(KC_2)": "Shift+2 (CAPS LOCK)", "S(KC_3)": "Shift+3 (TRUE VIDEO)",
     "S(KC_4)": "Shift+4 (INV VIDEO)", "S(KC_9)": "Shift+9 (GRAPHICS)", "S(KC_0)": "Shift+0 (DELETE)",

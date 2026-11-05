@@ -48,7 +48,7 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
 - `firmware/keyboards/keychron/q3/iso_encoder/keymaps/d0k`: Q3 keymap using the module. Layers SPEC_BASE, SPEC_FN,
   WIN_BASE, WIN_FN. Spectrum layer maps for the MiSTer core (Shift = Caps Shift, Ctrl = Symbol Shift,
   ZX_EXT = Ctrl+LShift, ZX_LOAD types LOAD "" with 60 ms per key). Fn layers: media/brightness on F-row, RM_*
-  lighting keys, Fn+1..0 = hotkey slots, Fn+V = switch to/from the VU meter effect, Fn+N = NKRO, Win lock.
+  lighting keys, Fn+1..0 = hotkey slots, Fn+V = switch to/from the VU meter effect, Fn+N = NKRO, Fn+Win = game mode (v28).
 - Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after). The VU meter is a
   normal effect fed by ZXKB (dark without it); PC direct mode is an overlay, only in Windows mode.
 - Caps Lock light: drawn by the module (v24), set from the app (Caps Lock light... window; 0xDE). Starts as flashing

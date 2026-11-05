@@ -26,16 +26,16 @@ Knob turn: Spectrum `KC_LEFT, KC_RGHT`, Windows `KC_VOLD, KC_VOLU`, Fn `RM_VALD,
 | scr | LOCK | 14 | Scroll Lock | F12 | MiSTer OSD menu (F12) |  |
 | pau | PAUSE | 15 | Pause | F9 | Pause / continue (F9) | Next effect |
 | grv | ` / ~ | 16 | ` ~ | ` ~ |  |  |
-| n1 | 1 / ! | 17 | 1 | 1 |  |  |
-| n2 | 2 / @ | 18 | 2 | 2 |  |  |
-| n3 | 3 / # | 19 | 3 | 3 |  |  |
-| n4 | 4 / $ | 20 | 4 | 4 |  |  |
-| n5 | 5 / % | 21 | 5 | 5 |  |  |
-| n6 | 6 / ^ | 22 | 6 | 6 |  |  |
-| n7 | 7 / & | 23 | 7 | 7 |  |  |
-| n8 | 8 / * | 24 | 8 | 8 |  |  |
-| n9 | 9 / ( | 25 | 9 | 9 |  |  |
-| n0 | 0 / ) | 26 | 0 | 0 |  |  |
+| n1 | 1 / ! | 17 | 1 | 1 |  | ZK_1 |
+| n2 | 2 / @ | 18 | 2 | 2 |  | ZK_2 |
+| n3 | 3 / # | 19 | 3 | 3 |  | ZK_3 |
+| n4 | 4 / $ | 20 | 4 | 4 |  | ZK_4 |
+| n5 | 5 / % | 21 | 5 | 5 |  | ZK_5 |
+| n6 | 6 / ^ | 22 | 6 | 6 |  | ZK_6 |
+| n7 | 7 / & | 23 | 7 | 7 |  | ZK_7 |
+| n8 | 8 / * | 24 | 8 | 8 |  | ZK_8 |
+| n9 | 9 / ( | 25 | 9 | 9 |  | ZK_9 |
+| n0 | 0 / ) | 26 | 0 | 0 |  | ZK_0 |
 | min | - / _ | 27 | - _ | - _ |  |  |
 | eq | = / + | 28 | = + | = + |  |  |
 | bks | DELETE / FORMAT | 29 | Backspace | Backspace | DELETE |  |
@@ -87,11 +87,11 @@ Knob turn: Spectrum `KC_LEFT, KC_RGHT`, Windows `KC_VOLD, KC_VOLU`, Fn `RM_VALD,
 | rsh | (blank) | 75 | Right Shift | Right Ctrl | SYMBOL SHIFT (sends Right Ctrl) |  |
 | up | ⇧ | 76 | Up | Up | Cursor up |  |
 | lct | PEEK / OUT | 77 | Left Ctrl | Left Ctrl | SYMBOL SHIFT |  |
-| lwn | CODE / IN | 78 | Windows | EXTENDED MODE (Ctrl + Left Shift) |  | Windows key lock |
+| lwn | CODE / IN | 78 | Windows | EXTENDED MODE (Ctrl + Left Shift) |  | Game mode on/off |
 | lal | RND / MERGE | 79 | Alt | Alt |  |  |
 | spc | (blank) | 80 | Space | Space |  |  |
 | ral | RND / MERGE | 81 | AltGr | AltGr |  |  |
-| rwn | CODE / IN | 82 | Windows | Types LOAD "" + Enter (60 ms per key) |  | Windows key lock |
+| rwn | CODE / IN | 82 | Windows | Types LOAD "" + Enter (60 ms per key) |  | Game mode on/off |
 | fn | EDIT / DEF FN | 83 | Fn (hold for WIN_FN) | Fn (hold for SPEC_FN) |  |  |
 | rct | PEEK / OUT | 84 | Right Ctrl | Right Ctrl | SYMBOL SHIFT |  |
 | lft | ⇦ | 85 | Left | Left | Cursor left |  |

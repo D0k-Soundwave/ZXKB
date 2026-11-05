@@ -164,6 +164,7 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_INITDIALOG: {
             g_dlg = dlg;
             g_kb  = kbsettings_possible() && kb_get(&g_now);
+            if (g_kb && !(g_now.game() & 7)) g_now.game() |= 7; // none chosen blocks all three (firmware v28): show it so
             g_before = g_now;
             SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, &g_delay_before, 0);
             SystemParametersInfoW(SPI_GETKEYBOARDSPEED, 0, &g_speed_before, 0);
@@ -214,9 +215,12 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             };
             switch (id) {
                 case IDC_KS_GAME: bit(g_now.game(), 0x80); return TRUE;
-                case IDC_KS_ALTTAB: bit(g_now.game(), 1); return TRUE;
-                case IDC_KS_ALTF4: bit(g_now.game(), 2); return TRUE;
-                case IDC_KS_WIN: bit(g_now.game(), 4); return TRUE;
+                case IDC_KS_ALTTAB: case IDC_KS_ALTF4: case IDC_KS_WIN: { // at least one stays ticked (none = all three)
+                    uint8_t mask = id == IDC_KS_ALTTAB ? 1 : id == IDC_KS_ALTF4 ? 2 : 4;
+                    if ((g_now.game() & 7) == mask && IsDlgButtonChecked(dlg, id) != BST_CHECKED) { show(); return TRUE; }
+                    bit(g_now.game(), mask);
+                    return TRUE;
+                }
                 case IDC_KS_SOCD_WASD: bit(g_now.socd(), 1); return TRUE;
                 case IDC_KS_SOCD_ARROWS: bit(g_now.socd(), 2); return TRUE;
                 case IDC_KS_LAYER: { // a first switch-on gets white, so it shows

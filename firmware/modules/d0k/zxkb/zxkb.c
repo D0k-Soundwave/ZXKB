@@ -541,9 +541,10 @@ bool process_record_zxkb(uint16_t keycode, keyrecord_t *record) {
     }
     if (cfg.game & 0x80) { /* game mode: keys that would take the player out of the game */
         uint8_t mods = get_mods() | get_oneshot_mods();
-        if ((cfg.game & 1) && keycode == KC_TAB && (mods & MOD_MASK_ALT)) return false;
-        if ((cfg.game & 2) && keycode == KC_F4 && (mods & MOD_MASK_ALT)) return false;
-        if ((cfg.game & 4) && (keycode == KC_LGUI || keycode == KC_RGUI)) return false;
+        uint8_t block = cfg.game & 7 ? cfg.game & 7 : 7; /* none chosen (as it starts): all three */
+        if ((block & 1) && keycode == KC_TAB && (mods & MOD_MASK_ALT)) return false;
+        if ((block & 2) && keycode == KC_F4 && (mods & MOD_MASK_ALT)) return false;
+        if ((block & 4) && (keycode == KC_LGUI || keycode == KC_RGUI)) return false;
     }
     if (cfg.socd) socd_key(keycode, pressed);
     if (keycode >= QK_MACRO && keycode <= QK_MACRO_MAX) { /* macro play modes */

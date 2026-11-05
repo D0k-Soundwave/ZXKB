@@ -35,7 +35,7 @@
                                  * zxkb_mirror_set() from its LED driver; boards that do not just never send. */
 #define ZXKB_CMD_SETTINGS  0xDF /* keyboard settings, always replies [0xDF, sub, the 13 bytes]:
                                  * [0xDF, 0x00] get; [0xDF, 0x01, 13 bytes] change (live); [0xDF, 0x02] save. Bytes:
-                                 * game (bit 0 block Alt+Tab, 1 Alt+F4, 2 Windows keys, 7 game mode on), SOCD (bit 0
+                                 * game (bit 0 block Alt+Tab, 1 Alt+F4, 2 Windows keys, none = all three; 7 game mode on), SOCD (bit 0
                                  * A/D + W/S, 1 arrows), debounce ms (0 = 5), lights off after minutes (0 = never),
                                  * layer light on, r, g, b, NKRO, macro play modes (4 bytes, 2 bits a macro: 0 once,
                                  * 1 repeat while held, 2 on / off) */
