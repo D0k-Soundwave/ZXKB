@@ -149,7 +149,8 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       Where a board cannot do something itself (no ZXKB module, too little memory), the app does it from the PC
       instead (e.g. layers and zones streamed through direct mode) and says so
 
-- [ ] Standard QMK + VIA keyboards without reflashing (D0k, 2026-11-03). Through VIA: remap, macros, layers, knob,
+- [~] Standard QMK + VIA keyboards without reflashing (D0k, 2026-11-03; 0.13-0.29: lighting, layout, labels, Fn hotkeys,
+      music pulse done; screen colour and notification flash still to come). Through VIA: remap, macros, layers, knob,
       the board's own effects, brightness, speed, colour. From the app: profiles, per-app profiles, playlists,
       scheduler, and whole-keyboard PC effects (one colour or brightness for the whole board: music pulse, screen
       colour, notification flash). Checked in QMK source (via.c, 2026-11-03): VIA's live lighting changes are not

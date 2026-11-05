@@ -40,6 +40,7 @@ constexpr int BLACK = 7, SWATCHES = 8;
 const wchar_t *slider_names[SLIDERS] = {L"Brightness", L"Speed", L"Size", L"Intensity"};
 constexpr int VU_ITEM = 1000; // list item data: effect number, or VU_ITEM + VuStyle
 constexpr int VU_GROUP = 100; // list group for the VU styles
+constexpr int PC_ITEM = 2000, PC_GROUP = 101; // standard keyboards: whole-keyboard effects worked out by ZXKB
 
 // Layout in device-independent pixels (scaled for the screen's DPI). [A] sizes chosen to fit the controls:
 // the preview across the top, the effect list on the left, the controls on the right.
@@ -155,6 +156,11 @@ void fill_list() {
     if (!g_board) return;
     add_group(list, effects::SPECTRUM, effects::group_names[effects::SPECTRUM]);
     if (vu_mode()) add_group(list, VU_GROUP, L"VU meter");
+    bool standard = g_board->kind == Board::VIA && g_board->via_channel;
+    if (standard) {
+        add_group(list, PC_GROUP, L"From ZXKB (whole keyboard)");
+        add_item(list, PC_GROUP, PC_ITEM + PCFX_PULSE, L"Music pulse");
+    }
     for (int gr = effects::SOLID; gr < effects::HIDDEN; gr++) add_group(list, gr, effects::group_names[gr]);
     const int order[3] = {VU_MUSIC, VU_BANDS, VU_ABC};
     if (vu_mode())
@@ -191,7 +197,8 @@ void refresh() {
 
     // select the current effect in the list
     HWND list = item(IDC_LIST);
-    int want = !on || !g_st.enabled ? -1 : vu_showing() ? VU_ITEM + g_vu_style : g_st.mode;
+    int want = !on || !g_st.enabled ? -1 : g_pc_effect && g_board->kind == Board::VIA ? PC_ITEM + g_pc_effect
+                                        : vu_showing() ? VU_ITEM + g_vu_style : g_st.mode;
     int n = ListView_GetItemCount(list), found = -1;
     for (int i = 0; i < n; i++) {
         LVITEMW it = {};
@@ -475,7 +482,10 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 auto *lv = reinterpret_cast<NMLISTVIEW *>(lp);
                 if ((lv->uNewState & LVIS_SELECTED) && !(lv->uOldState & LVIS_SELECTED)) {
                     int data = (int)lv->lParam;
-                    if (data >= VU_ITEM) select_vu(data - VU_ITEM);
+                    if (data >= PC_ITEM) {
+                        if (!g_st.enabled) set_effect(g_st.mode ? g_st.mode : 1); // lighting on first
+                        select_pc_effect(data - PC_ITEM);
+                    } else if (data >= VU_ITEM) select_vu(data - VU_ITEM);
                     else set_effect(data);
                     refresh();
                 }

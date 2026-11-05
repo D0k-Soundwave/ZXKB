@@ -66,7 +66,14 @@ void VuMeter::block_ready(const float *frames, int ch) {
     static double last = 0;
     double now = qpc_seconds();
     if (now - last >= 1.0 / FPS) {
-        link_->send(pkt, sizeof(pkt));
+        if (pulse_channel_) { // the loudest band sets the whole keyboard's brightness (standard VIA keyboards)
+            uint8_t level = 0;
+            for (int i = 1; i <= VuMath::BANDS; i++) level = pkt[i] > level ? pkt[i] : level;
+            uint8_t q[4] = {proto::VIA_SET, pulse_channel_, proto::VIA_BRIGHTNESS, (uint8_t)(level * pulse_peak_ / 255)};
+            link_->send(q, 4);
+        } else {
+            link_->send(pkt, sizeof(pkt));
+        }
         last = now;
     }
 }

@@ -69,7 +69,9 @@ VuMeter        g_vu(&g_link);
 Board         *g_board = nullptr;  // null while no keyboard is connected
 Status         g_st;               // last known keyboard state
 Tune           g_tune;             // size and intensity of the current effect
-int            g_vu_style = VU_BANDS;  // how the VU meter effect is fed (the keyboard just draws the bars)
+int            g_vu_style = VU_BANDS;
+int            g_pc_effect = PCFX_NONE;      // standard keyboards: PCFX_PULSE = brightness follows the music
+uint8_t        g_pulse_peak = 255;         // the keyboard's brightness when the pulse started (put back after)  // how the VU meter effect is fed (the keyboard just draws the bars)
 std::vector<std::string>  g_favs;  // effect names
 std::wstring   g_slots[10];        // "effect:NAME" or "profile:NAME"
 // The ZXKB window runs as a second copy of ZXKB.exe ("ZXKB.exe --window"), so closing it gives all its memory
@@ -284,6 +286,7 @@ void set_favourite(const std::string &n, bool on) {
 std::wstring current_effect_text() {
     if (!g_board) return L"keyboard not connected";
     if (!g_st.enabled) return L"lighting off";
+    if (g_pc_effect == PCFX_PULSE && g_board->kind == Board::VIA) return L"Music pulse (whole keyboard, from ZXKB)";
     if (vu_showing()) return vu_label(g_vu_style);
     return effects::friendly(effect_name(g_st.mode));
 }
@@ -336,6 +339,7 @@ void save_lists() {
 }
 
 void load_settings() {
+    g_pc_effect = settings::get_int(L"pc", L"effect", PCFX_NONE);
     g_vu_style = settings::vu_style_from(settings::get(L"vu", L"style", L"bands"));
     g_vu.set_style(g_vu_style);
     g_favs.clear();
@@ -374,10 +378,33 @@ HWND tray_window() { return g_window_mode ? FindWindowW(TRAY_CLASS, nullptr) : g
 // ---------- actions ----------
 // Listen to audio only while the keyboard shows the VU meter effect and could be seen (lighting on, not in
 // Spectrum mode). Anything else costs nothing.
+void via_set(uint8_t value_id, uint8_t a, uint8_t b);
 void update_capture() {
     if (g_window_mode) return; // only the tray copy listens to audio
+    // music pulse on a standard keyboard: the whole keyboard's brightness follows the music, up to its brightness
+    bool pulse = g_board && g_board->kind == Board::VIA && g_board->via_channel && g_pc_effect == PCFX_PULSE && g_st.enabled;
+    if (pulse) {
+        if (!g_vu.pulsing()) g_pulse_peak = g_st.val ? g_st.val : 255;
+        g_vu.set_pulse(g_board->via_channel, g_pulse_peak);
+        g_vu.start();
+        return;
+    }
+    if (g_vu.pulsing()) { // pulse over: the brightness it started from
+        g_vu.stop();
+        g_vu.set_pulse(0, 0);
+        if (g_board) via_set(proto::VIA_BRIGHTNESS, g_pulse_peak, 0);
+    }
     if (vu_showing() && g_st.vu_possible) g_vu.start();
     else g_vu.stop();
+}
+
+void select_pc_effect(int e) {
+    if (e == g_pc_effect) return;
+    g_pc_effect = e;
+    settings::set_int(L"pc", L"effect", e);
+    settings_changed(); // the tray copy runs it
+    update_capture();
+    update_tray();
 }
 
 void set_vu_style(int style) {
@@ -390,6 +417,7 @@ void set_vu_style(int style) {
 
 void set_effect(int mode) { // 0 = lighting off
     if (!g_board) return;
+    if (g_pc_effect != PCFX_NONE) select_pc_effect(PCFX_NONE); // a keyboard effect ends a PC effect
     via_set(proto::VIA_EFFECT, (uint8_t)mode);
     if (mode) g_st.mode = (uint8_t)mode;
     g_st.enabled = mode != 0;
@@ -848,6 +876,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (g_board) {
                 save_now();
             }
+            if (g_vu.pulsing() && g_board) via_set(proto::VIA_BRIGHTNESS, g_pulse_peak, 0); // quitting mid-pulse: its brightness back
             g_vu.stop();
             g_link.stop();
             if (!g_window_mode) Shell_NotifyIconW(NIM_DELETE, &g_nid);
@@ -857,6 +886,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     if (msg == g_settings_msg && msg) { // the other copy changed favourites, hotkeys, the VU style or looked up a keyboard
         load_settings();
         if (g_board) boards::apply_definition(g_board);
+        update_capture(); // the music pulse may have been chosen or ended in the window
         update_tray();
         window_refresh();
         return 0;

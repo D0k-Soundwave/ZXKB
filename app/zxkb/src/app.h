@@ -23,6 +23,9 @@ extern Board    *g_board;    // null while no keyboard is connected
 extern Status    g_st;       // last known keyboard state
 extern Tune      g_tune;     // size and intensity of the current effect
 extern int       g_vu_style; // VuStyle
+extern int       g_pc_effect; // PC effect for standard keyboards: PCFX_NONE or PCFX_PULSE
+constexpr int    PCFX_NONE = 0, PCFX_PULSE = 1;
+void select_pc_effect(int e);   // standard keyboards: a whole-keyboard effect worked out by ZXKB (PCFX_NONE ends it)
 extern bool      g_window_mode; // this copy of ZXKB.exe is the ZXKB window, not the tray
 HWND             tray_window(); // the tray copy's hidden window (owns the tray icon), null if not running
 
