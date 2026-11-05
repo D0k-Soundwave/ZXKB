@@ -432,6 +432,12 @@ HWND preview_create(HWND parent, int id) {
     return g_hwnd_preview;
 }
 
+void preview_input_back() {
+    if (!g_hwnd_preview) return;
+    RAWINPUTDEVICE rid = {0x01, 0x06, RIDEV_INPUTSINK, g_hwnd_preview};
+    RegisterRawInputDevices(&rid, 1, sizeof(rid));
+}
+
 // Simulated preview: the effect worked out for this moment; nothing to do (and no redraw) when it is not simulated
 void preview_simulate() {
     if (!g_hwnd_preview || !g_board || g_board->kind != Board::VIA || g_board->keys.empty()) return;

@@ -29,6 +29,7 @@
 #include "fnkeys.h"
 #include "remap.h"
 #include "keystore.h"
+#include "macros.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -1019,6 +1020,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdline, int) {
         if (win && IsDialogMessageW(win, &msg)) continue; // Tab, arrows and Esc in the ZXKB window
         if (HWND caps = caps_window()) if (IsDialogMessageW(caps, &msg)) continue;
         if (HWND rm = remap_window()) if (IsDialogMessageW(rm, &msg)) continue;
+        if (HWND mw = macros_window()) if (!macros_recording() && IsDialogMessageW(mw, &msg)) continue;
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }

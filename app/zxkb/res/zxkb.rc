@@ -22,6 +22,25 @@ BEGIN
     PUSHBUTTON      "Close", IDCANCEL, 223, 193, 50, 14
 END
 
+IDD_MACROS DIALOGEX 0, 0, 300, 262
+STYLE DS_SHELLFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE
+CAPTION "ZXKB - macros"
+FONT 9, "Segoe UI"
+BEGIN
+    LTEXT           "", IDC_MC_INFO, 7, 7, 286, 18
+    LISTBOX         IDC_MC_LIST, 7, 28, 286, 110, LBS_NOTIFY | WS_VSCROLL | WS_TABSTOP | WS_BORDER
+    LTEXT           "The macro selected:", -1, 7, 144, 120, 10
+    EDITTEXT        IDC_MC_EDIT, 7, 156, 286, 36, ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Text is typed; {Enter} taps a key; {Ctrl+C} a key with Ctrl; {Shift down} / {Shift up} hold and let go; {wait 250} waits 250 ms; {{ types {. Typed text uses US key positions (QMK).", -1, 7, 196, 286, 26
+    PUSHBUTTON      "Record", IDC_MC_RECORD, 7, 226, 60, 14
+    AUTOCHECKBOX    "Record waits", IDC_MC_WAITS, 71, 228, 60, 10
+    PUSHBUTTON      "Clear", IDC_MC_CLEARONE, 133, 226, 40, 14
+    DEFPUSHBUTTON   "Save to keyboard", IDC_MC_SAVE, 213, 226, 80, 14
+    PUSHBUTTON      "Import...", IDC_MC_IMPORT, 7, 244, 50, 14
+    PUSHBUTTON      "Export...", IDC_MC_EXPORT, 61, 244, 50, 14
+    PUSHBUTTON      "Close", IDCANCEL, 243, 244, 50, 14
+END
+
 IDD_REMAP DIALOGEX 0, 0, 250, 286
 STYLE DS_SHELLFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_VISIBLE
 CAPTION "ZXKB - change keys"

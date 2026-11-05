@@ -3,6 +3,7 @@
 #include "keystore.h"
 #include "app.h"
 #include "settings.h"
+#include "macros.h"
 #include <cwchar>
 #include <cstdlib>
 #include <string>
@@ -64,6 +65,27 @@ void record_knob(int layer, int encoder, bool cw, uint16_t code) {
     WritePrivateProfileStringW(L"knob", key(layer, encoder, cw ? 1 : 0).c_str(), c, file().c_str());
 }
 
+void record_macros(const std::vector<std::wstring> &texts) {
+    if (!g_board) return;
+    std::wstring f = file();
+    WritePrivateProfileStringW(L"macros", nullptr, nullptr, f.c_str());
+    for (size_t m = 0; m < texts.size(); m++)
+        if (!texts[m].empty()) WritePrivateProfileStringW(L"macros", (L"M" + std::to_wstring(m)).c_str(), texts[m].c_str(), f.c_str());
+}
+
+std::vector<std::wstring> kept_macros(bool *any) {
+    std::vector<std::wstring> v;
+    *any = false;
+    std::wstring f = file();
+    for (int m = 0; m < 128; m++) {
+        wchar_t buf[2048] = {0};
+        GetPrivateProfileStringW(L"macros", (L"M" + std::to_wstring(m)).c_str(), L"", buf, 2048, f.c_str());
+        v.push_back(buf);
+        if (*buf) *any = true;
+    }
+    return v;
+}
+
 void forget(int layer, int row, int col) {
     if (g_board) WritePrivateProfileStringW(L"keys", key(layer, row, col).c_str(), nullptr, file().c_str());
 }
@@ -72,10 +94,18 @@ void forget_all() {
     if (g_board) {
         WritePrivateProfileStringW(L"keys", nullptr, nullptr, file().c_str());
         WritePrivateProfileStringW(L"knob", nullptr, nullptr, file().c_str());
+        WritePrivateProfileStringW(L"macros", nullptr, nullptr, file().c_str());
     }
 }
 
-int count() { return g_board ? (int)(load().size() + load(L"knob").size()) : 0; }
+int count() {
+    if (!g_board) return 0;
+    bool any;
+    std::vector<std::wstring> m = kept_macros(&any);
+    int n = 0;
+    for (const std::wstring &t : m) n += !t.empty();
+    return (int)(load().size() + load(L"knob").size()) + n;
+}
 
 int reapply(int *failed) {
     int changed = 0;
@@ -87,6 +117,25 @@ int reapply(int *failed) {
         uint8_t s[6] = {0x05, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col, (uint8_t)(e.code >> 8), (uint8_t)e.code};
         if (keyboard_ask(s, 6, r, 4)) changed++;
         else (*failed)++;
+    }
+    { // the macros, if the keyboard's differ from the ones ZXKB wrote
+        bool any;
+        std::vector<std::wstring> want = kept_macros(&any);
+        std::vector<std::wstring> now;
+        int size = 0;
+        if (any && macros::read_all(&now, &size)) {
+            want.resize(now.size());
+            bool same = true; // compared by what the macros do, not how they are written ({Ctrl+C} = {Ctrl down}{c}{Ctrl up})
+            for (size_t m = 0; m < now.size() && same; m++) {
+                std::wstring e1, e2;
+                same = macros::to_bytes(want[m], &e1) == macros::to_bytes(now[m], &e2);
+            }
+            if (!same) {
+                std::wstring e;
+                if (macros::write_all(want, &e)) changed++;
+                else (*failed)++;
+            }
+        }
     }
     for (const Entry &e : load(L"knob")) { // row = encoder, col = clockwise
         uint8_t q[4] = {0x14, (uint8_t)e.layer, (uint8_t)e.row, (uint8_t)e.col}, r[32];

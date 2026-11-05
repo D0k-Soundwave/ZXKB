@@ -46,6 +46,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.36 | 2026-11-05 | 576,000 bytes | Macros... window: the keyboard's macros (VIA, stored on the keyboard) as readable text ({Enter}, {Ctrl+C}, {Shift down}/{Shift up}, {wait 250}), Record with or without waits, Clear, Save to keyboard (size checked), Import/Export as a text file; macros kept by ZXKB and put back after firmware updates; give them to keys in Change keys (Macros). |
 | 0.35 | 2026-11-05 | 557,568 bytes | The knob in Change keys: select it in the preview, then Press, Turn left or Turn right; shows all three; knob changes kept and put back after firmware updates like key changes (VIA 0x14 / 0x15). |
 | 0.34 | 2026-11-05 | 554,496 bytes | The window opens on the layer the keyboard types from and marks it "(in use)" in the Layer list; Change keys says when the layer being changed is not the one in use (D0k set Y on layer 0, the Spectrum base, while typing in Windows mode, layer 2). Needs firmware v26. |
 | 0.33 | 2026-11-05 | 553,984 bytes | Change keys: choosing an entry with no keys selected says to select keys first (it said the keyboard refused the change, D0k); a partial failure says how many keys. |

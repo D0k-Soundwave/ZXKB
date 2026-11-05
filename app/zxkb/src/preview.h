@@ -10,6 +10,7 @@ void preview_update();                    // new LED colours arrived: redraw
 double preview_aspect();
 void preview_relabel(); // the keymap or the keyboard language changed: redraw the key labels
 void preview_simulate(); // standard keyboards: work out the next frame of the effect (timer, while open)
+void preview_input_back(); // key presses (raw input) to the preview again, after the Macros window recorded
 // Key selection: click a key, Ctrl+click to add or remove one. The parent gets WM_COMMAND (id, PREVIEW_SELECTION).
 constexpr WORD PREVIEW_SELECTION = 1;
 std::vector<int> preview_selected_leds();   // LED numbers of the selected keys

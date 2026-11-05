@@ -34,6 +34,16 @@
 #define IDC_RM_PRESS     257
 #define IDC_RM_LEFT      258
 #define IDC_RM_RIGHT     259
+#define IDD_MACROS       260
+#define IDC_MC_INFO      261
+#define IDC_MC_LIST      262
+#define IDC_MC_EDIT      263
+#define IDC_MC_RECORD    264
+#define IDC_MC_SAVE      265
+#define IDC_MC_IMPORT    266
+#define IDC_MC_EXPORT    267
+#define IDC_MC_WAITS     268
+#define IDC_MC_CLEARONE  269
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 35 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.35" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 36 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.36" // raise for every build installed for D0k (docs/VERSIONS.md)

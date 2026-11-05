@@ -121,6 +121,9 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | 0.31 ZXKB.exe size | 549,376 bytes | M | 2026-11-05 |
 | Key changes put back after a firmware change (0.32) | layer 3 S: set to A in the app, reset to Dimmer outside it, back to A at the next start with a changed firmware note | M | probe getkey/setkey, 2026-11-05 |
 | Knob read through VIA (Q3) | layer 0 Left/Right, 1 and 3 Dimmer/Brighter, 2 Volume down/up, press Mute on layer 2 | M | probe knob + Change keys window, 2026-11-05 |
+| Macro round trip (0.36) | Hi{Enter}{Ctrl+C}{wait 100}{Shift down}x{Shift up}: 43 bytes, read back the same (shown as {Ctrl+c}) | M | Macros window, 2026-11-05 |
+| Macro waits recorded | from 30 ms, in 10 ms steps | A | shorter gaps are typing rhythm |
+| 0.36 ZXKB.exe size | 576,000 bytes | M | 2026-11-05 |
 | Firmware v16 size | 60,496 bytes (+312), static RAM +280 bytes (LED mirror copy 264 = 88 x 3) | M / C | arm-none-eabi-size, 2026-11-02 |
 | LED mirror rate | 30 frames/s while the preview is open, changed or not | C | one 9-LED packet every 3 ms; 10 packets per frame for 88 LEDs |
 | Preview window, graphics-card drawing: own RAM / reserved | 15.3 MB / 62.2 MB while open | M | window_test, 2026-11-02 |

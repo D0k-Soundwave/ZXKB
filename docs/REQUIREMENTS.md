@@ -85,7 +85,8 @@ Mechanical switches only. Most use QMK's VIA support already in the firmware; fi
       installing firmware and puts them back after (found 2026-11-05)
 - [ ] Game-mode lock: Win key (exists) plus blocking Alt+Tab / Alt+F4 (firmware work)
 - [ ] App-only actions on any key: launch app or URL, paste text, timer (work only while ZXKB runs)
-- [ ] Macros: record in the app, edit keys and delays, stored on the keyboard (work without the app);
+- [~] Macros: record in the app, edit keys and delays, stored on the keyboard (work without the app; 0.36: editor,
+      recording, import/export, kept across firmware updates; play modes and on-the-fly recording still to come);
       on-the-fly recording by a key; play once / repeat while held / toggle / sequence (firmware work);
       library with import and export
 - [ ] Hold-a-key second layer (QMK layers; each extra layer uses 192 bytes of the keyboard's settings memory)
