@@ -4,6 +4,10 @@ Status: `[x]` done · `[~]` in source, not yet built/flashed · `[ ]` to do · `
 Rule: do not build until D0k confirms the list is complete.
 
 ## Across the board
+- [ ] App first (D0k, 2026-11-06, restating his earlier rule): every function is built in the app so it works on any
+      keyboard without new firmware, because there is no ZXKB firmware for most keyboards and the app should control as
+      much as possible. Firmware only where the app truly cannot do it (said plainly each time). v27-v31 put game mode,
+      SOCD, lights-off, layer light, macro play modes and varying waits in firmware first: to be moved to the app.
 - [ ] As small and lightweight as possible everywhere: app RAM, CPU, disk/download size, and firmware
       flash/RAM (requested 2026-11-02). Measure and report real figures at every stage.
 - [~] App core in native C++ (Win32 only, no runtime), decided 2026-11-02 over slimmed Python for idle weight
