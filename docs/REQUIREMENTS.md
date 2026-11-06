@@ -55,6 +55,9 @@ Rule: do not build until D0k confirms the list is complete.
       Direction where it makes sense: left to right, right to left, up to down, down to up. A line thickness setting
       for effects that draw lines, from one line (one key row or column) upwards. Firmware work (the effects run on
       the keyboard) and the same in the app's preview. Details being asked one at a time.
+      Answered: the merged stripes effect also has the four diagonals (8 directions) (D0k, 2026-11-06).
+- [ ] Every effect's colours set from the app's colour boxes (D0k, 2026-11-06: today many ignore them). Audit of the
+      Q3's 60 effects and what is needed: docs/EFFECT_COLOURS.md.
 - [ ] Effect intensity settings, e.g. how large and how bright typing effects are (requested 2026-11-02);
       scope pending: ZXKB's own effects only, or ZXKB versions of QMK's typing effects too
 - [~] Overall brightness control: steps (Brighter / Dimmer), decided 2026-11-02
