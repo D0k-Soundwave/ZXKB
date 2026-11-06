@@ -51,6 +51,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.45 | 2026-11-06 | - | Layout check names keys by the base layer in use and the Windows language layout, never keycap legends (D0k). |
 | 0.44 | 2026-11-06 | 615,424 bytes | Key layout backups (D0k): the Firmware window copies the whole layout (4 layers, knob, macros) before installing, then after the keyboard restarts compares it and lists each difference, yours vs the keyboard now, ticked to put yours back for keys changed in ZXKB and macros; puts back, reads again and confirms. "Copy layout now" and "Layout backups..." (put back any copy) in the Firmware window; copies in %APPDATA%\ZXKBackups. Tested by hand: copy, one key changed, found, put back, checked. The after-install path not yet run. |
 | 0.43 | 2026-11-06 | - | Kept, not handed over: could not read the keymap for a copy (the keymap replies did not reach it). |
 | 0.42 | 2026-11-06 | - | Kept, not handed over: built before the Copy layout now button was finished. |

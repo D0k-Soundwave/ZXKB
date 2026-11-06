@@ -172,8 +172,10 @@ std::wstring name(uint16_t code) { return keycodes::describe(code, GetKeyboardLa
 std::wstring where(const Diff &d) {
     if (d.kind == MACRO) return L"Macro M" + std::to_wstring(d.a);
     if (d.kind == KNOB) return L"Layer " + std::to_wstring(d.layer) + L", knob " + (d.b ? L"turn right" : L"turn left");
-    // the key by what it does on the first layer, as the keyboard has it now
-    uint16_t base = g_now.keys[d.a * g_now.cols + d.b];
+    // the key by what it does on the base layer in use (ZXKB firmware reports it; else layer 0), named through the
+    // Windows language layout. Never by keycap legends: those are a personal display choice (D0k, 2026-11-06)
+    int base_layer = zxkb_board() && g_board->protocol >= 11 && g_st.base_layer < g_now.layers ? g_st.base_layer : 0;
+    uint16_t base = g_now.keys[(base_layer * g_now.rows + d.a) * g_now.cols + d.b];
     return L"Layer " + std::to_wstring(d.layer) + L", key " + name(base) + L" (" + std::to_wstring(d.a) + L"," + std::to_wstring(d.b) + L")";
 }
 
