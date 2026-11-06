@@ -51,6 +51,10 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Per-app profiles: switch profile when a given program or game is in front, and back after (2026-11-02; 0.50: tray menu, Profiles, Profiles by program; any keyboard; not saved to the keyboard while in use; not yet tried by D0k)
 - [ ] Effects on zones: an effect on part of the board only, another elsewhere (2026-11-02; needs firmware work)
 - [ ] More effect controls where an effect allows: direction, two or more colours, full colour picker (2026-11-02)
+- [ ] ZX effects (D0k, 2026-11-06): Spectrum stripes and Logo sweep are essentially the same effect: make them one.
+      Direction where it makes sense: left to right, right to left, up to down, down to up. A line thickness setting
+      for effects that draw lines, from one line (one key row or column) upwards. Firmware work (the effects run on
+      the keyboard) and the same in the app's preview. Details being asked one at a time.
 - [ ] Effect intensity settings, e.g. how large and how bright typing effects are (requested 2026-11-02);
       scope pending: ZXKB's own effects only, or ZXKB versions of QMK's typing effects too
 - [~] Overall brightness control: steps (Brighter / Dimmer), decided 2026-11-02
