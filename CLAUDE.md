@@ -5,6 +5,9 @@ It began as "ZX VU" (an audio VU meter for D0k's ZX Spectrum keyboard) and grew 
 lighting controller. It is headed for public release on GitHub (account `D0k-Soundwave`).
 
 ## Owner and working rules (read first)
+- **Never send simulated keystrokes, mouse input or Alt+F4 / close messages to the desktop, and never close or stop any
+  program ZXKB did not start.** On 2026-11-06 a test's Alt+F4 went to D0k's foreground window and killed a
+  mission-critical task. Test input code in isolation only (test/hook_test.cpp).
 - The owner is **D0k**. Always call him D0k. He directs; he does not write code himself.
 - **Collect all requirements before building.** Do not build, flash or release until D0k says the
   list is complete. Record new requests in `docs/REQUIREMENTS.md` as they arrive.
