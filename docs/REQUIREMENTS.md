@@ -66,6 +66,8 @@ Rule: do not build until D0k confirms the list is complete.
       effects, VU meter and key colours not yet). Open questions being asked one at a time.
       Answered: only edits in the ZXKB window wait for Apply; hotkeys and the tray menu switch at once (D0k, 2026-11-06).
       Closing the window with changes not applied asks: Apply, Discard or Cancel (D0k, 2026-11-06).
+      Smaller windows (Lock lights, Caps Lock light, Keyboard settings, Change keys, Macros) keep their own buttons;
+      the lock lights and Caps Lock light are shown in the preview while set, not on the keyboard, until OK (D0k, 2026-11-06).
 - [~] Layers as in an art package (D0k, 2026-11-06): key colours (the "main profile") at the bottom, the effect over them, lock
       lights on top; effect off shows the key colours. Firmware v33 + app 0.51 (ZXKB firmware only: stock VIA has no
       per-key colours). Replaces "per-key colour over any effect" (2026-11-03). Not yet tried by D0k.
