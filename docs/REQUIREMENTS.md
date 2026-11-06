@@ -75,6 +75,10 @@ Rule: do not build until D0k confirms the list is complete.
       Closing the window with changes not applied asks: Apply, Discard or Cancel (D0k, 2026-11-06).
       Smaller windows (Lock lights, Caps Lock light, Keyboard settings, Change keys, Macros) keep their own buttons;
       the lock lights and Caps Lock light are shown in the preview while set, not on the keyboard, until OK (D0k, 2026-11-06).
+      D0k confirmed the list for this round complete (2026-11-06). Stage 1 built in 0.53: the draft, Apply / Discard,
+      the close question, key colours and lock lights in the preview. Still to do: the Caps Lock light window in the
+      preview; the effects ZXKB cannot work out yet (ZX effects, VU meter, Starlight, Pixel rain / flow / fractal,
+      Digital rain); size and intensity of an effect the keyboard is not showing (firmware: ask per effect).
 - [~] Layers as in an art package (D0k, 2026-11-06): key colours (the "main profile") at the bottom, the effect over them, lock
       lights on top; effect off shows the key colours. Firmware v33 + app 0.51 (ZXKB firmware only: stock VIA has no
       per-key colours). Replaces "per-key colour over any effect" (2026-11-03). Not yet tried by D0k.

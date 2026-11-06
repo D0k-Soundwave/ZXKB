@@ -1,6 +1,6 @@
 // The Lock lights window (ZXKB window copy): the light shown while Caps Lock, Num Lock or Scroll Lock is on. Changes
-// are written to zxkb.ini and the tray (which shows the lights) told at once, so they can be seen live; Cancel puts
-// back what was there.
+// are written to zxkb.ini and the tray (which shows the lights) told at once; while this window is open the light
+// shows in the ZXKB window's preview only. Cancel puts back what was there.
 // Copyright 2026 D0k
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "locklights.h"
@@ -8,6 +8,7 @@
 #include "caps.h"
 #include "protocol.h"
 #include "numbox.h"
+#include "preview.h"
 #include "../res/resource.h"
 #include <commctrl.h>
 #include <commdlg.h>
@@ -110,8 +111,8 @@ void draw(const DRAWITEMSTRUCT *d) {
     if (d->itemState & ODS_FOCUS) DrawFocusRect(d->hDC, &d->rcItem);
 }
 
-void preview(bool on) { // the tray shows the lights while this window is open, though the ZXKB window is open too
-    if (HWND tray = tray_window()) SendMessageTimeoutW(tray, g_locks_msg, on ? 1 : 2, 0, SMTO_ABORTIFHUNG, 1000, nullptr);
+void preview(bool on) { // while this window is open the lights show in the ZXKB window's preview, not on the keyboard
+    preview_locks(on);   // (D0k, 2026-11-06); the tray shows them again once the ZXKB window is closed
 }
 
 INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
@@ -126,7 +127,8 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             }
             std::wstring info = L"While a lock key is on, ZXKB lights the whole keyboard in its light, then puts your lighting "
                                 L"back. Works with any keyboard while ZXKB runs. Caps Lock shows over Num Lock, Num Lock over "
-                                L"Scroll Lock. Flash and Breathe go between colour 1 and colour 2 (black for on / off).";
+                                L"Scroll Lock. Flash and Breathe go between colour 1 and colour 2 (black for on / off). While this window is "
+                                L"open, press a lock key to see its light in the preview.";
             SetDlgItemTextW(dlg, IDC_LK_INFO, info.c_str());
             show(dlg);
             preview(true);

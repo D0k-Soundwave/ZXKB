@@ -9,7 +9,12 @@ HWND preview_create(HWND parent, int id); // child control; its drawing resource
 void preview_update();                    // new LED colours arrived: redraw
 double preview_aspect();
 void preview_relabel(); // the keymap or the keyboard language changed: redraw the key labels
-void preview_simulate(); // standard keyboards: work out the next frame of the effect (timer, while open)
+void preview_simulate(); // work out the next frame of the effect (timer: standard keyboards, a draft, lock lights)
+// The window's draft (changes not applied yet): the preview works it out instead of showing the keyboard's own LEDs.
+// keys: show the keys' own colours (the regular layer) instead of the effect (keys being coloured, or effect off)
+void preview_draft(bool on, bool keys);
+bool preview_drafting();
+void preview_locks(bool on); // the Lock lights window is open: the lock light that is on shows over the preview
 void preview_input_back(); // key presses (raw input) to the preview again, after the Macros window recorded
 // Key selection: click a key, Ctrl+click to add or remove one. The parent gets WM_COMMAND (id, PREVIEW_SELECTION).
 constexpr WORD PREVIEW_SELECTION = 1;

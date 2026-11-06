@@ -9,6 +9,7 @@
 #include "labels.h"
 #include "keycaps.h"
 #include "sim.h"
+#include "locklights.h"
 #include "settings.h"
 #include <d2d1.h>
 #include <dwrite.h>
@@ -17,6 +18,9 @@
 #include <cstring>
 #include <cwchar>
 #include <vector>
+
+void sim_leds();  // below
+void sim_timer();
 
 namespace {
 
@@ -67,6 +71,8 @@ D2D1_COLOR_F hex(unsigned v, float a = 1) {
 
 int g_lit = 0; // how many LED colours g_rgb holds: the keyboard's LEDs, or (simulated) one per key
 bool g_sim = false; // the preview is simulated (standard firmware: the keyboard cannot report its LEDs)
+bool g_draft = false, g_draft_keys = false; // ZXKB keyboards: the window's draft is worked out (preview_draft)
+bool g_locks = false;                       // the Lock lights window is open
 constexpr UINT TIMER_SIM = 7;
 constexpr UINT SIM_FRAME_MS = 33; // [C] about 30 frames a second, as the LED mirror (zxkb.h)
 
@@ -283,9 +289,9 @@ void render() {
             size_t before = keys.size();
             g_sim = g_board->kind == Board::VIA && !g_board->keys.empty();
             if (g_sim) sim::set_keys(g_board->keys, g_board->keymap, g_board->cols);
+            else if (g_draft || g_locks) sim_leds();
             // frames only for a simulated preview; a ZXKB keyboard sends its own (the LED mirror)
-            if (g_sim) SetTimer(g_hwnd_preview, TIMER_SIM, SIM_FRAME_MS, nullptr);
-            else KillTimer(g_hwnd_preview, TIMER_SIM);
+            sim_timer();
             keys = board_keys();
             if (keys.size() != before) g_sel.assign(keys.size(), false);
             if (!g_fmt[0] || std::fabs(unit - g_fmt_unit) > 0.5f) make_formats(unit);
@@ -438,14 +444,52 @@ void preview_input_back() {
     RegisterRawInputDevices(&rid, 1, sizeof(rid));
 }
 
+bool via_sim() { return g_board && g_board->kind == Board::VIA && !g_board->keys.empty(); }
+bool simulating() { return g_board && (via_sim() || ((g_draft || g_locks) && g_board->led_count)); }
+
+void sim_timer() {
+    if (!g_hwnd_preview) return;
+    if (simulating()) SetTimer(g_hwnd_preview, TIMER_SIM, SIM_FRAME_MS, nullptr);
+    else KillTimer(g_hwnd_preview, TIMER_SIM);
+}
+
+// ZXKB keyboards: the simulator on the keyboard's own LEDs, with the key over each LED (for typing effects)
+void sim_leds() {
+    std::vector<uint16_t> scan(g_board->led_count, 0);
+    for (int r = 0; r < g_board->map_rows; r++)
+        for (int c = 0; c < g_board->map_cols; c++) {
+            size_t m = (size_t)(r * g_board->map_cols + c), at = (size_t)(r * g_board->cols + c);
+            if (m >= g_board->led_map.size() || g_board->led_map[m] >= g_board->led_count || c >= g_board->cols || at >= g_board->keymap.size()) continue;
+            uint16_t kc = g_board->keymap[at];
+            scan[g_board->led_map[m]] = labels::scan_of_usage((uint8_t)(kc & 0xFF));
+        }
+    sim::set_leds(g_board->leds, scan);
+}
+
 // Simulated preview: the effect worked out for this moment; nothing to do (and no redraw) when it is not simulated
 void preview_simulate() {
-    if (!g_hwnd_preview || !g_board || g_board->kind != Board::VIA || g_board->keys.empty()) return;
+    if (!g_hwnd_preview || !simulating()) return;
+    bool via = via_sim();
     std::string fx = g_st.enabled && g_st.mode >= 1 && g_st.mode <= (int)g_board->names.size() ? g_board->names[g_st.mode - 1] : "";
-    size_t n = std::min<size_t>(g_board->keys.size(), 256);
+    size_t n = via ? std::min<size_t>(g_board->keys.size(), 256) : g_board->led_count;
     uint8_t now[sizeof(g_rgb)] = {0};
-    if (g_pc_effect != PCFX_NONE || !sim::known(fx) || !sim::render(fx, g_st.hue, g_st.sat, g_st.val, g_st.speed, GetTickCount(), now))
+    DWORD ms = GetTickCount();
+    bool keys = !via && per_key_possible() && g_board->key.size() >= n * 8 && (g_draft_keys || (!g_st.enabled && has_key_layer()));
+    if (keys) sim::keys_frame(g_board->key.data(), (int)n, g_st.val, ms, now);
+    else if (g_pc_effect != PCFX_NONE || !sim::known(fx) || !sim::render(fx, g_st.hue, g_st.sat, g_st.val, g_st.speed, ms, now))
         std::memset(now, 0, n * 3); // lighting off, a ZXKB PC effect, or an effect the simulator does not have: unlit
+    if (g_locks) { // the lock light that would show now, over the whole keyboard (as the tray shows it)
+        bool on[locklights::COUNT] = {(GetKeyState(VK_CAPITAL) & 1) != 0, (GetKeyState(VK_NUMLOCK) & 1) != 0, (GetKeyState(VK_SCROLL) & 1) != 0};
+        locklights::Light l[locklights::COUNT];
+        for (int i = 0; i < locklights::COUNT; i++) l[i] = locklights::get(i);
+        int w = locklights::choose(on, l);
+        if (w >= 0) {
+            uint8_t h, s, v, c[3];
+            locklights::frame(l[w], ms, &h, &s, &v);
+            sim::hsv(h, s, (uint8_t)((l[w].full ? g_st.max_val : g_st.val) * v / 255), c);
+            for (size_t i = 0; i < n; i++) std::memcpy(&now[i * 3], c, 3);
+        }
+    }
     g_lit = (int)n;
     if (std::memcmp(now, g_rgb, n * 3) == 0) return;
     std::memcpy(g_rgb, now, n * 3);
@@ -454,7 +498,7 @@ void preview_simulate() {
 
 // Redraw only when a colour changed: a still effect then costs nothing
 void preview_update() {
-    if (!g_hwnd_preview || !g_board || !g_board->led_count) return;
+    if (!g_hwnd_preview || !g_board || !g_board->led_count || simulating()) return; // the draft is shown instead
     uint8_t now[sizeof(g_rgb)];
     int n = g_board->led_count; // at most 255, so it fits g_rgb
     keyboard_mirror(now, n);
@@ -462,6 +506,32 @@ void preview_update() {
     if (std::memcmp(now, g_rgb, n * 3) == 0) return;
     std::memcpy(g_rgb, now, n * 3);
     InvalidateRect(g_hwnd_preview, nullptr, FALSE);
+}
+
+void preview_draft(bool on, bool keys) {
+    bool was = g_draft || g_locks;
+    g_draft_keys = on && keys;
+    if (on == g_draft) return;
+    g_draft = on;
+    if (!g_board || via_sim()) return; // standard keyboards: always simulated
+    if (on && !was) { sim_leds(); mirror_request(false); } // the keyboard need not send its colours meanwhile
+    if (!on && !g_locks) mirror_request(true);
+    sim_timer();
+    if (!simulating()) preview_update(); // the keyboard's own colours again
+}
+bool preview_drafting() { return g_draft || g_locks; }
+
+void preview_locks(bool on) {
+    if (on == g_locks) return;
+    bool was = g_draft || g_locks;
+    g_locks = on;
+    if (!g_board) return;
+    if (!via_sim()) {
+        if (on && !was) { sim_leds(); mirror_request(false); }
+        if (!on && !g_draft) mirror_request(true);
+    }
+    sim_timer();
+    if (!simulating()) preview_update();
 }
 
 std::vector<int> preview_selected_leds() {

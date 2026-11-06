@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cmath>
+#include <map>
 #include "../res/resource.h"
 #define ZXKB_WIDEN2(s) L##s
 #define ZXKB_WIDEN(s)  ZXKB_WIDEN2(s)
@@ -160,6 +161,21 @@ int key_step_ms(int speed) { // the firmware's table: 5000 x (16 / 5000) ^ (spee
 }
 } // namespace proto
 void schedule_save();
+void save_now();
+
+// ---------- the ZXKB window's draft (D0k, 2026-11-06) ----------
+// In the window copy, edits change g_st, g_tune, the keys, the VU style and the PC effect only: the preview shows them
+// and they reach the keyboard when Apply is clicked. g_kb* hold what the keyboard has. Hotkeys and the tray menu (the
+// tray copy) still switch at once; a report from the keyboard updates the draft too while nothing is pending.
+Status               g_kb;
+Tune                 g_kb_tune;
+std::vector<uint8_t> g_kb_keys;
+int                  g_kb_vu_style = VU_BANDS, g_kb_pc = PCFX_NONE;
+std::map<int, Tune>  g_tunes;            // each effect's size and intensity, as the keyboard last reported them
+bool                 g_applying = false; // Apply is sending the draft
+bool drafting() { return g_window_mode && !g_applying; }
+
+void send_keys(const std::vector<int> &l); // l sorted, no repeats
 
 const uint8_t *key_state(int led) {
     if (!per_key_possible() || led < 0 || led >= g_board->led_count) return nullptr;
@@ -187,6 +203,12 @@ void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r,
         k[0] = fx;
         k[1] = speed;
     }
+    if (drafting()) return; // the window: until Apply
+    send_keys(l);
+    schedule_save();
+}
+
+void send_keys(const std::vector<int> &l) {
     // runs of neighbouring LEDs, up to 4 per report
     for (size_t i = 0; i < l.size();) {
         int first = l[i], n = 0;
@@ -199,7 +221,6 @@ void edit_keys(const std::vector<int> &leds, KeyEdit what, int value, uint8_t r,
         q[3] = (uint8_t)n;
         g_link.send(q, 4 + n * proto::KEY_BYTES);
     }
-    schedule_save();
 }
 
 bool caps_possible() { return zxkb_board() && g_board->protocol >= 9; }
@@ -431,12 +452,7 @@ void save_now() {
     KillTimer(g_hwnd, TIMER_SAVE);
     if (g_idle_off || locklights::showing() || apps::active()) return; // never keep the lights of idling, a lock light or a program's profile (saved after)
     if (g_board && g_save_pending) {
-        if (g_board->via_channel) {
-            bool view = g_window_mode && edit_view_showing(); // key colours shown for editing: save the effect, not that
-            if (view) via_set(proto::VIA_EFFECT, g_st.enabled ? g_st.mode : effect_off_mode());
-            send({proto::VIA_SAVE, g_board->via_channel});
-            if (view) via_set(proto::VIA_EFFECT, effect_off_mode());
-        }
+        if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
         if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
         if (per_key_possible()) send({proto::KEYS, proto::KEYS_SAVE});
         if (caps_possible()) send({proto::CAPS, proto::CAPS_SAVE});
@@ -574,6 +590,7 @@ void update_capture() {
 }
 
 void select_pc_effect(int e) {
+    if (drafting()) { g_pc_effect = e; return; }
     if (e == g_pc_effect) return;
     g_pc_effect = e;
     settings::set_int(L"pc", L"effect", e);
@@ -584,6 +601,7 @@ void select_pc_effect(int e) {
 
 void set_vu_style(int style) {
     g_vu_style = style;
+    if (drafting()) return;
     g_vu.set_style(style);
     settings::set(L"vu", L"style", settings::vu_style_name(style));
     settings_changed();
@@ -592,9 +610,17 @@ void set_vu_style(int style) {
 
 void set_effect(int mode) { // 0 = lighting off
     if (!g_board) return;
-    if (g_pc_effect != PCFX_NONE) select_pc_effect(PCFX_NONE); // a keyboard effect ends a PC effect
-    if (g_window_mode) edit_view_effect_chosen(); // the chosen effect shows, though keys are selected
     if (mode && mode == key_layer_mode()) mode = 0; // chosen by name somewhere: it is "effect off"
+    if (drafting()) {
+        g_pc_effect = PCFX_NONE;
+        if (mode) g_st.mode = (uint8_t)mode;
+        g_st.enabled = mode != 0;
+        auto t = g_tunes.find(g_st.mode); // its size and intensity, if the keyboard has reported them
+        if (t != g_tunes.end()) g_tune = t->second;
+        else { g_tune = Tune(); g_tune.mode = g_st.mode; g_tune.flags = 0; }
+        return;
+    }
+    if (g_pc_effect != PCFX_NONE) select_pc_effect(PCFX_NONE); // a keyboard effect ends a PC effect
     via_set(proto::VIA_EFFECT, mode ? (uint8_t)mode : effect_off_mode());
     if (mode) {
         g_st.mode = (uint8_t)mode;
@@ -614,6 +640,7 @@ void set_brightness(int val) {
     if (!g_board) return;
     val = val < 0 ? 0 : val > g_st.max_val ? g_st.max_val : val;
     g_st.val = (uint8_t)val;
+    if (drafting()) return;
     // VIA brightness is 0-255 scaled to the board's maximum; round up so the board lands on val
     int v = g_st.max_val ? (val * 255 + g_st.max_val - 1) / g_st.max_val : 0;
     via_set(proto::VIA_BRIGHTNESS, (uint8_t)(v > 255 ? 255 : v));
@@ -623,6 +650,7 @@ void set_brightness(int val) {
 void set_speed(int speed) {
     if (!g_board) return;
     g_st.speed = (uint8_t)(speed < 0 ? 0 : speed > 255 ? 255 : speed);
+    if (drafting()) return;
     via_set(proto::VIA_SPEED, g_st.speed);
     schedule_save();
 }
@@ -633,6 +661,7 @@ void set_tune(int size, int intensity) {
     auto clamp = [](int v, int lo) { return v < lo ? lo : v > 255 ? 255 : v; };
     g_tune.size      = (uint8_t)clamp(size, SIZE_MIN);
     g_tune.intensity = (uint8_t)clamp(intensity, INTENSITY_MIN);
+    if (drafting()) return;
     send({proto::TUNE, proto::TUNE_SET, g_tune.size, g_tune.intensity});
     schedule_save();
 }
@@ -641,6 +670,7 @@ void set_colour(uint8_t hue, uint8_t sat) {
     if (!g_board) return;
     g_st.hue = hue;
     g_st.sat = sat;
+    if (drafting()) return;
     via_set(proto::VIA_COLOUR, hue, sat);
     schedule_save();
 }
@@ -669,7 +699,61 @@ void apply_profile_data(const Profile &p) {
     set_brightness(p.val);
 }
 
+bool draft_pending() {
+    if (!g_window_mode || !g_board) return false;
+    const Status &a = g_st, &b = g_kb;
+    if (a.enabled != b.enabled || (a.enabled && a.mode != b.mode)) return true;
+    if (a.val != b.val || a.speed != b.speed || a.hue != b.hue || a.sat != b.sat) return true;
+    if (g_tune.flags && g_tune.mode == g_kb_tune.mode && (g_tune.size != g_kb_tune.size || g_tune.intensity != g_kb_tune.intensity)) return true;
+    if (g_vu_style != g_kb_vu_style || g_pc_effect != g_kb_pc) return true;
+    return g_board->key != g_kb_keys;
+}
+
+void draft_apply() {
+    if (!g_window_mode || !g_board) return;
+    const Status d = g_st;
+    const Tune dt = g_tune;
+    const int vu = g_vu_style, pc = g_pc_effect;
+    const std::vector<uint8_t> keys = g_board->key;
+    g_applying = true;
+    g_st = g_kb; // the setters below start from what the keyboard has
+    g_pc_effect = g_kb_pc;
+    if (vu != g_kb_vu_style) set_vu_style(vu);
+    bool fx = d.enabled != g_kb.enabled || (d.enabled && d.mode != g_kb.mode);
+    if (fx) set_effect(d.enabled ? d.mode : 0);
+    g_st.mode = d.mode; // also the effect chosen while it is off (turned on later)
+    if (d.hue != g_kb.hue || d.sat != g_kb.sat) set_colour(d.hue, d.sat);
+    if (d.speed != g_kb.speed) set_speed(d.speed);
+    if (d.val != g_kb.val) set_brightness(d.val);
+    g_tune = dt;
+    if (dt.flags && (fx || dt.size != g_kb_tune.size || dt.intensity != g_kb_tune.intensity)) set_tune(dt.size, dt.intensity);
+    std::vector<int> changed;
+    for (int i = 0; i < g_board->led_count && (size_t)(i + 1) * proto::KEY_BYTES <= keys.size(); i++)
+        if (g_kb_keys.size() != keys.size() || std::memcmp(&keys[i * proto::KEY_BYTES], &g_kb_keys[i * proto::KEY_BYTES], proto::KEY_BYTES))
+            changed.push_back(i);
+    g_board->key = keys;
+    if (!changed.empty()) { send_keys(changed); schedule_save(); }
+    if (pc != g_pc_effect) select_pc_effect(pc);
+    g_applying = false;
+    save_now(); // now: the window copy may end straight after (closing with Apply)
+    g_kb = g_st;
+    g_kb_tune = g_tune;
+    g_kb_keys = keys;
+    g_kb_vu_style = g_vu_style;
+    g_kb_pc = g_pc_effect;
+}
+
+void draft_discard() {
+    if (!g_window_mode || !g_board) return;
+    g_st = g_kb;
+    g_tune = g_kb_tune;
+    g_board->key = g_kb_keys;
+    g_vu_style = g_kb_vu_style;
+    g_pc_effect = g_kb_pc;
+}
+
 void apply_profile(const std::wstring &name) {
+
     Profile p;
     if (g_board && settings::load_profile(name, &p)) apply_profile_data(p);
 }
@@ -1005,6 +1089,8 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_st    = g_board->status;
             g_tune  = Tune();
             g_tune.flags = 0;
+            g_kb = g_st; g_kb_tune = g_tune; g_kb_keys = g_board->key; g_tunes.clear();
+            g_kb_vu_style = g_vu_style; g_kb_pc = g_pc_effect;
             locklights::forget(); // the keyboard starts with its own saved lighting
             apps::forget();
             if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
@@ -1098,7 +1184,16 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             Status *s = reinterpret_cast<Status *>(lp);
             normalise_status(s);
             if (g_board) {
-                if (locklights::showing() || (g_window_mode && edit_view_showing())) { // reports of a lock light or the key colours shown for editing: keep the keyboard's own
+                if (g_window_mode) { // the keyboard's state; the draft follows it unless it has changes not applied
+                    bool pending = draft_pending();
+                    Status draft = g_st;
+                    g_kb = *s;
+                    g_st = *s;
+                    if (pending) {
+                        g_st.mode = draft.mode; g_st.enabled = draft.enabled; g_st.val = draft.val;
+                        g_st.speed = draft.speed; g_st.hue = draft.hue; g_st.sat = draft.sat;
+                    }
+                } else if (locklights::showing()) { // ZXKB firmware reports the lock light's lighting: keep the keyboard's own
                     Status own = g_st;
                     g_st = *s;
                     g_st.mode = own.mode; g_st.enabled = own.enabled; g_st.val = own.val; g_st.hue = own.hue; g_st.sat = own.sat;
@@ -1114,7 +1209,12 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_ZX_TUNE: {
             Tune *t = reinterpret_cast<Tune *>(lp);
-            if (g_board) g_tune = *t;
+            if (g_board && g_window_mode) {
+                bool pending = draft_pending();
+                g_tunes[t->mode] = *t;
+                g_kb_tune = *t;
+                if (!pending || (g_tune.mode == t->mode && !g_tune.flags)) g_tune = *t;
+            } else if (g_board) g_tune = *t;
             delete t;
             window_refresh();
             return 0;
@@ -1155,7 +1255,14 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
     }
     if (msg == g_settings_msg && msg) { // the other copy changed favourites, hotkeys, the VU style or looked up a keyboard
+        bool pending = draft_pending();
+        int vu = g_vu_style, pc = g_pc_effect;
         load_settings();
+        if (g_window_mode) { // the VU style and PC effect saved are the keyboard's; the draft keeps its own
+            g_kb_vu_style = g_vu_style;
+            g_kb_pc = g_pc_effect;
+            if (pending) { g_vu_style = vu; g_pc_effect = pc; }
+        }
         if (g_board) boards::apply_definition(g_board);
         update_capture(); // the music pulse may have been chosen or ended in the window
         update_tray();

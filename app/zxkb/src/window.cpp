@@ -29,13 +29,12 @@
 #define ZXKB_W2(s) L##s
 #define ZXKB_W(s)  ZXKB_W2(s)
 
-void via_set(uint8_t value_id, uint8_t a, uint8_t b); // main.cpp
-
 namespace {
 
 enum : int {
     IDC_NOW = 100, IDC_LIST, IDC_ON, IDC_FAV, IDC_VERSION, IDC_PICK, IDC_PREVIEW, IDC_FIRMWARE, IDC_LOOKUP, IDC_KEYCAPS,
     IDC_KEYS_INFO, IDC_KEYS_ALL, IDC_KEYS_NONE, IDC_KEYS_EFFECT, IDC_KEYS_OFF, IDC_KEYS_COLOUR,
+    IDC_APPLY, IDC_DISCARD,
     IDC_CAPS_BTN, IDC_MACROS_BTN, IDC_KBSET_BTN, IDC_LAYER_LABEL, IDC_LAYER, IDC_REMAP_BTN, IDC_KEY_FX_LABEL, IDC_KEY_FX, IDC_KEY_SPEED_LABEL, IDC_KEY_SPEED, IDC_KEY_COLOURS_LABEL, IDC_KEY_C1, IDC_KEY_C2,
     IDC_SLIDER = 200, // + slider index
     IDC_VALUE  = 220, // + slider index
@@ -133,6 +132,9 @@ void layout() {
     y += 8;
     for (int c = 0; c < SWATCHES; c++) MoveWindow(item(IDC_SWATCH + c), px(x + c * (SWATCH + 6)), px(y), px(SWATCH), px(SWATCH), FALSE);
     MoveWindow(item(IDC_PICK), px(x + SWATCHES * (SWATCH + 6) + 4), px(y), px(cw - SWATCHES * (SWATCH + 6) - 4), px(SWATCH), FALSE);
+    // Apply and Discard at the foot of the controls column (the window's changes reach the keyboard on Apply)
+    MoveWindow(item(IDC_APPLY), px(W - MARGIN - 90), px(top + LIST_H - 26), px(90), px(26), FALSE);
+    MoveWindow(item(IDC_DISCARD), px(W - MARGIN - 186), px(top + LIST_H - 26), px(90), px(26), FALSE);
     MoveWindow(item(IDC_VERSION), px(MARGIN), px(top + LIST_H + 14), px(inner - 474), px(18), FALSE);
     MoveWindow(item(IDC_FIRMWARE), px(W - MARGIN - 120), px(top + LIST_H + 10), px(120), px(26), FALSE);
     MoveWindow(item(IDC_CAPS_BTN), px(W - MARGIN - 250), px(top + LIST_H + 10), px(124), px(26), FALSE);
@@ -238,10 +240,14 @@ void refresh() {
     if (!g_win) return;
     g_updating = true;
     bool on = g_board != nullptr;
-    std::wstring now = L"Now: " + current_effect_text();
-    if (on && g_board->kind == Board::VIA && g_st.enabled && !g_pc_effect && !g_board->keys.empty())
-        now += sim::known(effect_name(g_st.mode)) ? L" (preview simulated)" : L" (no preview for this effect)";
+    bool pending = draft_pending();
+    std::wstring now = (pending ? L"Not applied yet: " : L"Now: ") + current_effect_text();
+    bool simulated = on && ((g_board->kind == Board::VIA && !g_board->keys.empty()) || pending);
+    if (simulated && g_st.enabled && !g_pc_effect)
+        now += sim::known(effect_name(g_st.mode)) ? L" (preview simulated)" : L" (no preview for this effect yet)";
     SetWindowTextW(item(IDC_NOW), now.c_str());
+    EnableWindow(item(IDC_APPLY), pending);
+    EnableWindow(item(IDC_DISCARD), pending);
 
     // select the current effect in the list
     HWND list = item(IDC_LIST);
@@ -409,19 +415,19 @@ void pick_colour() {
     set_colour(h, s);
 }
 
-// The key colours shown while keys are selected (window.h)
-bool g_edit_view      = false; // the keyboard shows the key colours for editing
-bool g_edit_suspended = false; // an effect was chosen with keys selected: show it until the selection changes
+// What the preview shows: the keyboard's own LEDs, or the window's draft worked out (changes not applied). While keys
+// are selected for colouring, the keys' own colours (the regular layer) instead of the effect over them (D0k,
+// 2026-11-06); an effect chosen meanwhile shows until the selection changes.
+bool g_edit_suspended = false;
 int  g_edit_selected  = 0;
 void update_edit_view() {
     int n = g_board ? preview_selected_count() : 0;
-    if (n == 0 || (g_edit_selected == 0 && n > 0)) g_edit_suspended = false; // a new selection: show the colours again
+    if (n == 0 || g_edit_selected == 0) g_edit_suspended = false; // a new selection: show the colours again
     g_edit_selected = n;
-    bool want = g_board && g_win && has_key_layer() && per_key_possible() && g_st.enabled && n > 0 && !g_edit_suspended;
-    if (want == g_edit_view) return;
-    g_edit_view = want;
-    if (g_board) via_set(proto::VIA_EFFECT, want ? effect_off_mode() : g_st.enabled ? g_st.mode : effect_off_mode(), 0);
+    bool keys = g_board && has_key_layer() && per_key_possible() && n > 0 && !g_edit_suspended;
+    preview_draft(draft_pending() || keys, keys);
 }
+void effect_chosen() { if (preview_selected_count() > 0) g_edit_suspended = true; } // show the effect
 
 // Per-key colours for the keys selected in the preview
 void refresh_keys() {
@@ -433,7 +439,7 @@ void refresh_keys() {
                    : n == 0 ? L"Click keys to colour them (Ctrl: more; empty spot: none)"
                    : std::to_wstring(n) + (n == 1 ? L" key: colours and Key speed below apply to it"
                                                     : L" keys: colours and Key speed below apply to them");
-    if (g_board && can && has_key_layer() && g_st.enabled) t += L" (shown when the effect is off)"; // under the effect
+    if (g_board && can && has_key_layer() && g_st.enabled) t += L" (on the keyboard when the effect is off)"; // under the effect
     SetWindowTextW(item(IDC_KEYS_INFO), t.c_str());
     EnableWindow(item(IDC_KEYS_ALL), can);
     EnableWindow(item(IDC_KEYS_NONE), can);
@@ -564,6 +570,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 auto *lv = reinterpret_cast<NMLISTVIEW *>(lp);
                 if ((lv->uNewState & LVIS_SELECTED) && !(lv->uOldState & LVIS_SELECTED)) {
                     int data = (int)lv->lParam;
+                    effect_chosen();
                     if (data >= PC_ITEM) {
                         if (!g_st.enabled) set_effect(g_st.mode ? g_st.mode : 1); // lighting on first
                         select_pc_effect(data - PC_ITEM);
@@ -589,6 +596,8 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 return 0;
             }
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
+            if (id == IDC_APPLY) { draft_apply(); refresh(); return 0; }
+            if (id == IDC_DISCARD) { draft_discard(); refresh(); return 0; }
             if (id == IDC_CAPS_BTN) { locklights::dialog(g_win); return 0; }
             if (id == IDC_MACROS_BTN) { macros_dialog(g_win); return 0; }
             if (id == IDC_KBSET_BTN) { kbsettings_dialog(g_win); return 0; }
@@ -628,6 +637,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             if (id == IDC_KEY_C1 || id == IDC_KEY_C2) { g_key_target = id == IDC_KEY_C2 ? 2 : 1; refresh(); return 0; }
             if (g_updating) return 0;
             if (id == IDC_ON) {
+                effect_chosen();
                 set_effect(Button_GetCheck(item(IDC_ON)) == BST_CHECKED ? (g_st.mode ? g_st.mode : 1) : 0);
                 refresh();
             } else if (id == IDC_FAV) {
@@ -666,7 +676,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         }
         case WM_TIMER:
-            if (wp == TIMER_MIRROR) mirror_request(true);
+            if (wp == TIMER_MIRROR && !preview_drafting()) mirror_request(true); // not while the preview shows the draft
             return 0;
         case WM_INPUTLANGCHANGE: // the keyboard language changed: the labels follow it
             preview_relabel();
@@ -774,6 +784,8 @@ void window_show() {
     make(L"BUTTON", L"More colours...", WS_TABSTOP, IDC_PICK);
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP, IDC_VERSION);
     make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);
+    make(L"BUTTON", L"Apply", WS_TABSTOP, IDC_APPLY);
+    make(L"BUTTON", L"Discard", WS_TABSTOP, IDC_DISCARD);
     make(L"BUTTON", L"Lock lights...", WS_TABSTOP, IDC_CAPS_BTN);
     make(L"BUTTON", L"Macros...", WS_TABSTOP, IDC_MACROS_BTN);
     make(L"BUTTON", L"Keyboard settings...", WS_TABSTOP, IDC_KBSET_BTN);
@@ -818,20 +830,33 @@ void window_refresh() {
     refresh();
 }
 
-bool edit_view_showing() { return g_edit_view; }
-
-void edit_view_effect_chosen() {
-    if (!g_edit_view) return;
-    g_edit_view      = false; // set_effect sends the effect itself
-    g_edit_suspended = true;
+// Closing with changes not applied: Apply, Discard or Cancel (D0k, 2026-11-06). false: stay open
+bool ask_unapplied() {
+    if (!draft_pending()) return true;
+    const TASKDIALOG_BUTTON buttons[2] = {{1001, L"Apply"}, {1002, L"Discard"}};
+    TASKDIALOGCONFIG tc = {sizeof(tc)};
+    tc.hwndParent         = g_win;
+    tc.hInstance          = g_inst;
+    tc.dwFlags            = TDF_ALLOW_DIALOG_CANCELLATION;
+    tc.dwCommonButtons    = TDCBF_CANCEL_BUTTON;
+    tc.pszWindowTitle     = L"ZXKB";
+    tc.pszMainInstruction = L"Send the changes to the keyboard?";
+    tc.pszContent         = L"The changes made in this window show in the preview only. Apply sends them to the keyboard; "
+                            L"Discard leaves the keyboard as it is.";
+    tc.pButtons           = buttons;
+    tc.cButtons           = 2;
+    tc.nDefaultButton     = 1001;
+    int pressed = IDCANCEL;
+    if (FAILED(TaskDialogIndirect(&tc, &pressed, nullptr, nullptr))) return true;
+    if (pressed == 1001) draft_apply();
+    else if (pressed == 1002) draft_discard();
+    else return false;
+    return true;
 }
 
 void window_close() {
     if (!g_win || flash_busy()) return; // never close while firmware is being written
-    if (g_edit_view && g_board) { // the effect back over the key colours
-        g_edit_view = false;
-        via_set(proto::VIA_EFFECT, g_st.enabled ? g_st.mode : effect_off_mode(), 0);
-    }
+    if (!ask_unapplied()) return;
     mirror_request(false); // the keyboard stops sending colours
     DestroyWindow(g_win); // destroys every control with it
     g_win = nullptr;

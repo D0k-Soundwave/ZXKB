@@ -8,8 +8,11 @@
 #include <cstdlib>
 #include <cstring>
 
+namespace proto { int key_step_ms(int speed); } // main.cpp (the firmware's table)
+
 namespace sim {
 namespace {
+int proto_step_ms(int speed) { int ms = proto::key_step_ms(speed); return ms > 0 ? ms : 1; }
 
 // ---------- lib8tion (QMK lib/lib8tion, FASTLED_SCALE8_FIXED) ----------
 uint8_t scale8(uint8_t i, uint8_t scale) { return (uint8_t)(((uint16_t)i * (1 + scale)) >> 8); }
@@ -140,6 +143,53 @@ void set_keys(const std::vector<KeyRect> &keys, const std::vector<uint16_t> &key
     g_heat.assign(g_leds.size(), 0);
     g_drops.assign(g_leds.size() * 3, 0);
     g_drops_tick = 0xFFFFFFFF;
+}
+
+void set_leds(const std::vector<uint8_t> &xyflags, const std::vector<uint16_t> &scan) {
+    g_leds.clear();
+    g_hits.clear();
+    for (size_t i = 0; i + 2 < xyflags.size(); i += 3) {
+        Led l;
+        l.x    = xyflags[i];
+        l.y    = xyflags[i + 1];
+        l.mod  = (xyflags[i + 2] & 0x01) != 0; // [P] QMK LED_FLAG_MODIFIER 0x01
+        l.scan = i / 3 < scan.size() ? scan[i / 3] : 0;
+        g_leds.push_back(l);
+    }
+    g_heat.assign(g_leds.size(), 0);
+    g_drops.assign(g_leds.size() * 3, 0);
+    g_drops_tick = 0xFFFFFFFF;
+}
+
+void hsv(uint8_t h, uint8_t s, uint8_t v, uint8_t *rgb) { hsv_to_rgb({h, s, v}, rgb); }
+
+// As zxkb.c rgb_matrix_indicators_advanced_zxkb (v33), with its step table worked out as proto::key_step_ms
+void keys_frame(const uint8_t *key, int leds, uint8_t v, uint32_t now, uint8_t *rgb) {
+    for (int i = 0; i < leds; i++) {
+        const uint8_t *k = key + i * 8, *a = k + 2, *b = k + 5;
+        uint8_t *out = rgb + i * 3;
+        uint8_t fx = k[0];
+        if (fx == 0) { out[0] = out[1] = out[2] = 0; continue; } // follows the effect: the effect is off, so dark
+        uint32_t step = (uint32_t)proto_step_ms(k[1]);
+        uint8_t mix = 255, c[3];
+        switch (fx) {
+            case 2: mix = (now / step) & 1 ? 0 : 255; break;                          // flash
+            case 3: mix = sin8((uint8_t)(now * 256 / (step * 5))); break;              // breathe
+            case 5: {                                                                  // twinkle
+                uint8_t w = sin8((uint8_t)(now * 256 / (step * 6) + i * 97));
+                mix = w > 200 ? (uint8_t)((w - 200) * 255 / 55) : 0;
+                break;
+            }
+            case 4: {                                                                  // colour cycle
+                uint8_t peak = std::max(a[0], std::max(a[1], a[2]));
+                hsv_to_rgb({(uint8_t)(now * 256 / (step * 10) + i * 3), 255, peak}, c);
+                for (int j = 0; j < 3; j++) out[j] = (uint8_t)(c[j] * v / 255);
+                continue;
+            }
+            default: break;
+        }
+        for (int j = 0; j < 3; j++) out[j] = (uint8_t)((a[j] * mix + b[j] * (255 - mix)) / 255 * v / 255);
+    }
 }
 
 bool known(const std::string &effect) {
