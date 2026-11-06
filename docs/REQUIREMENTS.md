@@ -48,7 +48,7 @@ Rule: do not build until D0k confirms the list is complete.
       every byte back; the tray core stays at ~2 MB (decided 2026-11-03: in-process, ~8 MB stayed after closing)
 - [ ] Layers: stack effects (e.g. rainbow base, typing reactions on top, fixed colours on chosen keys above)
       (2026-11-02; needs firmware work)
-- [ ] Per-app profiles: switch profile when a given program or game is in front, and back after (2026-11-02)
+- [~] Per-app profiles: switch profile when a given program or game is in front, and back after (2026-11-02; 0.50: tray menu, Profiles, Profiles by program; any keyboard; not saved to the keyboard while in use; not yet tried by D0k)
 - [ ] Effects on zones: an effect on part of the board only, another elsewhere (2026-11-02; needs firmware work)
 - [ ] More effect controls where an effect allows: direction, two or more colours, full colour picker (2026-11-02)
 - [ ] Effect intensity settings, e.g. how large and how bright typing effects are (requested 2026-11-02);

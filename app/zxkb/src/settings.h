@@ -20,6 +20,8 @@ std::wstring get(const wchar_t *section, const wchar_t *key, const wchar_t *def 
 int          get_int(const wchar_t *section, const wchar_t *key, int def);
 void         set(const wchar_t *section, const wchar_t *key, const std::wstring &value);
 void         set_int(const wchar_t *section, const wchar_t *key, int value);
+void         remove(const wchar_t *section, const wchar_t *key);
+std::vector<std::wstring> keys(const wchar_t *section); // the keys in a section of zxkb.ini, in file order
 void         import_zx_vu();                            // first run: take VU on/off and style from ZX_VU.json
 
 std::vector<std::wstring> profile_names();              // sorted

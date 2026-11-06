@@ -68,6 +68,21 @@ void set(const wchar_t *section, const wchar_t *key, const std::wstring &value) 
     WritePrivateProfileStringW(section, key, value.c_str(), ini().c_str());
 }
 
+void remove(const wchar_t *section, const wchar_t *key) { WritePrivateProfileStringW(section, key, nullptr, ini().c_str()); }
+
+std::vector<std::wstring> keys(const wchar_t *section) {
+    std::vector<wchar_t> buf(32768); // [P] the most GetPrivateProfileSectionW returns (Win32 docs)
+    DWORD n = GetPrivateProfileSectionW(section, buf.data(), (DWORD)buf.size(), ini().c_str());
+    std::vector<std::wstring> out;
+    for (DWORD i = 0; i < n && buf[i];) {
+        std::wstring line = buf.data() + i;
+        i += (DWORD)line.size() + 1;
+        size_t eq = line.find(L'=');
+        if (eq != std::wstring::npos && eq > 0) out.push_back(line.substr(0, eq));
+    }
+    return out;
+}
+
 void set_int(const wchar_t *section, const wchar_t *key, int value) {
     set(section, key, std::to_wstring(value));
 }

@@ -34,6 +34,7 @@
 #include "inputhook.h"
 #include "appmacros.h"
 #include "locklights.h"
+#include "apps.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -51,6 +52,7 @@ enum : UINT {
     ID_SLOT_PRO = 3200, // + slot * 100 + profile index
     ID_SLOT_GAME = 4300, // + slot: game mode on / off
     ID_GAME     = 4400,  // game mode on / off (menu)
+    ID_APPS     = 4401,  // Profiles by program window
 };
 constexpr UINT WM_TRAY      = WM_APP + 50;
 constexpr UINT TIMER_SAVE   = 1;
@@ -413,7 +415,7 @@ void schedule_save() { g_save_pending = true; SetTimer(g_hwnd, TIMER_SAVE, SAVE_
 extern bool g_idle_off;
 void save_now() {
     KillTimer(g_hwnd, TIMER_SAVE);
-    if (g_idle_off || locklights::showing()) return; // never keep the lights of idling or a lock light (saved after)
+    if (g_idle_off || locklights::showing() || apps::active()) return; // never keep the lights of idling, a lock light or a program's profile (saved after)
     if (g_board && g_save_pending) {
         if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
         if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
@@ -453,6 +455,7 @@ void load_settings() {
     for (int i = 0; i < 10; i++) g_slots[i] = settings::get(L"slots", std::to_wstring(i + 1).c_str());
     locklights::reload();
     apply_input();
+    if (!g_window_mode) apps::start(); // profiles by program
 }
 
 void set_brightness(int val);
@@ -627,9 +630,8 @@ Profile current_profile() {
     return p;
 }
 
-void apply_profile(const std::wstring &name) {
-    Profile p;
-    if (!g_board || !settings::load_profile(name, &p)) return;
+void apply_profile_data(const Profile &p) {
+    if (!g_board) return;
     set_vu_style(p.vu_style);
     if (p.vu && vu_mode()) set_effect(vu_mode()); // profiles saved before the VU meter was a normal effect
     else if (p.effect == "OFF") set_effect(0);
@@ -641,6 +643,11 @@ void apply_profile(const std::wstring &name) {
     set_colour((uint8_t)p.hue, (uint8_t)p.sat);
     set_speed(p.speed);
     set_brightness(p.val);
+}
+
+void apply_profile(const std::wstring &name) {
+    Profile p;
+    if (g_board && settings::load_profile(name, &p)) apply_profile_data(p);
 }
 
 void select_vu(int style) {
@@ -847,6 +854,7 @@ void show_menu() {
     if (profiles.empty()) add(pro, 0, L"(none yet)", false, false);
     sep(pro);
     add(pro, ID_PROFILE_SAVE, L"Save current setup as...", false, on);
+    add(pro, ID_APPS, L"Profiles by program...", false, !profiles.empty());
     add_sub(pro, del, L"Delete", !profiles.empty());
     add_sub(menu, pro, L"Profiles");
 
@@ -904,7 +912,8 @@ void show_menu() {
         std::wstring name;
         if (DialogBoxParamW(g_inst, MAKEINTRESOURCEW(IDD_NAME), g_hwnd, name_dialog, (LPARAM)&name) == IDOK)
             settings::save_profile(name, current_profile());
-    } else if (cmd == ID_AUTOSTART) settings::set_autostart(!settings::autostart());
+    } else if (cmd == ID_APPS) apps::dialog(g_hwnd);
+    else if (cmd == ID_AUTOSTART) settings::set_autostart(!settings::autostart());
     else if (cmd == ID_FN_SETUP) {
         std::wstring ask = L"This keyboard's firmware does not report Fn + number to ZXKB. ZXKB can set Fn + 1 to Fn + 0 "
                            L"to send F13 to F22 (keys almost no keyboard has) in the keyboard's own keymap, and answer "
@@ -971,6 +980,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_tune  = Tune();
             g_tune.flags = 0;
             locklights::forget(); // the keyboard starts with its own saved lighting
+            apps::forget();
             if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
             // the window opens on the layer the keyboard types from (v26 on), not always layer 0 (D0k 2026-11-05)
             if (g_window_mode && g_board->kind == Board::ZXKB && g_board->protocol >= 11) g_board->shown_layer = g_st.base_layer;
@@ -1012,6 +1022,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             update_tray();
             window_refresh();
             apply_input(); // lock lights: polled while this keyboard is connected
+            if (!g_window_mode) apps::check_now(); // a program with a profile may be in front
             return 0;
         case WM_ZX_KEYBACK:
             idle_back();
@@ -1023,6 +1034,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             fnkeys::stop_listening(hwnd);
             g_idle_off = false;
             locklights::forget();
+            apps::forget();
             g_vu.stop();
             delete g_board;
             g_board = nullptr;
@@ -1105,6 +1117,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             window_close();
             if (g_board) {
                 locklights::put_back();
+                if (!g_window_mode) apps::stop(); // the lighting from before a program's profile back
                 save_now();
             }
             if (g_vu.pulsing() && g_board) via_set(proto::VIA_BRIGHTNESS, g_pulse_peak, 0); // quitting mid-pulse: its brightness back
