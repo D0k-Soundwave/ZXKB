@@ -19,6 +19,7 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| v31 | 2026-11-06 | 64,568 bytes | The keyboard takes a new built-in key layout when the keymap's ZXKB_LAYOUT_VERSION changes (v31: 1), as VIA keeps the old one through builds made on the same day; ZXKB puts back the user's own key changes after. Macros and lighting kept. |
 | v30 | 2026-11-05 | 64,536 bytes | Macros played by ZXKB's own player (protocol 14): waits that vary, picked at random each run between two values (1, 5, min-max\|). Not yet tried on the keyboard. |
 | v29 | 2026-11-05 | 64,176 bytes | Macro recording on the keyboard (protocol 13): the record key (ZK_MREC, Fn+M as delivered, reassignable) starts and stops it; keys are typed as usual and saved into the macro chosen in the app (settings byte 14); the key flashes red while recording; stops by itself when the macro room is full; tells the app (0xD7). Plain keys and modifiers only, no waits. 2 KB more RAM. |
 | v28 | 2026-11-05 | 63,416 bytes | Fn+Win switches game mode on / off (was the Windows-key lock; D0k), reassignable in Change keys. Game mode with nothing chosen blocks all three (Alt+Tab, Alt+F4, Windows keys). |

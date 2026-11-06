@@ -81,7 +81,8 @@ typedef struct PACKED {
     uint8_t layer_light[4]; /* on, r, g, b: keys that do something on a held layer light */
     uint8_t macro_mode[4];  /* 2 bits a macro: 0 play once, 1 repeat while held, 2 on / off */
     uint8_t rec_macro;      /* v29: the macro ZK_MREC records into */
-    uint8_t spare[19];      /* for later settings (no reset needed) */
+    uint8_t layout;         /* v31: the keymap's ZXKB_LAYOUT_VERSION the keyboard last took */
+    uint8_t spare[18];      /* for later settings (no reset needed) */
 } zxkb_config_t;
 _Static_assert(sizeof(zxkb_config_t) == EECONFIG_MODULE_ZXKB_DATA_SIZE, "update EECONFIG_MODULE_ZXKB_DATA_SIZE in config.h");
 static zxkb_config_t cfg;
@@ -399,6 +400,16 @@ static void overlay_set(uint8_t o) {
 void keyboard_post_init_zxkb(void) {
     keyboard_post_init_zxkb_kb();
     eeconfig_read_zxkb_datablock(&cfg, 0, sizeof(cfg));
+#if defined(ZXKB_LAYOUT_VERSION) && defined(DYNAMIC_KEYMAP_ENABLE)
+    /* VIA keeps the old keymap through any firmware built on the same day (quantum/via.c checks the build day):
+     * a new built-in layout is taken when the keymap's layout number changes. ZXKB then puts back the user's own
+     * key changes, as after any reset. Macros and lighting are not touched. */
+    if (cfg.layout != (uint8_t)ZXKB_LAYOUT_VERSION) {
+        dynamic_keymap_reset();
+        cfg.layout = (uint8_t)ZXKB_LAYOUT_VERSION;
+        eeconfig_update_zxkb_datablock(&cfg, 0, sizeof(cfg));
+    }
+#endif
     for (uint8_t i = 0; i < ZXKB_TUNABLES; i++) {
         if (cfg.size[i] < ZXKB_SIZE_MIN) cfg.size[i] = ZXKB_TUNE_DEFAULT_SIZE;
     }

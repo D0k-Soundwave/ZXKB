@@ -70,6 +70,8 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
 - Versions: see `docs/VERSIONS.md`. Every build handed to D0k gets a number (`ZXKB_FIRMWARE_VERSION` in the
   keymap config.h, `ZXKB_VERSION_STR` in app/zxkb/res/resource.h) and is kept for fallback via
   `sh firmware/build.sh release` and `pwsh tools/install_app.ps1`. Never reuse a released number.
+- After changing the built-in keymap (keymap.c), raise `ZXKB_LAYOUT_VERSION` in the keymap config.h (v31 on): VIA only
+  resets the keymap for a build on a new day, so otherwise keyboards keep the old layout.
 - The Q3 can hold at most 63 effects (QMK 6-bit mode field); it has 59.
 
 ## App: current state
