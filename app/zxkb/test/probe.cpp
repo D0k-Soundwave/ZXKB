@@ -138,6 +138,22 @@ int main(int argc, char **argv) {
         std::printf("LED %d changed %d times; average %ld ms between changes\n", led, changes, changes > 1 ? sum / (changes - 1) : 0);
         q[1] = 0;
         link.send(q, 2);
+    } else if (!std::strcmp(cmd, "raw") && argc > 2) { // probe raw HEX...: send a report, print the replies for 0.5 s
+        link.raw_reports(true);
+        uint8_t q[32] = {0};
+        int n = 0;
+        for (int i = 2; i < argc && n < 32; i++) q[n++] = (uint8_t)std::strtoul(argv[i], nullptr, 16);
+        link.send(q, n);
+        DWORD start = GetTickCount();
+        MSG m;
+        while (GetTickCount() - start < 500) {
+            if (PeekMessageW(&m, nullptr, WM_ZX_RAW, WM_ZX_RAW, PM_REMOVE)) {
+                uint8_t *r = reinterpret_cast<uint8_t *>(m.lParam);
+                for (int i = 0; i < 32; i++) std::printf("%02X ", r[i]);
+                std::printf("\n");
+                delete[] r;
+            } else MsgWaitForMultipleObjects(0, nullptr, FALSE, 10, QS_POSTMESSAGE);
+        }
     } else if (!std::strcmp(cmd, "macros")) { // probe macros: VIA macro count and buffer size (settings memory for macros)
         link.raw_reports(true);
         for (uint8_t id : {(uint8_t)0x0C, (uint8_t)0x0D}) { // VIA id_dynamic_keymap_macro_get_count / _get_buffer_size
