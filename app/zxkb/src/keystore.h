@@ -24,5 +24,8 @@ void keep_keyboard_macros();
 bool is_kept(const wchar_t *section, int layer, int a, int b); // a key ("keys": row, col) or knob ("knob": encoder, cw) ZXKB keeps
 // While the Firmware window installs and then checks the layout itself, the tray does not put changes back on its own
 void hold_reapply(bool on);
+std::wstring value(const wchar_t *section, const wchar_t *key);           // any value in this keyboard's file
+void         set_value(const wchar_t *section, const wchar_t *key, const wchar_t *v); // null v removes it
+std::wstring kept_macro(int macro);                                       // the text ZXKB keeps for a macro
 bool reapply_held();
 } // namespace keystore

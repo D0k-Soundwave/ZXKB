@@ -14,7 +14,11 @@ struct Config {
     uint8_t block = 7;     // bit 0 Alt+Tab, 1 Alt+F4, 2 Windows keys (none = all three, as the firmware)
     uint8_t socd  = 0;     // bit 0 A/D and W/S, bit 1 arrows
     bool    watch = false; // note key presses (lights off when idle)
+    uint16_t macro_keys = 0; // bit f: F13 + f plays a macro (blocked, reported to `report` as WM_ZX_MACROKEY)
+    HWND     report = nullptr;
 };
+constexpr UINT      WM_ZX_MACROKEY = WM_APP + 52; // wParam f (F13 + f), lParam 1 pressed / 0 let go
+constexpr ULONG_PTR MINE = 0x5A584B42;            // dwExtraInfo of ZXKB's own keys ("ZXKB"): the hook passes them
 void  configure(const Config &c);     // starts or stops the hook as needed
 DWORD last_key();                     // GetTickCount() of the last key press seen (0 if none yet)
 void  notify_next_key(HWND w, UINT msg); // post msg to w at the next key press (once), e.g. to put the lights back

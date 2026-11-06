@@ -8,6 +8,7 @@
 #include "app.h"
 #include "keystore.h"
 #include "kbsettings.h"
+#include "appmacros.h"
 #include "preview.h"
 #include "labels.h"
 #include "settings.h"
@@ -70,7 +71,24 @@ void put(std::string &out, uint8_t code, uint8_t usage) { out += '\x01'; out += 
 
 bool ranges_possible() { return zxkb_board() && g_board->protocol >= 14; }
 
-std::string to_bytes(const std::wstring &text, std::wstring *error) {
+// {wait 200-300} -> {wait 200}: for the keyboard's own copy of a macro ZXKB plays
+std::wstring fixed_waits(const std::wstring &t) {
+    std::wstring out;
+    for (size_t i = 0; i < t.size(); i++) {
+        if (t[i] == L'{' && !_wcsnicmp(t.c_str() + i, L"{wait ", 6)) {
+            size_t e = t.find(L'}', i), d = t.find(L'-', i);
+            if (e != std::wstring::npos && d != std::wstring::npos && d < e) {
+                out += t.substr(i, d - i) + L"}";
+                i = e;
+                continue;
+            }
+        }
+        out += t[i];
+    }
+    return out;
+}
+
+std::string to_bytes(const std::wstring &text, std::wstring *error, bool ranges) {
     std::string out;
     for (size_t i = 0; i < text.size(); i++) {
         wchar_t c = text[i];
@@ -90,9 +108,9 @@ std::string to_bytes(const std::wstring &text, std::wstring *error) {
                     out += "\x01\x04" + std::to_string(lo) + "|";
                 } else {
                     if (lo < 0 || hi > 60000) { *error = L"{wait A-B} needs A and B from 0 to 60000 ms."; return ""; }
-                    if (!ranges_possible()) {
+                    if (!ranges && !ranges_possible()) {
                         *error = L"Waits that vary, such as {wait " + std::to_wstring(lo) + L"-" + std::to_wstring(hi) +
-                                 L"}, need ZXKB firmware v30 on the keyboard; use a fixed wait.";
+                                 L"}, can only be played by ZXKB on this keyboard: choose \"Played by ZXKB\" for this macro, or use a fixed wait.";
                         return "";
                     }
                     // ZXKB's own code (firmware v30 on): a wait picked at random between the two each time it plays
@@ -228,7 +246,9 @@ bool write_all(const std::vector<std::wstring> &texts, std::wstring *error) {
     std::string buf;
     for (size_t m = 0; m < texts.size(); m++) {
         std::wstring e;
-        std::string b = to_bytes(texts[m], &e);
+        // a macro ZXKB plays may vary its waits whatever the firmware: the keyboard keeps it with the shortest waits
+        bool by_zxkb = appmacros::mode((int)m) != appmacros::KEYBOARD;
+        std::string b = to_bytes(by_zxkb && !ranges_possible() ? fixed_waits(texts[m]) : texts[m], &e);
         if (!e.empty()) { *error = L"M" + std::to_wstring(m) + L": " + e; return false; }
         buf += b;
         buf += '\0';
@@ -284,6 +304,10 @@ void fill_list() {
 void show_sel() {
     g_filling = true;
     SetDlgItemTextW(g_mdlg, IDC_MC_EDIT, g_sel < (int)g_texts.size() ? g_texts[g_sel].c_str() : L"");
+    SendDlgItemMessageW(g_mdlg, IDC_MC_PLAYEDBY, CB_SETCURSEL, (int)appmacros::mode(g_sel) + 1, 0);
+    bool vary = macros::ranges_possible() || appmacros::mode(g_sel) != appmacros::KEYBOARD; // waits that vary can be played
+    EnableWindow(GetDlgItem(g_mdlg, IDC_MC_VARY), vary);
+    SetDlgItemTextW(g_mdlg, IDC_MC_VARY_NOTE, vary ? L"ms each time it plays (0 = exact)" : L"(for macros played by ZXKB)");
     g_filling = false;
 }
 
@@ -307,10 +331,12 @@ INT_PTR CALLBACK mproc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             fill_list();
             show_sel();
             CheckDlgButton(dlg, IDC_MC_WAITS, BST_CHECKED);
+            for (const wchar_t *t : {L"Played by the keyboard (once; works without ZXKB)", L"Played by ZXKB: once",
+                                     L"Played by ZXKB: repeats while the key is held", L"Played by ZXKB: on / off (press again to stop)"})
+                SendDlgItemMessageW(dlg, IDC_MC_PLAYEDBY, CB_ADDSTRING, 0, (LPARAM)t);
+            SendDlgItemMessageW(dlg, IDC_MC_PLAYEDBY, CB_SETCURSEL, (int)appmacros::mode(g_sel) + 1, 0);
             SetDlgItemInt(dlg, IDC_MC_VARY, 0, FALSE);
-            EnableWindow(GetDlgItem(dlg, IDC_MC_VARY), macros::ranges_possible());
-            SetDlgItemTextW(dlg, IDC_MC_VARY_NOTE, macros::ranges_possible() ? L"ms each time it plays (0 = exact)"
-                                                                             : L"(waits that vary need ZXKB firmware v30)");
+            show_sel(); // the "vary" box follows the macro selected
             { // recording on the keyboard itself, if its firmware can
                 int  rec = 0;
                 bool kb  = kb_record_macro(&rec);
@@ -338,7 +364,7 @@ INT_PTR CALLBACK mproc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             g_last_key = now;
             // [A] waits shorter than 30 ms are typing rhythm, not intended pauses; kept to 10 ms steps
             if (IsDlgButtonChecked(dlg, IDC_MC_WAITS) == BST_CHECKED && gap >= 30 && g_texts[g_sel].size()) {
-                int ms = (int)(gap / 10 * 10), vary = macros::ranges_possible() ? (int)GetDlgItemInt(dlg, IDC_MC_VARY, nullptr, FALSE) : 0;
+                int ms = (int)(gap / 10 * 10), vary = macros::ranges_possible() || appmacros::mode(g_sel) != appmacros::KEYBOARD ? (int)GetDlgItemInt(dlg, IDC_MC_VARY, nullptr, FALSE) : 0;
                 g_texts[g_sel] += vary > 0 ? L"{wait " + std::to_wstring(ms > vary ? ms - vary : 0) + L"-" + std::to_wstring(ms + vary) + L"}"
                                            : L"{wait " + std::to_wstring(ms) + L"}";
             }
@@ -349,6 +375,19 @@ INT_PTR CALLBACK mproc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
         }
         case WM_COMMAND:
             switch (LOWORD(wp)) {
+                case IDC_MC_PLAYEDBY:
+                    if (HIWORD(wp) == CBN_SELCHANGE && !g_filling) {
+                        int s = (int)SendDlgItemMessageW(dlg, IDC_MC_PLAYEDBY, CB_GETCURSEL, 0, 0);
+                        std::wstring e;
+                        SetCursor(LoadCursor(nullptr, IDC_WAIT));
+                        if (s >= 0 && !appmacros::set_mode(g_sel, (appmacros::Mode)(s - 1), &e))
+                            MessageBoxW(dlg, e.c_str(), L"ZXKB", MB_OK | MB_ICONWARNING);
+                        else if (s > 0)
+                            SetDlgItemTextW(dlg, IDC_MC_INFO, (L"ZXKB plays M" + std::to_wstring(g_sel) + L" while it runs. Its keys now send a spare code ZXKB catches; " +
+                                                              std::to_wstring(appmacros::free_codes()) + L" spare codes left. Save to keyboard first if you changed its text.").c_str());
+                        show_sel();
+                    }
+                    return TRUE;
                 case IDC_MC_LIST:
                     if (HIWORD(wp) == LBN_SELCHANGE) {
                         g_sel = (int)SendDlgItemMessageW(dlg, IDC_MC_LIST, LB_GETCURSEL, 0, 0);

@@ -148,6 +148,17 @@ int reapply(int *failed) {
     return changed;
 }
 
+std::wstring value(const wchar_t *section, const wchar_t *key) {
+    if (!g_board) return L"";
+    wchar_t buf[2048] = {0};
+    GetPrivateProfileStringW(section, key, L"", buf, 2048, file().c_str());
+    return buf;
+}
+void set_value(const wchar_t *section, const wchar_t *key, const wchar_t *v) {
+    if (g_board) WritePrivateProfileStringW(section, key, v, file().c_str());
+}
+std::wstring kept_macro(int macro) { return value(L"macros", (L"M" + std::to_wstring(macro)).c_str()); }
+
 bool is_kept(const wchar_t *section, int layer, int a, int b) {
     for (const Entry &e : load(section))
         if (e.layer == layer && e.row == a && e.col == b) return true;

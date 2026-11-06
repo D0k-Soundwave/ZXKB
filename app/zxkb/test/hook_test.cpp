@@ -82,6 +82,20 @@ int main() {
     key(VK_LWIN, true); key(VK_LWIN, false);
     expect("Game mode off: Windows key works", "+[ -[ ", "");
 
+    // macro codes: F13 + f blocked and reported once per press / let go (Windows repeats are not reported)
+    HWND win = CreateWindowExW(0, L"STATIC", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, nullptr, nullptr);
+    g_report     = win;
+    g_macro_keys = 1 << 2; // F15
+    key(VK_F15, true); key(VK_F15, true); key(VK_F15, false); key(VK_F14, true); key(VK_F14, false);
+    expect("Macro code F15 blocked; F14 (not a macro code) passes", "+\x7d -\x7d ", "");
+    MSG m;
+    int presses = 0, releases = 0;
+    while (PeekMessageW(&m, win, WM_ZX_MACROKEY, WM_ZX_MACROKEY, PM_REMOVE)) (m.lParam ? presses : releases)++;
+    bool ok = presses == 1 && releases == 1;
+    std::printf("%s Macro code reported: %d press, %d let go (wanted 1 and 1)\n", ok ? "ok  " : "FAIL", presses, releases);
+    g_fail += !ok;
+    g_macro_keys = 0;
+
     std::printf(g_fail ? "%d failed\n" : "all passed\n", g_fail);
     return g_fail;
 }

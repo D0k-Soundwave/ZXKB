@@ -9,12 +9,14 @@ namespace {
 std::atomic<bool>    g_game{false};
 std::atomic<uint8_t> g_block{7}, g_socd{0};
 std::atomic<DWORD>   g_last{0};
+std::atomic<uint16_t> g_macro_keys{0};
+std::atomic<HWND>    g_report{nullptr};
+bool                 g_macro_down[12]; // hook thread: macro codes held (Windows repeats them while held)
 std::atomic<HWND>    g_notify_wnd{nullptr};
 std::atomic<UINT>    g_notify_msg{0};
 HANDLE               g_thread = nullptr;
 // ZXKB's own injected keys carry this, so the hook passes them; test switch ZXKB_TEST_HOOK=1 treats other injected
 // keys (a test's) as typed
-constexpr ULONG_PTR MINE = 0x5A584B42; // "ZXKB"
 bool                g_test = GetEnvironmentVariableW(L"ZXKB_TEST_HOOK", nullptr, 0) > 0;
 DWORD                g_thread_id = 0;
 
@@ -74,6 +76,14 @@ LRESULT CALLBACK proc(int code, WPARAM wp, LPARAM lp) {
                 g_last = GetTickCount();
                 if (HWND w = g_notify_wnd.exchange(nullptr)) PostMessageW(w, g_notify_msg, 0, 0);
             }
+            if (k->vkCode >= VK_F13 && k->vkCode <= VK_F24 && (g_macro_keys >> (k->vkCode - VK_F13) & 1)) {
+                int f = (int)(k->vkCode - VK_F13);
+                if (down != g_macro_down[f]) { // not Windows' key repeat
+                    g_macro_down[f] = down;
+                    if (HWND w = g_report) PostMessageW(w, WM_ZX_MACROKEY, f, down);
+                }
+                return 1; // ZXKB plays it: nothing else sees the code
+            }
             if (g_game) {
                 uint8_t b = g_block & 7 ? g_block & 7 : 7;
                 bool alt = (k->flags & LLKHF_ALTDOWN) != 0;
@@ -101,10 +111,12 @@ void configure(const Config &c) {
     g_game  = c.game;
     g_block = c.block;
     g_socd  = c.socd;
+    g_macro_keys = c.macro_keys;
+    g_report = c.report;
     if (!c.socd) { // let go of anything SOCD was holding back
         for (int p = 0; p < 4; p++) { held[p][0] = held[p][1] = false; active[p] = -1; }
     }
-    bool need = c.game || c.socd || c.watch;
+    bool need = c.game || c.socd || c.watch || c.macro_keys;
     if (need && !g_thread) {
         g_thread = CreateThread(nullptr, 64 * 1024, thread, nullptr, STACK_SIZE_PARAM_IS_A_RESERVATION, &g_thread_id);
     } else if (!need && g_thread) {

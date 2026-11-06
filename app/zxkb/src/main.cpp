@@ -32,6 +32,7 @@
 #include "macros.h"
 #include "kbsettings.h"
 #include "inputhook.h"
+#include "appmacros.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -296,6 +297,9 @@ bool key_function(int key, uint16_t *code) {
 
 bool set_key_function(int key, uint16_t code) {
     if (!g_board || key < 0 || key >= (int)g_board->keys.size()) return false;
+    // a macro ZXKB plays goes on keys as its spare code (F13-F24), which ZXKB catches
+    if (code >= 0x7700 && code <= 0x777F)
+        if (uint16_t t = appmacros::trigger_code(code - 0x7700)) code = t;
     const KeyRect &k = g_board->keys[key];
     if (k.row < 0 || k.col < 0) return false;
     // [P] VIA id_dynamic_keymap_set_keycode 0x05 [layer, row, col, hi, lo], echoed back
@@ -463,6 +467,9 @@ void apply_input() {
     c.socd  = fw ? 0 : (uint8_t)settings::get_int(L"input", L"socd", 0);
     int idle = fw ? 0 : settings::get_int(L"input", L"idle", 0);
     c.watch = idle > 0;
+    appmacros::reload(); // macros ZXKB plays: any keyboard, also ZXKB firmware ones
+    c.macro_keys = g_board ? appmacros::hook_mask() : 0;
+    c.report     = g_hwnd;
     inputhook::configure(c);
     if (idle > 0 && g_board) SetTimer(g_hwnd, TIMER_IDLE, IDLE_CHECK_MS, nullptr);
     else KillTimer(g_hwnd, TIMER_IDLE);
@@ -992,6 +999,9 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         case WM_ZX_KEYBACK:
             idle_back();
+            return 0;
+        case inputhook::WM_ZX_MACROKEY: // a macro ZXKB plays: its key pressed or let go
+            if (!g_window_mode) appmacros::key((int)wp, lp != 0);
             return 0;
         case WM_ZX_DISCONNECTED:
             fnkeys::stop_listening(hwnd);

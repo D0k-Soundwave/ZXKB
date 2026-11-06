@@ -70,6 +70,7 @@
 #define IDC_MC_VARY_NOTE 293
 #define IDC_FW_BACKUPS   294
 #define IDC_FW_COPYNOW   295
+#define IDC_MC_PLAYEDBY  296
 #define IDD_LAYOUTCHECK  300
 #define IDC_LC_INFO      301
 #define IDC_LC_FILE      302
@@ -78,5 +79,5 @@
 #define IDC_LC_NONE      305
 #define IDC_LC_APPLY     306
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 46 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.46" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 48 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.48" // raise for every build installed for D0k (docs/VERSIONS.md)

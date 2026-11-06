@@ -85,7 +85,8 @@ FONT 9, "Segoe UI"
 BEGIN
     LTEXT           "", IDC_MC_INFO, 7, 7, 286, 18
     LISTBOX         IDC_MC_LIST, 7, 28, 286, 110, LBS_NOTIFY | WS_VSCROLL | WS_TABSTOP | WS_BORDER
-    LTEXT           "The macro selected:", -1, 7, 144, 120, 10
+    LTEXT           "The macro selected:", -1, 7, 144, 70, 10
+    COMBOBOX        IDC_MC_PLAYEDBY, 80, 142, 213, 80, CBS_DROPDOWNLIST | WS_TABSTOP
     EDITTEXT        IDC_MC_EDIT, 7, 156, 286, 36, ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Text is typed; {Enter} taps a key; {Ctrl+C} a key with Ctrl; {Shift down} / {Shift up} hold and let go; {wait 250} waits 250 ms; {wait 200-300} a different time each run; {{ types {. US key positions (QMK).", -1, 7, 196, 286, 26
     PUSHBUTTON      "Record", IDC_MC_RECORD, 7, 226, 60, 14

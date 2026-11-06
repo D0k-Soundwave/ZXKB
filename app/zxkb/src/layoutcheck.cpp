@@ -383,6 +383,14 @@ void check(HWND owner, const std::wstring &file, bool after_update) {
     g_dlg = nullptr;
 }
 
+bool read_keymap(std::vector<uint16_t> *keys, int *layers) {
+    Snapshot s;
+    if (!read(&s)) return false;
+    *keys   = s.keys;
+    *layers = s.layers;
+    return true;
+}
+
 void choose_and_check(HWND owner) {
     wchar_t path[MAX_PATH] = {0};
     std::wstring dir = folder();

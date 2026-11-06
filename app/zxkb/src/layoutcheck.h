@@ -7,10 +7,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 #include <windows.h>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 namespace layoutcheck {
 bool possible(); // the keyboard's keymap can be read (VIA, matrix known)
+bool read_keymap(std::vector<uint16_t> *keys, int *layers); // every layer, layer * rows * cols + row * cols + col
 // Copy the whole layout to a new backup file; returns its path, empty if it could not be read
 std::wstring backup(const std::wstring &why, std::wstring *error);
 // Compare a backup with the keyboard and show the differences (modal); after_update: the firmware was just installed

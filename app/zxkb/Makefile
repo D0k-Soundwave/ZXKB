@@ -2,7 +2,7 @@
 # Output: ../../build/ZXKB.exe  - one file, no runtime or DLLs needed.
 OUT      = ../../build/ZXKB.exe
 OBJDIR   = ../../build/obj
-SRC      = src/main.cpp src/hidlink.cpp src/vu.cpp src/vumath.cpp src/settings.cpp src/effects.cpp src/window.cpp src/preview.cpp src/flash.cpp src/json.cpp src/boards.cpp src/layout.cpp src/labels.cpp src/keycaps.cpp src/caps.cpp src/fnkeys.cpp src/sim.cpp src/keycodes.cpp src/remap.cpp src/keystore.cpp src/macros.cpp src/kbsettings.cpp src/numbox.cpp src/layoutcheck.cpp src/inputhook.cpp
+SRC      = src/main.cpp src/hidlink.cpp src/vu.cpp src/vumath.cpp src/settings.cpp src/effects.cpp src/window.cpp src/preview.cpp src/flash.cpp src/json.cpp src/boards.cpp src/layout.cpp src/labels.cpp src/keycaps.cpp src/caps.cpp src/fnkeys.cpp src/sim.cpp src/keycodes.cpp src/remap.cpp src/keystore.cpp src/macros.cpp src/kbsettings.cpp src/numbox.cpp src/layoutcheck.cpp src/inputhook.cpp src/appmacros.cpp
 OBJ      = $(SRC:src/%.cpp=$(OBJDIR)/%.o) $(OBJDIR)/zxkb.res.o
 CXX      = g++
 WINDRES  = windres

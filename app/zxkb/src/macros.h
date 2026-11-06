@@ -13,7 +13,7 @@
 
 namespace macros {
 // QMK's macro bytes <-> the text form above
-std::string  to_bytes(const std::wstring &text, std::wstring *error);
+std::string  to_bytes(const std::wstring &text, std::wstring *error, bool ranges = false); // ranges: allowed whatever the firmware
 std::wstring to_text(const std::string &bytes);
 bool read_all(std::vector<std::wstring> *texts, int *buffer_size); // from the keyboard
 bool ranges_possible(); // the keyboard plays waits that vary, {wait 180-220} (ZXKB firmware v30 on)

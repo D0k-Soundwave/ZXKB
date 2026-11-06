@@ -41,6 +41,9 @@ Rule: no A figure becomes a constraint. When an A figure is measured, the old va
 | v29 size / .bss | 64,176 bytes (.text 56,732) / 9,412 bytes | M | build.sh, arm-none-eabi-size -A, 2026-11-05 |
 | Recording buffers (RAM) | 2 x 1,024 bytes | A | ZXKB_REC_BUFFER: room for macro buffers up to 1 KB (the Q3's is 434, M); larger boards would refuse to record |
 | Record key flash rate | 4 a second (125 ms half-period) | A | chosen to read as "recording"; D0k to judge |
+| Spare key codes for macros ZXKB plays | 12 (F13-F24) | P | QMK keycodes KC_F13 0x68 - KC_F24 0x73; Windows VK_F13-VK_F24; other rarely used codes untested |
+| Gap between repeats of a macro ZXKB plays | 100 ms | A | same as the firmware's; D0k to judge |
+| Gap between key events ZXKB sends | 1 ms | A | as a keyboard's own reports come; not measured whether programs need it |
 | Debounce default | 5 ms | P | QMK DEBOUNCE default, quantum/debounce (master f5db962) |
 | Debounce slider range | 1-50 ms | A | a range for the slider only; the firmware takes 1-255 |
 | Macro repeat gap (repeat while held / on-off) | 100 ms | A | ZXKB_MACRO_REPEAT_MS; D0k to judge in use |
