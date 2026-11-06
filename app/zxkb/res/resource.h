@@ -78,5 +78,5 @@
 #define IDC_LC_NONE      305
 #define IDC_LC_APPLY     306
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 45 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.45" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 46 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.46" // raise for every build installed for D0k (docs/VERSIONS.md)

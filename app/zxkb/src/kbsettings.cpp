@@ -4,6 +4,7 @@
 #include "app.h"
 #include "protocol.h"
 #include "numbox.h"
+#include "settings.h"
 #include "../res/resource.h"
 #include <commctrl.h>
 #include <commdlg.h>
@@ -104,8 +105,8 @@ void show() {
     check(IDC_KS_NKRO, g_now.nkro());
     int macros = macro_count() < MACRO_MODES_MAX ? macro_count() : MACRO_MODES_MAX;
     if (macros > 0) SendDlgItemMessageW(d, IDC_KS_MACRO_MODE, CB_SETCURSEL, g_now.macro_mode(selected_macro()), 0);
-    int kb_ids[] = {IDC_KS_GAME, IDC_KS_ALTTAB, IDC_KS_ALTF4, IDC_KS_WIN, IDC_KS_SOCD_WASD, IDC_KS_SOCD_ARROWS, IDC_KS_DEBOUNCE,
-                    IDC_KS_IDLE, IDC_KS_LAYER, IDC_KS_NKRO};
+    // game mode, SOCD and lights off work on any keyboard (ZXKB does them); the rest needs ZXKB firmware
+    int kb_ids[] = {IDC_KS_DEBOUNCE, IDC_KS_LAYER, IDC_KS_NKRO};
     for (int id : kb_ids) EnableWindow(GetDlgItem(d, id), g_kb);
     EnableWindow(GetDlgItem(d, IDC_KS_LAYER_C), g_kb && g_now.layer()[0]);
     EnableWindow(GetDlgItem(d, IDC_KS_MACRO), g_kb && macros > 0);
@@ -122,8 +123,22 @@ void show() {
     g_filling = false;
 }
 
+// ZXKB's own copy of game mode, SOCD and lights off (any keyboard); the tray reads it again
+void app_input_save(Set &s) {
+    settings::set_int(L"input", L"game", s.game());
+    settings::set_int(L"input", L"socd", s.socd());
+    settings::set_int(L"input", L"idle", s.idle());
+    settings_changed();
+}
+void app_input_load(Set &s) {
+    s.game() = (uint8_t)settings::get_int(L"input", L"game", 7);
+    s.socd() = (uint8_t)settings::get_int(L"input", L"socd", 0);
+    s.idle() = (uint8_t)settings::get_int(L"input", L"idle", 0);
+}
+
 void changed() {
     if (g_kb) kb_send(g_now);
+    app_input_save(g_now);
     show();
 }
 
@@ -199,6 +214,7 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_INITDIALOG: {
             g_dlg = dlg;
             g_kb  = kbsettings_possible() && kb_get(&g_now);
+            if (!g_kb) app_input_load(g_now); // ZXKB's own settings: any keyboard
             if (g_kb && !(g_now.game() & 7)) g_now.game() |= 7; // none chosen blocks all three (firmware v28): show it so
             g_before = g_now;
             SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, &g_delay_before, 0);
@@ -217,7 +233,7 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             for (const wchar_t *n : mode_names) SendDlgItemMessageW(dlg, IDC_KS_MACRO_MODE, CB_ADDSTRING, 0, (LPARAM)n);
             SetDlgItemTextW(dlg, IDC_KS_INFO,
                             g_kb ? L"Changes show at once. OK keeps them (on the keyboard and in Windows); Cancel puts back what was there."
-                                 : L"The keyboard settings need ZXKB firmware v27 or later. Windows' key repeat works with any keyboard.");
+                                 : L"Game mode, SOCD, lights off and key repeat work with any keyboard while ZXKB runs. Debounce, the layer light, NKRO and macro play modes need ZXKB firmware on the keyboard.");
             show();
             return TRUE;
         }
@@ -302,6 +318,7 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
                 }
                 case IDCANCEL:
                     if (g_kb && std::memcmp(g_now.b, g_before.b, sizeof(g_now.b)) != 0) kb_send(g_before);
+                    if (std::memcmp(g_now.b, g_before.b, sizeof(g_now.b)) != 0) app_input_save(g_before);
                     set_repeat(g_delay_before, g_speed_before, false);
                     DestroyWindow(dlg);
                     return TRUE;
@@ -316,6 +333,23 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
 
 bool kbsettings_possible() { return zxkb_board() && g_board->protocol >= 12; }
 bool kb_record_possible() { return zxkb_board() && g_board->protocol >= 13; }
+bool kb_firmware_does_input() { return kbsettings_possible(); }
+
+bool game_mode_toggle(bool *now_on) {
+    if (kb_firmware_does_input()) { // the keyboard's own game mode (Fn+Win switches the same one)
+        Set s;
+        if (!kb_get(&s)) return false;
+        s.game() ^= 0x80;
+        kb_send(s);
+        *now_on = (s.game() & 0x80) != 0;
+        settings::set_int(L"input", L"game", s.game());
+        return true;
+    }
+    int g = settings::get_int(L"input", L"game", 7) ^ 0x80;
+    settings::set_int(L"input", L"game", g);
+    *now_on = (g & 0x80) != 0;
+    return true;
+}
 
 bool kb_record_macro(int *macro) {
     Set s;

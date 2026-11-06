@@ -31,6 +31,7 @@
 #include "keystore.h"
 #include "macros.h"
 #include "kbsettings.h"
+#include "inputhook.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -46,9 +47,15 @@ enum : UINT {
     ID_SLOT_FX = 3000, // + slot (0-9): use current effect
     ID_SLOT_CLR = 3100, // + slot: clear
     ID_SLOT_PRO = 3200, // + slot * 100 + profile index
+    ID_SLOT_GAME = 4300, // + slot: game mode on / off
+    ID_GAME     = 4400,  // game mode on / off (menu)
 };
 constexpr UINT WM_TRAY      = WM_APP + 50;
 constexpr UINT TIMER_SAVE   = 1;
+constexpr UINT TIMER_IDLE   = 2; // lights off when idle, done by ZXKB (keyboards without ZXKB firmware)
+// [A] checked every 2 s: the lights go off at most 2 s after the minutes set; they come back at the first key press
+constexpr UINT IDLE_CHECK_MS = 2000;
+constexpr UINT WM_ZX_KEYBACK = WM_APP + 51; // a key was pressed while the lights were off for idling
 // [A] write settings to the keyboard 3 s after the last change, not on every click. Not measured: how many
 // EEPROM writes the keyboard's flash can take; the delay just groups a burst of clicks into one write.
 constexpr UINT SAVE_DELAY_MS = 3000;
@@ -370,6 +377,17 @@ void update_tray() {
     Shell_NotifyIconW(NIM_MODIFY, &g_nid);
 }
 
+// A short tray notice (balloon)
+void notice(const std::wstring &t) {
+    if (g_window_mode) return;
+    g_nid.uFlags |= NIF_INFO;
+    lstrcpynW(g_nid.szInfoTitle, L"ZXKB", ARRAYSIZE(g_nid.szInfoTitle));
+    lstrcpynW(g_nid.szInfo, t.c_str(), ARRAYSIZE(g_nid.szInfo));
+    g_nid.dwInfoFlags = NIIF_INFO;
+    Shell_NotifyIconW(NIM_MODIFY, &g_nid);
+    g_nid.uFlags &= ~NIF_INFO;
+}
+
 void send(std::initializer_list<uint8_t> bytes) {
     uint8_t buf[proto::REPORT] = {0};
     int n = 0;
@@ -384,8 +402,10 @@ void via_set(uint8_t value_id, uint8_t a, uint8_t b = 0) {
 bool g_save_pending = false;
 void schedule_save() { g_save_pending = true; SetTimer(g_hwnd, TIMER_SAVE, SAVE_DELAY_MS, nullptr); }
 
+extern bool g_idle_off;
 void save_now() {
     KillTimer(g_hwnd, TIMER_SAVE);
+    if (g_idle_off) return; // never keep the brightness turned down for idling
     if (g_board && g_save_pending) {
         if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
         if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
@@ -408,6 +428,8 @@ void save_lists() {
     settings_changed();
 }
 
+void apply_input();
+
 void load_settings() {
     g_pc_effect = settings::get_int(L"pc", L"effect", PCFX_NONE);
     g_vu_style = settings::vu_style_from(settings::get(L"vu", L"style", L"bands"));
@@ -421,6 +443,46 @@ void load_settings() {
         p = c == std::string::npos ? c : c + 1;
     }
     for (int i = 0; i < 10; i++) g_slots[i] = settings::get(L"slots", std::to_wstring(i + 1).c_str());
+    apply_input();
+}
+
+void set_brightness(int val);
+
+// Game mode, SOCD and lights off for keyboards without them in their firmware: ZXKB's input hook (tray copy only)
+bool    g_idle_off = false; // the lights were turned down for idling
+uint8_t g_idle_val = 0;     // the brightness to put back
+DWORD   g_started  = GetTickCount();
+
+void apply_input() {
+    if (g_window_mode) return;
+    bool fw = g_board && kb_firmware_does_input(); // the keyboard does them itself
+    inputhook::Config c;
+    int g   = settings::get_int(L"input", L"game", 7);
+    c.game  = !fw && (g & 0x80);
+    c.block = (uint8_t)(g & 7);
+    c.socd  = fw ? 0 : (uint8_t)settings::get_int(L"input", L"socd", 0);
+    int idle = fw ? 0 : settings::get_int(L"input", L"idle", 0);
+    c.watch = idle > 0;
+    inputhook::configure(c);
+    if (idle > 0 && g_board) SetTimer(g_hwnd, TIMER_IDLE, IDLE_CHECK_MS, nullptr);
+    else KillTimer(g_hwnd, TIMER_IDLE);
+}
+
+void idle_check() {
+    int idle = settings::get_int(L"input", L"idle", 0);
+    if (!g_board || idle <= 0 || g_idle_off || !g_st.enabled || g_st.val == 0) return;
+    DWORD last = inputhook::last_key() ? inputhook::last_key() : g_started;
+    if (GetTickCount() - last < (DWORD)idle * 60000) return;
+    g_idle_val = g_st.val;
+    g_idle_off = true;
+    via_set(proto::VIA_BRIGHTNESS, 0); // not saved: the next key press puts it back
+    inputhook::notify_next_key(g_hwnd, WM_ZX_KEYBACK);
+}
+
+void idle_back() {
+    if (!g_idle_off) return;
+    g_idle_off = false;
+    if (g_board) set_brightness(g_idle_val);
 }
 
 // Tray: open the ZXKB window (start the window copy), or bring it to the front if it is open
@@ -570,9 +632,22 @@ void select_by_name(const std::string &n) { // an effect or a VU style
     else if (int m = effect_number(n)) set_effect(m);
 }
 
+void apply_input();
+void notice(const std::wstring &t);
+
+void toggle_game() {
+    bool on = false;
+    if (!game_mode_toggle(&on)) return;
+    apply_input();
+    settings_changed();
+    notice(on ? L"Game mode on." : L"Game mode off.");
+}
+
 void apply_slot(int slot) { // slot 1-10
     const std::wstring &s = g_slots[slot - 1];
-    if (s.rfind(L"effect:", 0) == 0) {
+    if (s == L"game") {
+        toggle_game();
+    } else if (s.rfind(L"effect:", 0) == 0) {
         select_by_name(settings::narrow(s.substr(7)));
     } else if (s.rfind(L"profile:", 0) == 0) {
         apply_profile(s.substr(8));
@@ -584,6 +659,7 @@ std::wstring slot_text(int i) {
     std::wstring key = L"Fn+" + std::to_wstring((i + 1) % 10) + L": ";
     if (s.rfind(L"effect:", 0) == 0) return key + menu_name(settings::narrow(s.substr(7)));
     if (s.rfind(L"profile:", 0) == 0) return key + L"profile " + s.substr(8);
+    if (s == L"game") return key + L"game mode on / off";
     return key + L"(not set)";
 }
 
@@ -760,6 +836,7 @@ void show_menu() {
         add(k, ID_SLOT_FX + s, showing ? L"Current effect (" + menu_name(cur) + L")" : L"Current effect", false, showing);
         for (size_t i = 0; i < profiles.size(); i++)
             add(k, ID_SLOT_PRO + s * MAX_PROFILES + (UINT)i, L"Profile " + profiles[i], g_slots[s] == L"profile:" + profiles[i]);
+        add(k, ID_SLOT_GAME + s, L"Game mode on / off", g_slots[s] == L"game");
         sep(k);
         add(k, ID_SLOT_CLR + s, L"Clear", false, !g_slots[s].empty());
         add_sub(keys, k, slot_text(s));
@@ -770,6 +847,7 @@ void show_menu() {
         else add(keys, ID_FN_SETUP, L"Set up Fn + 1 to Fn + 0 on this keyboard...");
     }
     add_sub(menu, keys, L"Fn + number hotkeys");
+    add(menu, ID_GAME, L"Game mode", (settings::get_int(L"input", L"game", 7) & 0x80) != 0);
     sep(menu);
     add(menu, ID_AUTOSTART, L"Start with Windows", settings::autostart());
     std::wstring about = L"ZXKB " ZXKB_VERSION_WSTR;
@@ -823,6 +901,8 @@ void show_menu() {
         MessageBoxW(g_hwnd, msg.c_str(), L"ZXKB", MB_OK | (ok ? MB_ICONINFORMATION : MB_ICONWARNING));
     }
     else if (cmd == ID_QUIT) DestroyWindow(g_hwnd);
+    else if (cmd == ID_GAME) toggle_game();
+    else if (cmd >= ID_SLOT_GAME && cmd < ID_SLOT_GAME + 10) { g_slots[cmd - ID_SLOT_GAME] = L"game"; save_lists(); }
     else if (cmd >= ID_SLOT_PRO) {
         UINT s = (cmd - ID_SLOT_PRO) / MAX_PROFILES, i = (cmd - ID_SLOT_PRO) % MAX_PROFILES;
         if (s < 10 && i < profiles.size()) { g_slots[s] = L"profile:" + profiles[i]; save_lists(); }
@@ -910,8 +990,12 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             update_tray();
             window_refresh();
             return 0;
+        case WM_ZX_KEYBACK:
+            idle_back();
+            return 0;
         case WM_ZX_DISCONNECTED:
             fnkeys::stop_listening(hwnd);
+            g_idle_off = false;
             g_vu.stop();
             delete g_board;
             g_board = nullptr;
@@ -919,6 +1003,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_save_pending = false;
             update_tray();
             window_refresh();
+            apply_input();
             return 0;
         case WM_HOTKEY: // F13-F22 from a plain VIA keyboard set up by fnkeys
             if (!g_window_mode && wp >= (WPARAM)fnkeys::HOTKEY_BASE && wp < (WPARAM)fnkeys::HOTKEY_BASE + 10)
@@ -975,6 +1060,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         case WM_TIMER:
             if (wp == TIMER_SAVE) save_now();
+            else if (wp == TIMER_IDLE) idle_check();
             return 0;
         case WM_DEVICECHANGE:
             if (wp == DBT_DEVICEARRIVAL && !g_board) g_link.rescan();

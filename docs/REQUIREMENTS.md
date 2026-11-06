@@ -8,6 +8,9 @@ Rule: do not build until D0k confirms the list is complete.
       keyboard without new firmware, because there is no ZXKB firmware for most keyboards and the app should control as
       much as possible. Firmware only where the app truly cannot do it (said plainly each time). v27-v31 put game mode,
       SOCD, lights-off, layer light, macro play modes and varying waits in firmware first: to be moved to the app.
+      0.46: game mode, SOCD and lights off moved (firmware kept as the Q3's fallback). Still to move: macro play modes,
+      varying waits; lock lights as whole-board only on stock firmware. Not possible on stock firmware: layer light,
+      debounce, NKRO, per-key colours.
 - [ ] Keyboard-agnostic firmware builder (D0k, 2026-11-06), optional extra for people who want per-key lighting or to
       work without the app: take any keyboard's own QMK source and add the ZXKB community module the way QMK documents
       it (keymap.json "modules": ["d0k/zxkb"], userspace build with qmk compile), with no hand-made keymap; only for

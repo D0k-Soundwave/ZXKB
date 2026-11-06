@@ -11,3 +11,7 @@ bool kbsettings_possible(); // the keyboard has the settings (ZXKB protocol 12, 
 bool kb_record_possible();  // the keyboard can record macros itself (ZXKB protocol 13, firmware v29)
 bool kb_record_macro(int *macro);   // the macro the record key records into
 bool kb_set_record_macro(int macro); // set and save it
+// Game mode, SOCD and lights off are ZXKB's own, for any keyboard ([input] in zxkb.ini, done by the tray's input hook);
+// on ZXKB firmware v27 on the keyboard does them itself (also without ZXKB running) and ZXKB keeps both in step.
+bool kb_firmware_does_input();          // the connected keyboard does game mode, SOCD and lights off itself
+bool game_mode_toggle(bool *now_on);    // switch game mode (keyboard or ZXKB), true if done
