@@ -9,6 +9,7 @@
 #include "preview.h"
 #include "flash.h"
 #include "caps.h"
+#include "locklights.h"
 #include "remap.h"
 #include "macros.h"
 #include "kbsettings.h"
@@ -569,7 +570,7 @@ LRESULT CALLBACK proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 return 0;
             }
             if (id == IDC_FIRMWARE) { flash_dialog(g_win); return 0; }
-            if (id == IDC_CAPS_BTN) { caps_dialog(g_win); return 0; }
+            if (id == IDC_CAPS_BTN) { locklights::dialog(g_win); return 0; }
             if (id == IDC_MACROS_BTN) { macros_dialog(g_win); return 0; }
             if (id == IDC_KBSET_BTN) { kbsettings_dialog(g_win); return 0; }
             if (id == IDC_REMAP_BTN) { remap_dialog(g_win); return 0; }
@@ -754,7 +755,7 @@ void window_show() {
     make(L"BUTTON", L"More colours...", WS_TABSTOP, IDC_PICK);
     make(L"STATIC", L"", SS_LEFTNOWORDWRAP, IDC_VERSION);
     make(L"BUTTON", L"Firmware...", WS_TABSTOP, IDC_FIRMWARE);
-    make(L"BUTTON", L"Caps Lock light...", WS_TABSTOP, IDC_CAPS_BTN);
+    make(L"BUTTON", L"Lock lights...", WS_TABSTOP, IDC_CAPS_BTN);
     make(L"BUTTON", L"Macros...", WS_TABSTOP, IDC_MACROS_BTN);
     make(L"BUTTON", L"Keyboard settings...", WS_TABSTOP, IDC_KBSET_BTN);
     make(L"BUTTON", L"Look up this keyboard online...", WS_TABSTOP, IDC_LOOKUP);

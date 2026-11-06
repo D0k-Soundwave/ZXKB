@@ -9,7 +9,7 @@ Rule: do not build until D0k confirms the list is complete.
       much as possible. Firmware only where the app truly cannot do it (said plainly each time). v27-v31 put game mode,
       SOCD, lights-off, layer light, macro play modes and varying waits in firmware first: to be moved to the app.
       0.46: game mode, SOCD and lights off moved (firmware kept as the Q3's fallback). Macro play modes and varying
-      waits moved in 0.48 (played by ZXKB, any keyboard). Still to move: lock lights as whole-board only on stock firmware. Not possible on stock firmware: layer light,
+      waits moved in 0.48 (played by ZXKB, any keyboard). Lock lights moved in 0.49 (whole keyboard on any keyboard; per-key Caps Lock light stays a firmware extra). Not possible on stock firmware: layer light,
       debounce, NKRO, per-key colours.
 - [ ] Keyboard-agnostic firmware builder (D0k, 2026-11-06), optional extra for people who want per-key lighting or to
       work without the app: take any keyboard's own QMK source and add the ZXKB community module the way QMK documents
@@ -31,6 +31,10 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Caps Lock on: Tab, Q, Caps Lock, A, Caps Shift and \ flash too, at full brightness (D0k, 2026-11-05; v23)
 - [x] Caps Lock light set from the app: colours, effect, speed, brightness, keys, starting keys (D0k, 2026-11-05;
       v25 + 0.27, tried by D0k: works)
+- [~] Lock lights on any keyboard (D0k, 2026-11-06: in the app): Caps Lock, Num Lock, Scroll Lock each Off / Steady /
+      Flash / Breathe between two colours, speed, full brightness; the whole keyboard (stock VIA has no per-key
+      lighting), own lighting put back after, never saved. Paused while idling, a PC effect or the ZXKB window is open
+      (except with its Lock lights window open). 0.49; not yet tried with real lock keys.
 - [x] Live LED current tune commands 0xD3/0xD4/0xD5 (v10)
 - [x] Spectrum effects: stripes, tape loading, VU, border flash, attribute clash, typing ripple, logo sweep (v9/v10)
 

@@ -33,6 +33,7 @@
 #include "kbsettings.h"
 #include "inputhook.h"
 #include "appmacros.h"
+#include "locklights.h"
 
 // ---------- menu command ids ----------
 enum : UINT {
@@ -56,6 +57,7 @@ constexpr UINT TIMER_SAVE   = 1;
 constexpr UINT TIMER_IDLE   = 2; // lights off when idle, done by ZXKB (keyboards without ZXKB firmware)
 // [A] checked every 2 s: the lights go off at most 2 s after the minutes set; they come back at the first key press
 constexpr UINT IDLE_CHECK_MS = 2000;
+constexpr UINT TIMER_LOCKS  = 3; // lock lights: the lock keys looked at every locklights::POLL_MS
 constexpr UINT WM_ZX_KEYBACK = WM_APP + 51; // a key was pressed while the lights were off for idling
 // [A] write settings to the keyboard 3 s after the last change, not on every click. Not measured: how many
 // EEPROM writes the keyboard's flash can take; the delay just groups a burst of clicks into one write.
@@ -91,6 +93,8 @@ std::wstring   g_slots[10];        // "effect:NAME" or "profile:NAME"
 // copy alone feeds the VU meter and answers Fn + number. Each tells the other when it changes shared settings.
 bool           g_window_mode = false;
 UINT           g_settings_msg;     // "settings changed, read them again"
+UINT           g_locks_msg;        // window -> tray, lock lights: 0 the window opens (put the lighting back), 1 / 2 its lock lights window opens / closes
+bool           g_locks_preview = false; // the window's lock lights window is open: the lights show while the window is open
 const wchar_t  TRAY_CLASS[]   = L"ZXKB";      // the tray copy's hidden window
 const wchar_t  WINDOW_CLASS[] = L"ZXKB.link"; // the window copy's hidden window
 
@@ -409,7 +413,7 @@ void schedule_save() { g_save_pending = true; SetTimer(g_hwnd, TIMER_SAVE, SAVE_
 extern bool g_idle_off;
 void save_now() {
     KillTimer(g_hwnd, TIMER_SAVE);
-    if (g_idle_off) return; // never keep the brightness turned down for idling
+    if (g_idle_off || locklights::showing()) return; // never keep the lights of idling or a lock light (saved after)
     if (g_board && g_save_pending) {
         if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
         if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
@@ -447,6 +451,7 @@ void load_settings() {
         p = c == std::string::npos ? c : c + 1;
     }
     for (int i = 0; i < 10; i++) g_slots[i] = settings::get(L"slots", std::to_wstring(i + 1).c_str());
+    locklights::reload();
     apply_input();
 }
 
@@ -473,6 +478,14 @@ void apply_input() {
     inputhook::configure(c);
     if (idle > 0 && g_board) SetTimer(g_hwnd, TIMER_IDLE, IDLE_CHECK_MS, nullptr);
     else KillTimer(g_hwnd, TIMER_IDLE);
+    if (g_board && locklights::any_on()) SetTimer(g_hwnd, TIMER_LOCKS, locklights::POLL_MS, nullptr);
+    else { KillTimer(g_hwnd, TIMER_LOCKS); locklights::put_back(); }
+}
+
+// The lock lights may show: not while idling, a PC effect or music pulse uses the lighting, or the ZXKB window is
+// open (it reads the keyboard's lighting as its own), unless the window's lock lights window is open
+bool locks_allowed() {
+    return !g_idle_off && g_pc_effect == PCFX_NONE && !g_vu.pulsing() && (g_locks_preview || !FindWindowW(WINDOW_CLASS, nullptr));
 }
 
 void idle_check() {
@@ -480,6 +493,7 @@ void idle_check() {
     if (!g_board || idle <= 0 || g_idle_off || !g_st.enabled || g_st.val == 0) return;
     DWORD last = inputhook::last_key() ? inputhook::last_key() : g_started;
     if (GetTickCount() - last < (DWORD)idle * 60000) return;
+    locklights::put_back(); // first, so its brightness does not undo the lights going off
     g_idle_val = g_st.val;
     g_idle_off = true;
     via_set(proto::VIA_BRIGHTNESS, 0); // not saved: the next key press puts it back
@@ -956,6 +970,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             g_st    = g_board->status;
             g_tune  = Tune();
             g_tune.flags = 0;
+            locklights::forget(); // the keyboard starts with its own saved lighting
             if (zxkb_board()) send({proto::TUNE, proto::TUNE_GET});
             // the window opens on the layer the keyboard types from (v26 on), not always layer 0 (D0k 2026-11-05)
             if (g_window_mode && g_board->kind == Board::ZXKB && g_board->protocol >= 11) g_board->shown_layer = g_st.base_layer;
@@ -996,6 +1011,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             update_capture();
             update_tray();
             window_refresh();
+            apply_input(); // lock lights: polled while this keyboard is connected
             return 0;
         case WM_ZX_KEYBACK:
             idle_back();
@@ -1006,6 +1022,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_ZX_DISCONNECTED:
             fnkeys::stop_listening(hwnd);
             g_idle_off = false;
+            locklights::forget();
             g_vu.stop();
             delete g_board;
             g_board = nullptr;
@@ -1042,7 +1059,13 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_ZX_STATUS: { // a reply, or the keyboard telling us its state changed
             Status *s = reinterpret_cast<Status *>(lp);
             if (g_board) {
-                g_st = *s;
+                if (locklights::showing()) { // ZXKB firmware reports the lock light's lighting: keep the keyboard's own
+                    Status own = g_st;
+                    g_st = *s;
+                    g_st.mode = own.mode; g_st.enabled = own.enabled; g_st.val = own.val; g_st.hue = own.hue; g_st.sat = own.sat;
+                } else {
+                    g_st = *s;
+                }
                 update_capture();
             }
             delete s;
@@ -1071,6 +1094,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_TIMER:
             if (wp == TIMER_SAVE) save_now();
             else if (wp == TIMER_IDLE) idle_check();
+            else if (wp == TIMER_LOCKS) locklights::tick(locks_allowed());
             return 0;
         case WM_DEVICECHANGE:
             if (wp == DBT_DEVICEARRIVAL && !g_board) g_link.rescan();
@@ -1080,6 +1104,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 if (HWND w = FindWindowW(L"ZXKBWindow", nullptr)) PostMessageW(w, WM_CLOSE, 0, 0); // Quit closes the window too
             window_close();
             if (g_board) {
+                locklights::put_back();
                 save_now();
             }
             if (g_vu.pulsing() && g_board) via_set(proto::VIA_BRIGHTNESS, g_pulse_peak, 0); // quitting mid-pulse: its brightness back
@@ -1095,6 +1120,11 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         update_capture(); // the music pulse may have been chosen or ended in the window
         update_tray();
         window_refresh();
+        return 0;
+    }
+    if (msg == g_locks_msg && msg && !g_window_mode) { // the window opens, or its lock lights window opens / closes
+        if (wp == 1) g_locks_preview = true;
+        else { g_locks_preview = false; locklights::put_back(); }
         return 0;
     }
     if (msg == g_taskbar_created && msg && !g_window_mode) { add_tray_icon(); return 0; } // Explorer restarted
@@ -1114,6 +1144,7 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdline, int) {
     if (!g_window_mode) settings::import_zx_vu();
     load_settings();
     g_settings_msg = RegisterWindowMessageW(L"ZXKB.settings");
+    g_locks_msg    = RegisterWindowMessageW(L"ZXKB.locks");
 
     const wchar_t *cls = g_window_mode ? WINDOW_CLASS : TRAY_CLASS;
     WNDCLASSW wc = {};
@@ -1128,7 +1159,10 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE, PWSTR cmdline, int) {
     filter.dbcc_classguid = {0x4D1E55B2, 0xF16F, 0x11CF, {0x88, 0xCB, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30}}; // HID
     HDEVNOTIFY notify = RegisterDeviceNotificationW(g_hwnd, &filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
-    if (g_window_mode) window_show(); // fills in when the keyboard answers
+    if (g_window_mode) { // the tray puts the keyboard's own lighting back first, so the window reads that, not a lock light
+        if (HWND tray = FindWindowW(TRAY_CLASS, nullptr)) SendMessageTimeoutW(tray, g_locks_msg, 0, 0, SMTO_ABORTIFHUNG, 1000, nullptr);
+        window_show(); // fills in when the keyboard answers
+    }
     else add_tray_icon();
     g_link.start(g_hwnd);
 

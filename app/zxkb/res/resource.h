@@ -78,6 +78,10 @@
 #define IDC_LC_ALL       304
 #define IDC_LC_NONE      305
 #define IDC_LC_APPLY     306
+#define IDD_LOCKS        320
+#define IDC_LK_INFO      321
+#define IDC_LK_KEYS      322
+#define IDC_LK_ROW       330 /* + 10 x light: + 1 effect, 2 colour 1, 3 colour 2, 4 speed, 5 speed box, 6 full */
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 48 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.48" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 49 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.49" // raise for every build installed for D0k (docs/VERSIONS.md)
