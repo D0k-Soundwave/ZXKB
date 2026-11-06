@@ -878,7 +878,8 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             fw_changed = !g_window_mode && keystore::firmware_changed();
             // macros recorded on the keyboard while ZXKB was not running become the ones kept
             if (!g_window_mode && !fw_changed && kb_record_possible()) keystore::keep_keyboard_macros();
-            if (fw_changed && keystore::count() > 0) {
+            // the Firmware window, when it did the update, checks the whole layout itself (layoutcheck)
+            if (fw_changed && keystore::count() > 0 && !keystore::reapply_held()) {
                 // a firmware update reset the keymap (VIA does so for every new build): ZXKB's key changes back
                 int failed = 0, n = keystore::reapply(&failed);
                 if (n || failed) {

@@ -9,6 +9,8 @@
 #include "settings.h"
 #include "protocol.h"
 #include "../res/resource.h"
+#include "layoutcheck.h"
+#include "keystore.h"
 #include <commctrl.h>
 #include <commdlg.h>
 #include <setupapi.h>
@@ -22,6 +24,8 @@ namespace {
 constexpr UINT WM_FW_STATUS   = WM_APP + 100; // lParam: new std::wstring, deleted here
 constexpr UINT WM_FW_PROGRESS = WM_APP + 101; // wParam: 0-100
 constexpr UINT WM_FW_DONE     = WM_APP + 102; // wParam: 1 written
+constexpr UINT WM_FW_CHECK    = WM_APP + 103; // the keyboard is back: check its layout against the copy
+std::wstring   g_backup_file; // the layout copied before this install
 constexpr UINT TIMER_RECONNECT = 1;
 // [A] waits. Not measured yet: how long the Q3 takes to show up as a DFU device after the command, and to start
 // again after writing. QMK Toolbox writes the Q3's ~60 KB in a few seconds (seen by D0k, not timed).
@@ -278,6 +282,20 @@ void install() {
                                   L"unplug it and plug it back in while holding Esc. Holding Esc also clears its settings.";
     if (MessageBoxW(g_dlg, ask.c_str(), L"ZXKB", MB_YESNO | MB_ICONQUESTION) != IDYES) return;
 
+    // copy the whole key layout first, to check and put back after (D0k, 2026-11-06)
+    g_backup_file.clear();
+    if (!in_dfu && layoutcheck::possible()) {
+        set_status(L"Copying the key layout, knob and macros...");
+        std::wstring e;
+        g_backup_file = layoutcheck::backup(L"before installing " + g_files[sel], &e);
+        if (g_backup_file.empty() &&
+            MessageBoxW(g_dlg, (e + L"\n\nInstall anyway, without a copy to check against?").c_str(), L"ZXKB", MB_YESNO | MB_ICONWARNING) != IDYES) {
+            set_status(L"");
+            return;
+        }
+        if (!g_backup_file.empty()) keystore::hold_reapply(true);
+    }
+
     g_cancel = false;
     g_state  = WAITING;
     g_t0     = GetTickCount();
@@ -332,6 +350,15 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             set_busy(true, false); // writing: no cancelling
             return TRUE;
         }
+        case WM_FW_CHECK:
+            if (!g_backup_file.empty()) {
+                Sleep(500); // [A] let the tray copy finish its own start-up talk with the keyboard first
+                layoutcheck::check(dlg, g_backup_file, true);
+                keystore::hold_reapply(false);
+                g_backup_file.clear();
+                set_status(L"Done: the keyboard runs firmware v" + std::to_wstring(g_st.fw_version) + L". Key layout checked.");
+            }
+            return TRUE;
         case WM_FW_PROGRESS:
             SendDlgItemMessageW(dlg, IDC_FW_PROGRESS, PBM_SETPOS, wp, 0);
             return TRUE;
@@ -366,6 +393,16 @@ INT_PTR CALLBACK proc(HWND dlg, UINT msg, WPARAM wp, LPARAM lp) {
             switch (LOWORD(wp)) {
                 case IDC_FW_INSTALL: install(); return TRUE;
                 case IDC_FW_BROWSE: browse(); return TRUE;
+                case IDC_FW_COPYNOW: { // a copy of the layout, to put back later
+                    if (g_state != IDLE) return TRUE;
+                    std::wstring e, f = layoutcheck::possible() ? layoutcheck::backup(L"copied by hand", &e) : L"";
+                    if (f.empty()) MessageBoxW(dlg, e.empty() ? L"This keyboard's key layout cannot be read." : e.c_str(), L"ZXKB", MB_OK | MB_ICONWARNING);
+                    else set_status(L"Copied: " + f.substr(f.find_last_of(L'\\') + 1));
+                    return TRUE;
+                }
+                case IDC_FW_BACKUPS: // put back any earlier layout copy
+                    if (g_state == IDLE) layoutcheck::choose_and_check(dlg);
+                    return TRUE;
                 case IDC_FW_LIST:
                     if (HIWORD(wp) == LBN_DBLCLK) install();
                     return TRUE;
@@ -401,8 +438,10 @@ void flash_refresh() {
         g_state = IDLE;
         fill_list();
         log_phase("keyboard back");
-        set_status(L"Done: the keyboard runs firmware v" + std::to_wstring(g_st.fw_version) + L".");
+        set_status(L"Done: the keyboard runs firmware v" + std::to_wstring(g_st.fw_version) + L"." +
+                   (g_backup_file.empty() ? L"" : L" Checking the key layout..."));
         set_busy(false, false);
+        if (!g_backup_file.empty()) PostMessageW(g_dlg, WM_FW_CHECK, 0, 0); // after the connection is set up
     }
 }
 

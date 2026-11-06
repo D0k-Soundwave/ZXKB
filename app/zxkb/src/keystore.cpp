@@ -6,6 +6,7 @@
 #include "macros.h"
 #include <cwchar>
 #include <cstdlib>
+#include <ctime>
 #include <string>
 #include <vector>
 
@@ -145,6 +146,24 @@ int reapply(int *failed) {
         else (*failed)++;
     }
     return changed;
+}
+
+bool is_kept(const wchar_t *section, int layer, int a, int b) {
+    for (const Entry &e : load(section))
+        if (e.layer == layer && e.row == a && e.col == b) return true;
+    return false;
+}
+
+// [A] 15 minutes: longer than any install and check takes; a hold left by a closed window then runs out
+constexpr long long HOLD_S = 15 * 60;
+void hold_reapply(bool on) {
+    if (!g_board) return;
+    WritePrivateProfileStringW(L"keyboard", L"hold_until", on ? std::to_wstring((long long)time(nullptr) + HOLD_S).c_str() : nullptr, file().c_str());
+}
+bool reapply_held() {
+    wchar_t v[32] = {0};
+    GetPrivateProfileStringW(L"keyboard", L"hold_until", L"", v, 32, file().c_str());
+    return *v && _wtoi64(v) > (long long)time(nullptr);
 }
 
 void keep_keyboard_macros() {

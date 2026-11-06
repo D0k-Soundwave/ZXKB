@@ -21,4 +21,8 @@ bool firmware_changed();                                 // this keyboard's firm
 // The keyboard's own macros become the ones kept, if they differ (a macro recorded on the keyboard, maybe without
 // ZXKB running). Only when the firmware has not changed: after a change the keyboard's macros were reset.
 void keep_keyboard_macros();
+bool is_kept(const wchar_t *section, int layer, int a, int b); // a key ("keys": row, col) or knob ("knob": encoder, cw) ZXKB keeps
+// While the Firmware window installs and then checks the layout itself, the tray does not put changes back on its own
+void hold_reapply(bool on);
+bool reapply_held();
 } // namespace keystore

@@ -51,6 +51,9 @@ git (firmware v11 a50ac01, v12 0836394, v13 a45b141, v14 7f249cd; app 0.1 09277f
 
 | Version | Date | Size | Changes |
 |---|---|---|---|
+| 0.44 | 2026-11-06 | 615,424 bytes | Key layout backups (D0k): the Firmware window copies the whole layout (4 layers, knob, macros) before installing, then after the keyboard restarts compares it and lists each difference, yours vs the keyboard now, ticked to put yours back for keys changed in ZXKB and macros; puts back, reads again and confirms. "Copy layout now" and "Layout backups..." (put back any copy) in the Firmware window; copies in %APPDATA%\ZXKBackups. Tested by hand: copy, one key changed, found, put back, checked. The after-install path not yet run. |
+| 0.43 | 2026-11-06 | - | Kept, not handed over: could not read the keymap for a copy (the keymap replies did not reach it). |
+| 0.42 | 2026-11-06 | - | Kept, not handed over: built before the Copy layout now button was finished. |
 | 0.41 | 2026-11-05 | - | Number boxes beside every slider (main window, Caps Lock light, Keyboard settings): type an exact value. Macros: {wait 200-300} waits a different time each run (v30 on); recorded waits can vary by +/- N ms. Not yet tested by hand. |
 | 0.40 | 2026-11-05 | 586,240 bytes | Macros window: which macro the keyboard records into, or a note when the firmware cannot record; macros recorded on the keyboard are kept by ZXKB (at once, or at the next connect if ZXKB was not running) and shown in an open Macros window; tray notice after each recording. "Record a macro" in Change keys (ZXKB). |
 | 0.39 | 2026-11-05 | 583,680 bytes | Keyboard settings: game mode blocks all three until chosen otherwise, and at least one stays ticked; says Fn+Win switches it. |

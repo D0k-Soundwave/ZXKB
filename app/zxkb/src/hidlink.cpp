@@ -359,6 +359,11 @@ void HidLink::read_loop() {
                 PostMessageW(hwnd_, WM_ZX_STATUS, 0, (LPARAM) new Status(s)); // the last of request_via_status()
             }
         } else if (p[0] == proto::VIA_KEYMAP_BUFFER) {
+            if (raw_) { // also to whoever asked directly (layout backups read the whole keymap this way)
+                uint8_t *copy = new uint8_t[proto::REPORT];
+                std::memcpy(copy, p, proto::REPORT);
+                PostMessageW(hwnd_, WM_ZX_RAW, 0, (LPARAM)copy);
+            }
             int off = (p[1] << 8 | p[2]) - keymap_base_, n = p[3];
             EnterCriticalSection(&write_lock_);
             bool done = false;
