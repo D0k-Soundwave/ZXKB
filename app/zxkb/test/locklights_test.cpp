@@ -15,6 +15,7 @@ bool   g_save_pending = false;
 static std::string g_sent;
 void via_set(uint8_t id, uint8_t a, uint8_t b) { char t[32]; std::snprintf(t, 32, "%u:%u,%u ", id, a, b); g_sent += t; }
 void schedule_save() { g_sent += "save "; }
+uint8_t effect_off_mode() { return 0; }
 std::string effect_name(int m) { return m == 1 ? "Breathing" : m == 2 ? "Solid Color" : ""; }
 namespace proto { int key_step_ms(int) { return 320; } }
 namespace settings {

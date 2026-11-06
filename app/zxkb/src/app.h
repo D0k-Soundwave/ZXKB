@@ -39,6 +39,8 @@ std::string  vu_name(int style);
 std::wstring menu_name(const std::string &n);
 std::wstring current_effect_text();
 int          vu_mode();
+bool         has_key_layer();    // ZXKB firmware v33 on: "effect off" shows the keys' own colours (the regular layer)
+uint8_t      effect_off_mode();  // the effect number sent for "effect off" (0 = lighting off)
 bool         vu_showing();
 bool         replaced(size_t i);                 // QMK effect hidden because the board has ZXKB's version
 std::string  current_name();                     // effect or "VU:style" now showing, "" if none

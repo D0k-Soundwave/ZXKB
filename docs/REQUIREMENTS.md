@@ -60,6 +60,9 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Fn+number hotkey slots, each assignable to an effect or profile
 - [ ] Live preview window with the Wraith legends
 - [ ] Per-key paint editor
+- [~] Layers as in an art package (D0k, 2026-11-06): key colours (the "main profile") at the bottom, the effect over them, lock
+      lights on top; effect off shows the key colours. Firmware v33 + app 0.51 (ZXKB firmware only: stock VIA has no
+      per-key colours). Replaces "per-key colour over any effect" (2026-11-03). Not yet tried by D0k.
 - [~] Per-key effects (D0k, 2026-11-03; built in v20 + 0.21; flash on a chosen key tried by D0k with 0.22, works): each key its own effect over its colour, run by the keyboard: steady, flash
       between two colours (in step with each other, Spectrum FLASH rate 320 ms by default), breathe, colour cycle,
       twinkle; own colours and speed per key. Planned cost: 7 bytes per key in the keyboard's settings memory (616 on the

@@ -303,7 +303,11 @@ bool rgb_matrix_indicators_advanced_zxkb(uint8_t led_min, uint8_t led_max) {
     if (overlay == ZXKB_OVERLAY_DIRECT) return true;
     uint16_t v   = rgb_matrix_get_val();
     uint32_t now = timer_read32();
-    for (uint8_t i = led_min; i < led_max && i < RGB_MATRIX_LED_COUNT; i++) {
+    /* layers, bottom to top (D0k, 2026-11-06, as layers in an art package): the keys' own colours (the regular
+     * layer), the effect over them, then the lights below (record key, layer light, Caps Lock). The regular layer
+     * shows only while the effect is off ("Key colours only"); before v33 the key colours were drawn over the effect. */
+    bool regular = rgb_matrix_get_mode() == RGB_MATRIX_COMMUNITY_MODULE_KEY_COLOURS;
+    for (uint8_t i = led_min; regular && i < led_max && i < RGB_MATRIX_LED_COUNT; i++) {
         const uint8_t *k  = cfg.key[i];
         uint8_t        fx = k[0], speed = k[1];
         if (fx == ZXKB_KEY_NONE) continue;

@@ -262,6 +262,7 @@ void refresh() {
     EnableWindow(list, on);
 
     Button_SetCheck(item(IDC_ON), on && g_st.enabled ? BST_CHECKED : BST_UNCHECKED);
+    SetWindowTextW(item(IDC_ON), on && has_key_layer() ? L"Effect on" : L"Lighting on");
     EnableWindow(item(IDC_ON), on);
     std::string cur = current_name();
     Button_SetCheck(item(IDC_FAV), !cur.empty() && is_favourite(cur) ? BST_CHECKED : BST_UNCHECKED);
@@ -415,6 +416,7 @@ void refresh_keys() {
                    : n == 0 ? L"Click keys to colour them (Ctrl: more; empty spot: none)"
                    : std::to_wstring(n) + (n == 1 ? L" key: colours and Key speed below apply to it"
                                                     : L" keys: colours and Key speed below apply to them");
+    if (g_board && can && has_key_layer() && g_st.enabled) t += L" (shown when the effect is off)"; // under the effect
     SetWindowTextW(item(IDC_KEYS_INFO), t.c_str());
     EnableWindow(item(IDC_KEYS_ALL), can);
     EnableWindow(item(IDC_KEYS_NONE), can);

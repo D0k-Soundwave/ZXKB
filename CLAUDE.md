@@ -53,7 +53,8 @@ lighting controller. It is headed for public release on GitHub (account `D0k-Sou
   ZX_EXT = Ctrl+LShift, ZX_LOAD types LOAD "" with 60 ms per key). Fn layers: media/brightness on F-row, RM_*
   lighting keys, Fn+1..0 = hotkey slots, Fn+V = switch to/from the VU meter effect, Fn+N = NKRO, Fn+Win = game mode (v28), Fn+M = record a macro on the keyboard (v29).
 - Auto Spectrum stripes when the switch selects Spectrum mode (previous effect restored after). The VU meter is a
-  normal effect fed by ZXKB (dark without it); PC direct mode is an overlay, only in Windows mode.
+  normal effect fed by ZXKB (dark without it); PC direct mode is an overlay, only in Windows mode. Layers (v33): key colours are the regular layer, shown only by the last
+  effect KEY_COLOURS ("effect off" in the app); any other effect covers them; record key, layer light, Caps Lock light on top.
 - Caps Lock light: drawn by the module (v24), set from the app (Caps Lock light... window; 0xDE). Starts as flashing
   magenta/white every 320 ms at full brightness on Tab, Q, Caps Lock, A, Caps Shift and \ (LEDs 33, 34, 49, 50, 63,
   64; keymap zxkb_caps_keys_user).

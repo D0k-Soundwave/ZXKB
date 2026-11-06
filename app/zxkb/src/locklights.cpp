@@ -134,7 +134,7 @@ void put_back() {
     g_shown = -1;
     g_sent_fx = g_sent_hue = g_sent_sat = g_sent_val = -1;
     if (!g_board || !g_board->via_channel) return;
-    via_set(proto::VIA_EFFECT, g_st.enabled ? g_st.mode : 0, 0);
+    via_set(proto::VIA_EFFECT, g_st.enabled ? g_st.mode : effect_off_mode(), 0);
     via_set(proto::VIA_COLOUR, g_st.hue, g_st.sat);
     via_set(proto::VIA_BRIGHTNESS, (uint8_t)raw_brightness(g_st.val), 0);
     if (g_save_pending) schedule_save(); // lighting changed meanwhile: saved now the light is gone

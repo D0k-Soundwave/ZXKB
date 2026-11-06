@@ -127,6 +127,20 @@ std::wstring menu_name(const std::string &n) { return is_vu_name(n) ? vu_label(v
 int  vu_mode() { return effect_number("VU_METER"); }
 bool vu_showing() { return g_board && g_st.enabled && g_st.mode && g_st.mode == vu_mode(); }
 
+// Layers (D0k, 2026-11-06): the keys' own colours are the regular layer, the effect goes over them, the lock lights over
+// that. With ZXKB firmware v33 on, "effect off" is its Key colours only effect, which shows the regular layer; on other
+// keyboards it is lighting off. The app keeps "effect off" as enabled = 0 and mode = the effect to turn back on.
+int  key_layer_mode() { return effect_number("KEY_COLOURS"); }
+bool has_key_layer() { return key_layer_mode() != 0; }
+uint8_t effect_off_mode() { return (uint8_t)key_layer_mode(); } // what the keyboard is sent for "effect off"
+void normalise_status(Status *s) {
+    int kc = key_layer_mode();
+    if (!kc || !s->enabled || s->mode != kc) return;
+    s->enabled = 0;
+    int last = effect_number(settings::narrow(settings::get(L"lighting", L"last")));
+    s->mode = (uint8_t)(last && last != kc ? last : 1);
+}
+
 std::string current_name() {
     if (!g_board || !g_st.enabled) return "";
     return vu_showing() ? vu_name(g_vu_style) : effect_name(g_st.mode);
@@ -372,7 +386,7 @@ void set_favourite(const std::string &n, bool on) {
 
 std::wstring current_effect_text() {
     if (!g_board) return L"keyboard not connected";
-    if (!g_st.enabled) return L"lighting off";
+    if (!g_st.enabled) return has_key_layer() ? L"effect off: key colours" : L"lighting off";
     if (g_pc_effect == PCFX_PULSE && g_board->kind == Board::VIA) return L"Music pulse (whole keyboard, from ZXKB)";
     if (vu_showing()) return vu_label(g_vu_style);
     return effects::friendly(effect_name(g_st.mode));
@@ -574,8 +588,12 @@ void set_vu_style(int style) {
 void set_effect(int mode) { // 0 = lighting off
     if (!g_board) return;
     if (g_pc_effect != PCFX_NONE) select_pc_effect(PCFX_NONE); // a keyboard effect ends a PC effect
-    via_set(proto::VIA_EFFECT, (uint8_t)mode);
-    if (mode) g_st.mode = (uint8_t)mode;
+    if (mode && mode == key_layer_mode()) mode = 0; // chosen by name somewhere: it is "effect off"
+    via_set(proto::VIA_EFFECT, mode ? (uint8_t)mode : effect_off_mode());
+    if (mode) {
+        g_st.mode = (uint8_t)mode;
+        settings::set(L"lighting", L"last", settings::widen(effect_name(mode))); // turned back on after "effect off"
+    }
     g_st.enabled = mode != 0;
     if (zxkb_board()) {
         g_st.vu_possible = 1; // the keyboard reports at once if the VU meter cannot show (e.g. Spectrum mode)
@@ -765,6 +783,7 @@ void refresh_status() {
 
 // QMK's own version of an effect is hidden when the board also has ZXKB's (same menu name)
 bool replaced(size_t i) {
+    if (g_board->names[i] == "KEY_COLOURS") return true; // listed as "effect off", not as an effect
     if (g_board->kinds[i] != 0) return false;
     std::wstring name = effects::friendly(g_board->names[i]);
     for (size_t j = 0; j < g_board->names.size(); j++)
@@ -791,7 +810,7 @@ void show_menu() {
     // effects, grouped
     HMENU fxm = CreatePopupMenu();
     if (on) {
-        add(fxm, ID_OFF, L"Lighting off", !g_st.enabled, true, true);
+        add(fxm, ID_OFF, has_key_layer() ? L"Effect off (key colours)" : L"Lighting off", !g_st.enabled, true, true);
         HMENU vu = CreatePopupMenu(); // the audio VU meter, one entry per style
         const int order[3] = {VU_MUSIC, VU_BANDS, VU_ABC};
         for (int s : order) add(vu, ID_STYLE_BANDS + s, vu_label(s), vu_showing() && g_vu_style == s, true, true);
@@ -976,6 +995,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         case WM_ZX_CONNECTED:
             delete g_board;
             g_board = reinterpret_cast<Board *>(lp);
+            normalise_status(&g_board->status);
             g_st    = g_board->status;
             g_tune  = Tune();
             g_tune.flags = 0;
@@ -1070,6 +1090,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         case WM_ZX_STATUS: { // a reply, or the keyboard telling us its state changed
             Status *s = reinterpret_cast<Status *>(lp);
+            normalise_status(s);
             if (g_board) {
                 if (locklights::showing()) { // ZXKB firmware reports the lock light's lighting: keep the keyboard's own
                     Status own = g_st;

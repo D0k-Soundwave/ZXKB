@@ -26,6 +26,7 @@ RGB_MATRIX_EFFECT(ZX_SOLID_SPLASH)
 RGB_MATRIX_EFFECT(ZX_SOLID_MULTISPLASH)
 #endif
 RGB_MATRIX_EFFECT(PC_DIRECT)
+RGB_MATRIX_EFFECT(KEY_COLOURS) /* v33, last so the effects before it keep their numbers */
 
 #ifdef RGB_MATRIX_CUSTOM_EFFECT_IMPLS
 #include "zxkb.h"
@@ -394,6 +395,14 @@ static bool PC_DIRECT(effect_params_t* params) {
         RGB_MATRIX_TEST_LED_FLAGS();
         rgb_matrix_set_color(i, scale8(zxkb_direct[i][0], v), scale8(zxkb_direct[i][1], v), scale8(zxkb_direct[i][2], v));
     }
+    return rgb_matrix_check_finished_leds(led_max);
+}
+
+// Key colours only (v33; D0k, 2026-11-06): the effect "turned off". The keys' own colours are the regular layer
+// under every effect; this draws nothing, so zxkb.c's indicators show just that layer (and the lights above it).
+static bool KEY_COLOURS(effect_params_t* params) {
+    RGB_MATRIX_USE_LIMITS(led_min, led_max);
+    for (uint8_t i = led_min; i < led_max; i++) rgb_matrix_set_color(i, 0, 0, 0);
     return rgb_matrix_check_finished_leds(led_max);
 }
 
