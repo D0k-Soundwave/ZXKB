@@ -29,6 +29,8 @@
 #define ZXKB_W2(s) L##s
 #define ZXKB_W(s)  ZXKB_W2(s)
 
+void via_set(uint8_t value_id, uint8_t a, uint8_t b); // main.cpp
+
 namespace {
 
 enum : int {
@@ -407,8 +409,23 @@ void pick_colour() {
     set_colour(h, s);
 }
 
+// The key colours shown while keys are selected (window.h)
+bool g_edit_view      = false; // the keyboard shows the key colours for editing
+bool g_edit_suspended = false; // an effect was chosen with keys selected: show it until the selection changes
+int  g_edit_selected  = 0;
+void update_edit_view() {
+    int n = g_board ? preview_selected_count() : 0;
+    if (n == 0 || (g_edit_selected == 0 && n > 0)) g_edit_suspended = false; // a new selection: show the colours again
+    g_edit_selected = n;
+    bool want = g_board && g_win && has_key_layer() && per_key_possible() && g_st.enabled && n > 0 && !g_edit_suspended;
+    if (want == g_edit_view) return;
+    g_edit_view = want;
+    if (g_board) via_set(proto::VIA_EFFECT, want ? effect_off_mode() : g_st.enabled ? g_st.mode : effect_off_mode(), 0);
+}
+
 // Per-key colours for the keys selected in the preview
 void refresh_keys() {
+    update_edit_view();
     bool can = per_key_possible();
     int  n   = preview_selected_count();
     std::wstring t = !g_board ? L""
@@ -801,8 +818,20 @@ void window_refresh() {
     refresh();
 }
 
+bool edit_view_showing() { return g_edit_view; }
+
+void edit_view_effect_chosen() {
+    if (!g_edit_view) return;
+    g_edit_view      = false; // set_effect sends the effect itself
+    g_edit_suspended = true;
+}
+
 void window_close() {
     if (!g_win || flash_busy()) return; // never close while firmware is being written
+    if (g_edit_view && g_board) { // the effect back over the key colours
+        g_edit_view = false;
+        via_set(proto::VIA_EFFECT, g_st.enabled ? g_st.mode : effect_off_mode(), 0);
+    }
     mirror_request(false); // the keyboard stops sending colours
     DestroyWindow(g_win); // destroys every control with it
     g_win = nullptr;

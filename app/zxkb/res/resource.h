@@ -91,5 +91,5 @@
 #define IDC_LK_KEYS      322
 #define IDC_LK_ROW       330 /* + 10 x light: + 1 effect, 2 colour 1, 3 colour 2, 4 speed, 5 speed box, 6 full */
 #define ZXKB_VERSION_MAJOR 0
-#define ZXKB_VERSION_MINOR 51 // keep in step with ZXKB_VERSION_STR
-#define ZXKB_VERSION_STR   "0.51" // raise for every build installed for D0k (docs/VERSIONS.md)
+#define ZXKB_VERSION_MINOR 52 // keep in step with ZXKB_VERSION_STR
+#define ZXKB_VERSION_STR   "0.52" // raise for every build installed for D0k (docs/VERSIONS.md)

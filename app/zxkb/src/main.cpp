@@ -431,7 +431,12 @@ void save_now() {
     KillTimer(g_hwnd, TIMER_SAVE);
     if (g_idle_off || locklights::showing() || apps::active()) return; // never keep the lights of idling, a lock light or a program's profile (saved after)
     if (g_board && g_save_pending) {
-        if (g_board->via_channel) send({proto::VIA_SAVE, g_board->via_channel});
+        if (g_board->via_channel) {
+            bool view = g_window_mode && edit_view_showing(); // key colours shown for editing: save the effect, not that
+            if (view) via_set(proto::VIA_EFFECT, g_st.enabled ? g_st.mode : effect_off_mode());
+            send({proto::VIA_SAVE, g_board->via_channel});
+            if (view) via_set(proto::VIA_EFFECT, effect_off_mode());
+        }
         if (zxkb_board()) send({proto::TUNE, proto::TUNE_SAVE});
         if (per_key_possible()) send({proto::KEYS, proto::KEYS_SAVE});
         if (caps_possible()) send({proto::CAPS, proto::CAPS_SAVE});
@@ -588,6 +593,7 @@ void set_vu_style(int style) {
 void set_effect(int mode) { // 0 = lighting off
     if (!g_board) return;
     if (g_pc_effect != PCFX_NONE) select_pc_effect(PCFX_NONE); // a keyboard effect ends a PC effect
+    if (g_window_mode) edit_view_effect_chosen(); // the chosen effect shows, though keys are selected
     if (mode && mode == key_layer_mode()) mode = 0; // chosen by name somewhere: it is "effect off"
     via_set(proto::VIA_EFFECT, mode ? (uint8_t)mode : effect_off_mode());
     if (mode) {
@@ -1092,7 +1098,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             Status *s = reinterpret_cast<Status *>(lp);
             normalise_status(s);
             if (g_board) {
-                if (locklights::showing()) { // ZXKB firmware reports the lock light's lighting: keep the keyboard's own
+                if (locklights::showing() || (g_window_mode && edit_view_showing())) { // reports of a lock light or the key colours shown for editing: keep the keyboard's own
                     Status own = g_st;
                     g_st = *s;
                     g_st.mode = own.mode; g_st.enabled = own.enabled; g_st.val = own.val; g_st.hue = own.hue; g_st.sat = own.sat;

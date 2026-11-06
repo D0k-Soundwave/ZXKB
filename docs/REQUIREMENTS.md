@@ -60,6 +60,10 @@ Rule: do not build until D0k confirms the list is complete.
 - [~] Fn+number hotkey slots, each assignable to an effect or profile
 - [ ] Live preview window with the Wraith legends
 - [ ] Per-key paint editor
+- [ ] Preview first, then Apply (D0k, 2026-11-06): every change in the ZXKB window, effects included, shows in the preview
+      first and reaches the keyboard only when Apply is clicked; hotkeys (Fn + number slots) still switch at once.
+      Needs every effect worked out in the app for the preview (QMK effects already simulated in src/sim; ZX
+      effects, VU meter and key colours not yet). Open questions being asked one at a time.
 - [~] Layers as in an art package (D0k, 2026-11-06): key colours (the "main profile") at the bottom, the effect over them, lock
       lights on top; effect off shows the key colours. Firmware v33 + app 0.51 (ZXKB firmware only: stock VIA has no
       per-key colours). Replaces "per-key colour over any effect" (2026-11-03). Not yet tried by D0k.
